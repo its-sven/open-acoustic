@@ -7,6 +7,10 @@ Control a **stock** Play Acoustic live from your laptop (or an iPad) over USB‑
 ![Web MIDI](https://img.shields.io/badge/tech-Web%20MIDI%20%2B%20SysEx-5c4ee5)
 ![Firmware](https://img.shields.io/badge/firmware-PA%201.4.00%20Build%2051-339933)
 
+### ▶ [Try the Remote in your browser »](https://michaelbeyhs.github.io/open-acoustic/tools/pa-remote.html)
+
+Opens the live front panel. Needs **Chrome/Edge** (desktop) or a **Web MIDI browser app** (iPad), with a Play Acoustic connected by USB. No install, nothing to flash.
+
 > _**Unofficial** community project. Not affiliated with, endorsed by, or supported by TC‑Helicon / Music Tribe. "Play Acoustic", "Play Electric" and "TC‑Helicon" are trademarks of their respective owner, used here only descriptively. **No proprietary firmware binaries or disassembly are distributed in this repository.** Use at your own risk._
 
 <p align="center">
