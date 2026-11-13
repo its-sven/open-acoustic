@@ -242,6 +242,8 @@ Full SysEx reference: `docs/SYSEX.md`.
 - `45 00 00` returns the current preset header (name + flags); see `docs/SYSEX.md`.
 - Setup › ROOMSENSE (0x2A7) value names are AMBIENT / AMBIENT/AUTO (list at X:4577B4; its format code 0x95 doesn't index the value-list table). Confirmed on the unit.
 
+- **Changing preset:** no SysEx takes a preset number. The way in is the SysEx `55` event tunnel: inject the pedal's own ▲/▼ footswitch events (`DB 04/05 00` + `01`) or knob events (`AE 00 01/00`); codes read from the echo on the unit. See `docs/SYSEX.md` "Fake front-panel presses". GENRE (0x2A5) changes load the first preset of the new genre (P:4461D8).
+
 ## 16. USB SysEx lock-out and factory reset
 - 2026-11-13: after a power cycle the unit stopped answering any SysEx over USB (not even the universal identity request); its own MIDI output (bank select + program change) still arrived. VoiceSupport and the oddeyez editor could not control it either. Most likely cause: a stored MIDI setting from the earlier setup-block experiments: **MIDI CTRL 0x278** (MERGE / MIDI / USB; MIDI = only the 5-pin input, which the Play Acoustic doesn't have) or **FILTER 0x27B** (NONE / PRGCHANGE / SYSEX / PC+SYSEX). Not proven.
 - `tools/pa-remote.html` now refuses to set 0x278 and 0x27B.
@@ -285,7 +287,7 @@ See §14 ("Naming from the menu tables", "Full ID range") for the table format a
 | Mix AUX/ROOMSENSE cell | ROOMSENSE without an aux cable | 2026-11-13 |
 | ROOMSENSE values | AMBIENT / AMBIENT/AUTO | 2026-11-13 |
 | USB SysEx lock-out after power cycle | Happened; fixed by factory reset (STORE + BACK) | 2026-11-13 |
-| SysEx `55` front-panel tunnel for the footswitches | Did not work; reverted | 2026-11-13 |
+| SysEx `55` front-panel tunnel | First tries showed nothing (our `01`/`02` were swapped). Fixed: echo and injection work; preset up/down from the remote confirmed. Codes: knob `AE 00 01/00`, buttons `DB <code> 00/01` (table in `docs/SYSEX.md`) | 2026-11-13 |
 
 Everything else (new Setup IDs, CONTROL params, preset name/number, other FX pages) is derived from the code and tracked in `tools/verify.html`.
 

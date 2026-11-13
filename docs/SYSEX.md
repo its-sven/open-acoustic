@@ -29,7 +29,7 @@ The DSP checks each command's payload length against its table: the bytes after 
 | `46` | 2 | → dev | Sibling of `45` (same helpers); probably another preset request variant. | likely |
 | `50` | 2 | → dev | **Delete preset** `bank num` (editor: `makeDeletePreset`). | editor |
 | `57` | 2 | → dev | **Sync session**: `00 00` begin, `00 01` end. Wraps setup and preset reads and writes. | confirmed |
-| `55` | 5 | both | **Front-panel/MIDI tunnel.** `02 x` enables the tunnel. `01 v3 v2 v1 v0` injects a 3-byte event; only internal codes `AE`, `DA`, `DB`, `DD` are acted on. When enabled, the device also reports events back as `55`. Tried on hardware for the footswitches (enable echo, learn, replay): didn't work; not pursued further. | code |
+| `55` | 5 | both | **Front-panel event tunnel.** `01 x 00 00 00` sets the tunnel flag (x ≠ 0 = on). `02 v3 v2 v1 v0` injects a 3-byte event (28-bit `e0<<16 \| e1<<8 \| e2`), but only while the tunnel is on; codes `AE`, `DA`, `DB`, `DD` are acted on. While on, the device also reports front-panel events back as `55 …`. (Until 2026-11-13 our tools had `01`/`02` swapped, which is why the first hardware tries showed nothing.) | code |
 | `54` | 14 | → dev | Unknown (handler P:44904B). | — |
 | `53` | 1 | → dev | Unknown (handler P:4490CB). | — |
 | `58` | 1 | → dev | Unknown; touches screen/page state (handler P:4490EE). | — |
@@ -79,3 +79,23 @@ Parameter IDs, names and ranges: `data/params-1.4.00.csv`.
 | 0x279 / 0x27A | MIDI CHAN / CC CHAN | Not dangerous for SysEx, but no use either (the AVR drops channel messages). |
 
 The remote refuses 0x278 and 0x27B.
+
+## Fake front-panel presses (SysEx 55) and preset up/down (confirmed)
+- `55 01 01 00 00 00` switches the tunnel on. The pedal then reports every front-panel event as `55 <28-bit>` (event = `e0 e1 e2`), and accepts `55 02 <28-bit e0<<16|e1<<8|e2>` to inject one.
+- Event codes seen on the unit (2026-11-13, preset screen):
+
+| Control | Event(s) | Effect on the preset screen |
+|---|---|---|
+| Control knob, one click up | `AE 00 01` | next preset |
+| Control knob, one click down | `AE 00 00` | previous preset |
+| ▲ footswitch | `DB 04 00` (press), `DB 04 01` (release) | next preset |
+| ▼ footswitch | `DB 05 00`, `DB 05 01` | previous preset |
+| VOCAL FX / GUITAR FX / MIX (left soft buttons, top to bottom) | `DB 09` / `DB 08` / `DB 07` + `00`, `01` | open the menu; inside a menu, select the cell beside it |
+| FAVORITE / GENRE / SETUP (right soft buttons) | `DB 00` / `DB 01` / `DB 02` + `00`, `01` | same, right column |
+| STORE | `DB 03 00`, `DB 03 01` | store screen |
+| BACK | `DB 06 00`, `DB 06 01` | back to the preset screen |
+| front ◀ ▶, HIT footswitch | not recorded yet | |
+
+- There is no SysEx command that takes a preset number: `45`/`46` only send a preset, `53 02` reloads the current one, `53 03` reports it, writing 0x2A4 only matters at power-up, and Program Change (which would select one) is dropped by the AVR. Injecting the footswitch events is the way to step presets. The pedal reports each change as Bank Select + Program Change.
+- An injected event acts on whatever screen the pedal shows, exactly like the real control.
+- **Confirmed on the unit:** injected footswitch and knob events change presets. The remote presses the real buttons for its soft buttons, BACK, STORE and ▼ ▲ (option "Press the pedal's buttons too"), and uses the footswitch/knob events for ◀ ▶ and the knob on its preset screen.

@@ -77,6 +77,7 @@ select, input { max-width: 100%; }
 .cell .vtxt { font-size: 14px; line-height: 1.1; padding-left: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cell.right .vtxt { padding-left: 0; }
 .lcdgrid.fx { grid-template-columns: 92fr 34fr; grid-template-rows: 48fr 9fr; gap: 2px 0; padding: 0; }
+.fximg.empty { background: transparent; }
 .fximg { grid-row: 1; grid-column: 1; background: currentColor; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; image-rendering: pixelated; min-height: 0; }
 .fxright { grid-row: 1 / 3; grid-column: 2; display: grid; grid-template-rows: repeat(3, 1fr); border-left: 2px solid #e9eef2; min-width: 0; }
 .fxcell { cursor: pointer; padding: 2px 4px; min-width: 0; display: grid; align-content: center; justify-items: center; gap: 2px; text-align: center; }
@@ -108,7 +109,7 @@ select, input { max-width: 100%; }
 .fsw { display: grid; justify-items: center; gap: 8px; background: none; border: 0; color: #e6ebef; cursor: pointer; font: 800 15px/1.1 system-ui, sans-serif; }
 .fsw small { font-size: 10px; font-weight: 600; color: #b9c1c8; }
 .fsw .led { width: 9px; height: 9px; border-radius: 50%; background: #3a3f44; box-shadow: inset 0 1px 1px rgba(0,0,0,.6); }
-.fsw .led.lit { background: #ff4a3d; box-shadow: 0 0 10px #ff4a3d; }
+.fsw .led.lit { background: #3d8bff; box-shadow: 0 0 10px #3d8bff, 0 0 3px #a9cbff inset; }
 .fsw .cap { width: 58px; height: 58px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #f4f6f8, #8b9399 60%, #4b5258); box-shadow: 0 4px 8px rgba(0,0,0,.6); }
 .fsw:disabled { cursor: default; opacity: .55; }
 .fsw:not(:disabled):active .cap { transform: translateY(2px); }
@@ -188,16 +189,16 @@ button, .soft, .hwbtn, .fsw, .cell, .fxcell, .fxstyle { touch-action: manipulati
         <button class="hwbtn round" id="hwPrev" aria-label="Previous page">◀</button>
         <div class="knob" id="knob" tabindex="0" role="slider" aria-label="Control knob" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0" title="Control knob: drag, scroll or arrow keys (Shift = ×10)"></div>
         <button class="hwbtn round" id="hwNext" aria-label="Next page">▶</button>
-        <button class="hwbtn store" id="hwStore" title="Store isn't mapped to a SysEx command">Store</button>
+        <button class="hwbtn store" id="hwStore" title="Presses STORE on the pedal">Store</button>
       </div>
       <div class="footrow">
-        <button class="fsw" disabled title="Preset down: not mapped"><span style="font-size:22px">▼</span><span class="led"></span><span class="cap"></span></button>
-        <button class="fsw" disabled title="Preset up: not mapped"><span style="font-size:22px">▲</span><span class="led"></span><span class="cap"></span></button>
-        <button class="fsw" id="hwHit" title="Toggle HIT (param 0x2A8)"><span>HIT<br><small>HOLD FOR TALK</small></span><span class="led" id="hitLed"></span><span class="cap"></span></button>
+        <button class="fsw" id="fswDown" title="▼ footswitch (sends the pedal's own footswitch event)"><span style="font-size:22px">▼</span><span class="led"></span><span class="cap"></span></button>
+        <button class="fsw" id="fswUp" title="▲ footswitch (sends the pedal's own footswitch event)"><span style="font-size:22px">▲</span><span class="led"></span><span class="cap"></span></button>
+        <button class="fsw" id="hwHit" title="HIT: tap to toggle, hold for TALK (presses the real footswitch when mirroring is on)"><span>HIT<br><small>HOLD FOR TALK</small></span><span class="led" id="hitLed"></span><span class="cap"></span></button>
       </div>
     </div>
-    <div class="paneltools"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="advChk"> Advanced pages (Vocal FX / Guitar FX open the ADV menus)</label></div>
-    <p class="panelhint">Pages and cell positions come from the firmware's own menu tables (still being checked against the real unit); labels are the firmware's display names. Values are read live (SysEx 0x47) and set with the knob (0x22). Shift = ×10. On the preset screen (the pedal's main screen) the six soft buttons open the menus (white); inside a menu they turn blue and select the cell beside them, as on the pedal. Favorite, Genre, Store and the preset footswitches aren't mapped. The bars and labels follow the pedal's layout; the pixels are an approximation.</p>
+    <div class="paneltools"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="mirrorChk" checked> Press the pedal's buttons too (soft buttons, BACK, STORE, footswitches)</label><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="advChk"> Advanced pages (Vocal FX / Guitar FX open the ADV menus)</label></div>
+    <p class="panelhint">Pages and cell positions come from the firmware's own menu tables (still being checked against the real unit); labels are the firmware's display names. Values are read live (SysEx 0x47) and set with the knob (0x22). Shift = ×10. On the preset screen (the pedal's main screen) the six soft buttons open the menus (white); inside a menu they turn blue and select the cell beside them, as on the pedal. With "Press the pedal's buttons too" on, the soft buttons, BACK, STORE and ▼ ▲ also press the real buttons (SysEx 55 events), and ◀ ▶ / the knob on the preset screen change presets. ◀ ▶ inside menus press the pedal's arrow buttons too, and HIT works as tap (toggle) or hold (TALK). The bars and labels follow the pedal's layout; the pixels are an approximation.</p>
   </div>
   <div class="card" id="liveCard">
     <div class="row" style="justify-content:space-between">
@@ -223,7 +224,7 @@ button, .soft, .hwbtn, .fsw, .cell, .fxcell, .fxstyle { touch-action: manipulati
   <div class="card">
     <div class="row" style="justify-content:space-between">
       <strong>MIDI monitor</strong>
-      <div class="btns"><label class="f" style="flex-direction:row;display:flex;gap:6px;align-items:center"><input type="checkbox" id="showOut" checked> show sent</label><button id="clearLog">Clear</button></div>
+      <div class="btns"><label class="f" style="flex-direction:row;display:flex;gap:6px;align-items:center"><input type="checkbox" id="showOut" checked> show sent</label><label class="f" style="flex-direction:row;display:flex;gap:6px;align-items:center" title="Value replies (22) and preset packets (20/21) from the panel's background reads"><input type="checkbox" id="showPoll"> show polling replies</label><button id="clearLog">Clear</button></div>
     </div>
     <div class="log" id="log" aria-live="polite"></div>
   </div>
@@ -302,7 +303,9 @@ function selectParam(id) {
   if (out && inp) getParam(id);
 }
 let idPromise = null;   // one identity exchange at a time (several polls used to start their own)
-async function ensureId() { if (identified) return; idPromise ??= identify().finally(() => { idPromise = null; }); await idPromise; identified = true; }
+async function ensureId() { if (identified) return; idPromise ??= identify().finally(() => { idPromise = null; }); await idPromise; identified = true;
+  // Switch the front-panel event tunnel on right away, so the pedal echoes its own knob/button events ("panel event" in the monitor).
+  if (!tunnelReady) { out.send([...hdr(), 0x55, 0x01, 0x01, 0x00, 0x00, 0x00, 0xF7]); tunnelReady = true; log("→ front-panel event tunnel on (55 01 01)", "out"); } }
 function setParam(id, v) {
   if (id === 0x278 || id === 0x27B) { log(`(refused: 0x${id.toString(16)} would lock out USB SysEx)`, "out"); return; }
   const m = [...hdr(), 0x22, (id >> 7) & 0x7F, id & 0x7F, ...enc28(v), 0xF7]; out.send(m);
@@ -438,7 +441,10 @@ function renderFx(g, sp) {
   const n = st && v != null && sp.images ? sp.images[v - st[2]] : null;
   const pic = document.createElement("div"); pic.className = "fximg";
   const uri = (window.PA_IMAGES || {})[n ?? 39];
-  if (uri && v != null) { pic.style.webkitMaskImage = pic.style.maskImage = `url(${uri})`; }
+  // Not read yet (rare, the values are read ahead): keep the last picture shown rather than flashing blank.
+  const show = uri && v != null ? `url(${uri})` : pnl.lastPic;
+  if (show) { pic.style.webkitMaskImage = pic.style.maskImage = show; pnl.lastPic = show; }
+  else pic.classList.add("empty");   // nothing shown yet at all: blank (without a mask the box would fill solid)
   pic.title = n != null ? `firmware image ${n}` : "";
   const right = document.createElement("div"); right.className = "fxright";
   for (const i of [1, 3, 5]) {   // one box per right-hand soft button
@@ -486,6 +492,22 @@ async function readPreset() {
       pnl.presetName = String.fromCharCode(...(end < 0 ? raw : raw.slice(0, end)).filter(c => c >= 0x20 && c < 0x7F)).trim(); }
   }
 }
+// Read ahead: every Vocal/Guitar FX page's cells (STYLE picks the picture) plus the page-variant selectors, once after
+// connecting and again after each preset change, so FX pages open with the right picture and values instead of blank.
+async function prefetch() {
+  if (pnl.prefetchFor === pnl.preset) return;
+  const ids = new Set([0x295, 0x39F, 0x362]);
+  for (const k of ["VOCAL", "GUITAR"]) for (const e of MENUS[k] || []) if (e.layout === "image") for (const c of e.s) if (c) ids.add(c[0]);
+  for (const id of ids) { const v = await panelRead(id); if (v != null) pnl.vals[id] = v; }
+  pnl.prefetchFor = pnl.preset;
+}
+// Fast path after a preset change: read just number and name, outside the poll lock, then redraw.
+let fastBusy = false;
+async function fastPreset() {
+  if (fastBusy || !out || !inp) return; fastBusy = true;
+  try { await ensureId(); pnl.presetName = null; await readPreset(); renderPanel(); setTimeout(() => pollPanel(true), 300); }
+  catch (_) {} finally { fastBusy = false; }
+}
 let polling = false;
 async function pollPanel(force) {
   if (polling || !out || !inp) return;
@@ -498,27 +520,81 @@ async function pollPanel(force) {
     if (!isHome() && !isProductInfo(sp)) for (const c of sp.s) { if (!c) continue; want++; const v = await panelRead(c[0]); if (v != null) { pnl.vals[c[0]] = v; got++; } }
     const hit = await panelRead(0x2A8); if (hit != null) pnl.vals[0x2A8] = hit;
     await readPreset();
+    await prefetch();
     $("panelStatus").textContent = got === want ? "In sync with the pedal" : `Read ${got}/${want} values`; $("panelStatus").className = "status " + (got === want ? "ok" : "bad");
     const n = pages().length; if (pnl.sub >= n) pnl.sub = n - 1;
     renderPanel();
   } catch (e) { $("panelStatus").textContent = "Read failed: " + e.message; $("panelStatus").className = "status bad"; }
   polling = false;
 }
+// ── Fake front-panel presses (SysEx 55 tunnel) ──
+// 55 01 01 00 00 00 switches the tunnel on (the pedal then echoes its own panel events as "55 …");
+// 55 02 <28-bit e0<<16|e1<<8|e2> injects one event as if a control was used (sub-commands checked at P:4497B4).
+// Event codes, read from the echo on the unit (2026-11-13):
+//   Control knob:   AE 00 01 = one click up, AE 00 00 = one click down
+//   ▲ footswitch:   DB 04 00 (press), DB 04 01 (release)    ▼ footswitch: DB 05 00 / DB 05 01
+const EVT = {
+  knobUp: [[0xAE, 0x00, 0x01]], knobDown: [[0xAE, 0x00, 0x00]],
+  fswUp: [[0xDB, 0x04, 0x00], [0xDB, 0x04, 0x01]], fswDown: [[0xDB, 0x05, 0x00], [0xDB, 0x05, 0x01]],
+};
+// Buttons are DB <code> 00 (press) + DB <code> 01 (release). Soft buttons by panel slot (left 0/2/4, right 1/3/5):
+// VOCAL FX 09, GUITAR FX 08, MIX 07, FAVORITE 00, GENRE 01, SETUP 02; STORE 03, BACK 06; ▲ 04, ▼ 05. (Front ◀ ▶ and HIT: not known yet.)
+const BTN = { soft: { 0: 0x09, 2: 0x08, 4: 0x07, 1: 0x00, 3: 0x01, 5: 0x02 }, store: 0x03, back: 0x06, next: 0x04, prev: 0x05, hit: 0x0B };
+// Note: DB 04 / DB 05 were recorded for the front ▶ / ◀ buttons; whether the ▲ ▼ footswitches send the same codes is unconfirmed.
+const mirror = () => !!out && $("mirrorChk").checked;
+const pressButton = code => press([[0xDB, code, 0x00], [0xDB, code, 0x01]]);
+let tunnelReady = false;
+async function injectEvent(e0, e1, e2) {
+  if (!out) throw new Error("not connected");
+  await ensureId();
+  if (!tunnelReady) { out.send([...hdr(), 0x55, 0x01, 0x01, 0x00, 0x00, 0x00, 0xF7]); tunnelReady = true; await delay(30); }
+  out.send([...hdr(), 0x55, 0x02, ...enc28((e0 << 16) | (e1 << 8) | e2), 0xF7]);
+  log(`→ inject panel event ${[e0, e1, e2].map(x => x.toString(16).padStart(2, "0")).join(" ")}`, "out");
+}
+async function press(seq) {   // send a press (and release) sequence like the real control
+  if (!out) { $("panelStatus").textContent = "Connect MIDI first"; $("panelStatus").className = "status bad"; return; }
+  try { for (let i = 0; i < seq.length; i++) { if (i) await delay(60); await injectEvent(...seq[i]); } }
+  catch (e) { log("inject failed: " + e.message, "out"); return; }
+  setTimeout(() => pollPanel(true), 250);
+}
+// Preset up/down: what the pedal's own ▲ ▼ footswitches send (they step presets on the preset screen).
+const stepPreset = dir => press(dir > 0 ? EVT.fswUp : EVT.fswDown);
 function turn(delta) {
-  if (isHome()) return;
+  if (isHome()) { for (let i = 0; i < Math.min(Math.abs(delta), 10); i++) press(delta > 0 ? EVT.knobUp : EVT.knobDown); return; }
   const c = curSub().s[pnl.sel]; if (!c) return;
   const v = Math.max(c[2], Math.min(c[3], (val(c[0]) ?? c[2]) + delta));
   pnl.vals[c[0]] = v; pnl.touched = performance.now(); renderPanel();
   clearTimeout(pnl.sendT);
   pnl.sendT = setTimeout(async () => { if (!out) { $("panelStatus").textContent = "Not connected: change not sent"; $("panelStatus").className = "status bad"; return; } await ensureId(); setParam(c[0], pnl.vals[c[0]]); }, 35);
 }
-document.querySelectorAll(".soft").forEach(b => b.onclick = () => softPress(+b.dataset.slot));
-$("hwPrev").onclick = () => gotoSub(-1); $("hwNext").onclick = () => gotoSub(1);
-$("hwBack").onclick = () => gotoPage("PRESET");
-$("hwHit").onclick = async () => { if (!out) return; await ensureId(); const v = await panelRead(0x2A8); pnl.vals[0x2A8] = v ? 0 : 1; setParam(0x2A8, pnl.vals[0x2A8]); renderPanel(); setTimeout(() => pollPanel(true), 200); };
+document.querySelectorAll(".soft").forEach(b => b.onclick = () => { const i = +b.dataset.slot; if (mirror()) pressButton(BTN.soft[i]); softPress(i); });
+$("hwStore").onclick = () => { if (!mirror()) return; pressButton(BTN.store); $("panelStatus").textContent = "STORE pressed on the pedal (its store screen isn't shown here)"; $("panelStatus").className = "status"; };
+$("fswDown").onclick = () => press(EVT.fswDown); $("fswUp").onclick = () => press(EVT.fswUp);
+$("hwPrev").onclick = () => { if (isHome()) return stepPreset(-1); if (mirror()) pressButton(BTN.prev); gotoSub(-1); };
+$("hwNext").onclick = () => { if (isHome()) return stepPreset(1); if (mirror()) pressButton(BTN.next); gotoSub(1); };
+$("hwBack").onclick = () => { if (mirror()) pressButton(BTN.back); gotoPage("PRESET"); };
+// HIT: with mirroring on, press the real HIT footswitch (DB 0B 00 on press, DB 0B 01 on release), so holding it
+// gives TALK like on the pedal; otherwise toggle the HIT parameter 0x2A8.
+const hitToggle = async () => { if (!out) return; await ensureId(); const v = await panelRead(0x2A8); pnl.vals[0x2A8] = v ? 0 : 1; setParam(0x2A8, pnl.vals[0x2A8]); renderPanel(); setTimeout(() => pollPanel(true), 200); };
+let hitDown = false;
+$("hwHit").addEventListener("pointerdown", e => { if (!mirror()) return; hitDown = true; $("hwHit").setPointerCapture(e.pointerId); injectEvent(0xDB, BTN.hit, 0x00).catch(() => {}); });
+const hitUp = () => { if (!hitDown) return; hitDown = false; injectEvent(0xDB, BTN.hit, 0x01).catch(() => {}); setTimeout(() => pollPanel(true), 250); };
+$("hwHit").addEventListener("pointerup", hitUp); $("hwHit").addEventListener("pointercancel", hitUp);
+$("hwHit").addEventListener("click", () => { if (!mirror()) hitToggle(); });
+$("hwHit").addEventListener("keydown", e => { if ((e.key === " " || e.key === "Enter") && mirror() && !e.repeat) { e.preventDefault(); injectEvent(0xDB, BTN.hit, 0x00).then(() => delay(80)).then(() => injectEvent(0xDB, BTN.hit, 0x01)).catch(() => {}); } });
 const knob = $("knob");
-knob.addEventListener("wheel", e => { e.preventDefault(); turn((e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 10 : 1)); }, { passive: false });
-$("lcd").addEventListener("wheel", e => { e.preventDefault(); turn((e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 10 : 1)); }, { passive: false });
+// Scroll direction follows the system setting the way the user expects (scrolling "down" the page = value up).
+// Trackpads send many small pixel deltas, so accumulate them: one step per 30 px (line/page-mode wheels: one step per notch).
+let wheelAcc = 0;
+function onWheel(e) {
+  e.preventDefault();
+  const step = e.shiftKey ? 10 : 1;
+  if (e.deltaMode !== 0) { turn(Math.sign(e.deltaY) * step); return; }
+  wheelAcc += e.deltaY;
+  while (Math.abs(wheelAcc) >= 30) { turn(Math.sign(wheelAcc) * step); wheelAcc -= Math.sign(wheelAcc) * 30; }
+}
+knob.addEventListener("wheel", onWheel, { passive: false });
+$("lcd").addEventListener("wheel", onWheel, { passive: false });
 let dragY = null, acc = 0;
 knob.addEventListener("pointerdown", e => { dragY = e.clientY; acc = 0; knob.setPointerCapture(e.pointerId); });
 knob.addEventListener("pointermove", e => { if (dragY == null) return; acc += dragY - e.clientY; dragY = e.clientY; const step = e.shiftKey ? 10 : 1; while (Math.abs(acc) >= 6) { turn(Math.sign(acc) * step); acc -= Math.sign(acc) * 6; } });
@@ -531,8 +607,12 @@ gotoPage("PRESET");
 function onMsg(e) {
   const d = e.data; if (!d || !d.length) return;
   if (d[0] === 0xF0) for (const h of [...sysexWaiters]) h(d);
+  if (d[0] === 0xF0 && d[3] === 0x38 && d[6] === 0x55 && d.length >= 12) { const v = dec28(d, 7);
+    log(`← panel event ${[(v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF].map(x => x.toString(16).padStart(2, "0")).join(" ")}`, "in"); return; }
   const st = d[0] & 0xF0, ch = (d[0] & 0x0F) + 1;
+  if (st === 0xC0) fastPreset();   // the pedal reports preset changes as Program Change: refresh name/number now
   if (st === 0xB0 || st === 0xC0) log(`← ch${ch} ${[...d].map(x => x.toString(16).padStart(2, "0")).join(" ")}`, "in");
+  else if (d[0] === 0xF0 && d[3] === 0x38 && [0x20, 0x21, 0x22].includes(d[6]) && !$("showPoll").checked) return;   // background-read replies
   else if (d[0] === 0xF0) log(`← SysEx ${d.length} bytes: ${[...d.slice(0, 12)].map(x => x.toString(16).padStart(2, "0")).join(" ")}${d.length > 12 ? " …" : ""}`, "in");
   else if (d[0] !== 0xF8 && d[0] !== 0xFE) log(`← ${[...d].map(x => x.toString(16).padStart(2, "0")).join(" ")}`, "in");
 }
@@ -544,7 +624,7 @@ function fill() {
   pick($("outSel"), access.outputs.values()); pick($("inSel"), access.inputs.values()); bind();
 }
 function bind() {
-  identified = false;
+  identified = false; tunnelReady = false;
   out = access.outputs.get($("outSel").value) || null;
   if (inp) inp.onmidimessage = null;
   inp = access.inputs.get($("inSel").value) || null; if (inp) inp.onmidimessage = onMsg;

@@ -13,3 +13,10 @@ build/
 *.a
 *.node
 node_modules/
+
+# --- Public-repo exclusions: proprietary firmware program content ---
+# Firmware images, unpacked/section/record/RAM dumps — kept locally, never published
+*.syx
+*.bin
+# Full disassembly of proprietary firmware — kept locally, never published
+disasm/

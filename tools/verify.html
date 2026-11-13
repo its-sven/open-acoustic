@@ -161,7 +161,11 @@ const SECTIONS = [
   { id: "panel-softbuttons", t: "Soft-button lighting matches the pedal", how: "Lit beside a filled cell, dim otherwise; white on the preset screen.", init: "works" },
   { id: "panel-flicker", t: "No picture flicker on page change", how: "", init: "untested", note: "Fix: picture waits for the STYLE read." },
   { id: "panel-bars", t: "Level bars visible on FX pages, value under the selected level", how: "", init: "untested" },
-  { id: "panel-not-mapped", t: "Not mapped: preset ▼▲, STORE, FAVORITE, GENRE", how: "Known gap. The SysEx 55 tunnel attempt failed.", init: "broken" },
+  { id: "panel-not-mapped", t: "Not mirrored on the panel: store, genre and favorite screens; front ◀ ▶ inside menus", how: "The pedal reacts, but the panel doesn't show those screens yet.", init: "partly" },
+  { id: "preset-step", t: "◀ ▶, the panel ▼ ▲ and the knob on the preset screen change presets", init: "works", note: "Works (2026-11-13).", how: "These send the pedal's own events through SysEx 55 (codes read from the echo on the unit): ▲ footswitch DB 04 00/01, ▼ DB 05 00/01, knob AE 00 01 (up) / AE 00 00 (down). The pedal must show its preset screen.",
+    act: [["▲ footswitch", "inject2", 0xDB, 0x04], ["▼ footswitch", "inject2", 0xDB, 0x05], ["Knob up", "inject", 0xAE, 0x00, 0x01], ["Knob down", "inject", 0xAE, 0x00, 0x00], ["Read preset 0x2A4", "read", 0x2A4]] },
+  { id: "panel-codes", t: "Event codes of the remaining controls: front ◀ ▶ and the HIT footswitch", how: "With the remote connected, press each once (HIT: tap, then hold) and copy the \"← panel event\" lines. Soft buttons, BACK and STORE are known.", init: "partly" },
+  { id: "panel-mirror", t: "Panel soft buttons, BACK and STORE press the real buttons", how: "With \"Press the pedal's buttons too\" on: VOCAL FX on the panel opens Vocal FX on the pedal, etc.", init: "untested" },
  ]},
  { id: "platform", title: "Platforms", kind: "verify", items: [
   { id: "plat-chrome", t: "Chrome on Mac", how: "", init: "works" },
@@ -237,9 +241,13 @@ function renderItem(sec, it) {
   d.appendChild(st);
   if (it.act) {
     const a = document.createElement("div"); a.className = "acts"; const res = document.createElement("span"); res.className = "res";
-    for (const [label, kind, id, v] of it.act) {
+    for (const actDef of it.act) { const [label, kind, id, v] = actDef, arguments_ = actDef.slice(1);
       const b = document.createElement("button"); b.type = "button"; b.textContent = label;
       b.onclick = async () => { res.textContent = "…"; try {
+        if (kind === "inject2") { await inject(id, v, 0x00); await delay(60); await inject(id, v, 0x01); await delay(400); const p = await getParam(0x2A4);
+          res.textContent = `sent ${label}; preset now ${p}`; appendNote(it, `${label} → preset ${p}`); return; }
+        if (kind === "inject") { await inject(id, v, arguments_[3]); await delay(400); const p = await getParam(0x2A4);
+          res.textContent = `sent ${label}; preset now ${p}`; appendNote(it, `inject ${label} → preset ${p}`); return; }
         if (kind === "set") { await setParam(id, v); await delay(150); }
         const r = await getParam(id); res.textContent = `0x${id.toString(16).toUpperCase()} = ${r}`;
         appendNote(it, `${kind === "set" ? `set ${v}, read back` : "read"} 0x${id.toString(16).toUpperCase()} = ${r}`);
@@ -302,12 +310,18 @@ async function getParam(id) {
   out.send([...hdr(), 0x47, (id >> 7) & 0x7F, id & 0x7F, 0xF7]);
   const r = await p; if (!r) throw new Error("no reply"); return dec28(r, 9);
 }
+let tunnelOn = false;
+async function inject(e0, e1, e2) {   // SysEx 55: enable the front-panel tunnel once (55 01 01), then inject one 3-byte event (55 02 <28-bit>)
+  await ensureId();
+  if (!tunnelOn) { out.send([...hdr(), 0x55, 0x01, 0x01, 0x00, 0x00, 0x00, 0xF7]); tunnelOn = true; await delay(30); }
+  out.send([...hdr(), 0x55, 0x02, ...enc28((e0 << 16) | (e1 << 8) | e2), 0xF7]);
+}
 async function setParam(id, v) {
   if (id === 0x278 || id === 0x27B) throw new Error("refused: locks out USB SysEx");
   await ensureId(); out.send([...hdr(), 0x22, (id >> 7) & 0x7F, id & 0x7F, ...enc28(v), 0xF7]);
 }
 function bind() {
-  identified = false;
+  identified = false; tunnelOn = false;
   out = access.outputs.get($("outSel").value) || null;
   if (inp) inp.onmidimessage = null;
   inp = access.inputs.get($("inSel").value) || null;
