@@ -162,9 +162,11 @@ const SECTIONS = [
   { id: "panel-flicker", t: "No picture flicker on page change", how: "", init: "untested", note: "Fix: picture waits for the STYLE read." },
   { id: "panel-bars", t: "Level bars visible on FX pages, value under the selected level", how: "", init: "untested" },
   { id: "panel-not-mapped", t: "Not mirrored on the panel: store, genre and favorite screens; front ◀ ▶ inside menus", how: "The pedal reacts, but the panel doesn't show those screens yet.", init: "partly" },
-  { id: "preset-step", t: "◀ ▶, the panel ▼ ▲ and the knob on the preset screen change presets", init: "works", note: "Works (2026-11-13).", how: "These send the pedal's own events through SysEx 55 (codes read from the echo on the unit): ▲ footswitch DB 04 00/01, ▼ DB 05 00/01, knob AE 00 01 (up) / AE 00 00 (down). The pedal must show its preset screen.",
-    act: [["▲ footswitch", "inject2", 0xDB, 0x04], ["▼ footswitch", "inject2", 0xDB, 0x05], ["Knob up", "inject", 0xAE, 0x00, 0x01], ["Knob down", "inject", 0xAE, 0x00, 0x00], ["Read preset 0x2A4", "read", 0x2A4]] },
-  { id: "panel-codes", t: "Event codes of the remaining controls: front ◀ ▶ and the HIT footswitch", how: "With the remote connected, press each once (HIT: tap, then hold) and copy the \"← panel event\" lines. Soft buttons, BACK and STORE are known.", init: "partly" },
+  { id: "preset-step", t: "◀ ▶, the panel ▼ ▲ and the knob on the preset screen change presets", init: "works", note: "Works (2026-11-13).", how: "These send the pedal's own events through SysEx 55 (codes read from the echo on the unit): ▲ footswitch DB 0C, ▼ DB 0D, front ▶ DB 04, ◀ DB 05 (each 00 press + 01 release), knob AE 00 01 (up) / AE 00 00 (down). The pedal must show its preset screen.",
+    act: [["▲ footswitch", "inject2", 0xDB, 0x0C], ["▼ footswitch", "inject2", 0xDB, 0x0D], ["▶ arrow", "inject2", 0xDB, 0x04], ["◀ arrow", "inject2", 0xDB, 0x05], ["Knob up", "inject", 0xAE, 0x00, 0x01], ["Knob down", "inject", 0xAE, 0x00, 0x00], ["Read preset 0x2A4", "read", 0x2A4]] },
+  { id: "panel-codes", t: "Event codes of all front-panel controls", how: "Soft buttons DB 09/08/07 and 00/01/02, STORE 03, BACK 06, ▶ 04, ◀ 05, HIT 0B, ▲ 0C, ▼ 0D; knob AE 00 01/00.", init: "works", note: "All recorded on the unit (2026-11-13)." },
+  { id: "panel-hit-hold", t: "Panel HIT: tap toggles, hold gives TALK", how: "With mirroring on, the panel HIT presses the real footswitch (DB 0B).", init: "untested" },
+  { id: "panel-arrows-menu", t: "Panel ◀ ▶ inside a menu turn the pedal's page too", how: "", init: "untested" },
   { id: "panel-mirror", t: "Panel soft buttons, BACK and STORE press the real buttons", how: "With \"Press the pedal's buttons too\" on: VOCAL FX on the panel opens Vocal FX on the pedal, etc.", init: "untested" },
  ]},
  { id: "platform", title: "Platforms", kind: "verify", items: [
@@ -299,10 +301,14 @@ const hdr = () => [0xF0, 0x00, 0x01, 0x38, devCh, 0x70];
 async function ensureId() {
   if (!out || !inp) throw new Error("Connect MIDI first");
   if (identified) return;
+  // Only talk to a device that identifies as TC-Helicon (00 01 38) Play Acoustic (70) / Play Electric (71).
   const p = collect(1200, m => m[0] === 0xF0 && m[1] === 0x7E && m[3] === 0x06 && m[4] === 0x02);
   out.send([0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7]); const r = await p;
-  devCh = r ? r[2] : 0x7F; identified = true;
-  $("midiStatus").textContent = r ? `Connected (channel byte ${devCh})` : "Connected (no identity reply, using 7F)";
+  if (!r || !(r[5] === 0x00 && r[6] === 0x01 && r[7] === 0x38 && (r[8] === 0x70 || r[8] === 0x71))) {
+    $("midiStatus").textContent = r ? `"${out.name}" is not a Play Acoustic` : `No Play Acoustic answered on "${out.name}"`;
+    throw new Error("not a Play Acoustic"); }
+  devCh = r[2]; identified = true;
+  $("midiStatus").textContent = `Connected to Play ${r[8] === 0x71 ? "Electric" : "Acoustic"} (channel byte ${devCh})`;
 }
 async function getParam(id) {
   await ensureId();
@@ -330,10 +336,12 @@ function bind() {
 }
 function fill() {
   for (const [sel, ports] of [[$("outSel"), access.outputs], [$("inSel"), access.inputs]]) {
-    const prev = sel.value; sel.innerHTML = "";
+    // Auto-pick only ports named Play Acoustic / Play Electric / TC-Helicon; anything else must be chosen by hand.
+    const prev = sel.value; sel.innerHTML = ""; sel.add(new Option("— choose port —", ""));
     for (const p of ports.values()) sel.add(new Option(p.name, p.id));
-    const pa = [...sel.options].find(o => /play|helicon|tc/i.test(o.text));
-    if ([...sel.options].some(o => o.value === prev)) sel.value = prev; else if (pa) sel.value = pa.value;
+    const pa = [...sel.options].find(o => o.value && /play\s*acoustic|play\s*electric|helicon/i.test(o.text));
+    const prevOpt = [...sel.options].find(o => o.value && o.value === prev), isPA = o => /play\s*acoustic|play\s*electric|helicon/i.test(o.text);
+    sel.value = prevOpt && isPA(prevOpt) ? prev : pa ? pa.value : prevOpt ? prev : "";
   }
   bind();
 }

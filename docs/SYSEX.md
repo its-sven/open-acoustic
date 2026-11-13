@@ -88,14 +88,17 @@ The remote refuses 0x278 and 0x27B.
 |---|---|---|
 | Control knob, one click up | `AE 00 01` | next preset |
 | Control knob, one click down | `AE 00 00` | previous preset |
-| ▲ footswitch | `DB 04 00` (press), `DB 04 01` (release) | next preset |
-| ▼ footswitch | `DB 05 00`, `DB 05 01` | previous preset |
+| front ▶ button | `DB 04 00` (press), `DB 04 01` (release) | next preset; inside a menu, next page |
+| ▲ footswitch | `DB 0C 00`, `DB 0C 01` | next preset |
+| front ◀ button | `DB 05 00`, `DB 05 01` | previous preset; inside a menu, previous page |
+| ▼ footswitch | `DB 0D 00`, `DB 0D 01` | previous preset |
 | VOCAL FX / GUITAR FX / MIX (left soft buttons, top to bottom) | `DB 09` / `DB 08` / `DB 07` + `00`, `01` | open the menu; inside a menu, select the cell beside it |
 | FAVORITE / GENRE / SETUP (right soft buttons) | `DB 00` / `DB 01` / `DB 02` + `00`, `01` | same, right column |
 | STORE | `DB 03 00`, `DB 03 01` | store screen |
 | BACK | `DB 06 00`, `DB 06 01` | back to the preset screen |
-| front ◀ ▶, HIT footswitch | not recorded yet | |
+| HIT footswitch | `DB 0B 00` (press), `DB 0B 01` (release) | tap = HIT on/off, hold = TALK |
 
+- Button events: `DB <code> 00` = press, `DB <code> 02` = still held (sent while a button stays down), `DB <code> 01` = release.
 - There is no SysEx command that takes a preset number: `45`/`46` only send a preset, `53 02` reloads the current one, `53 03` reports it, writing 0x2A4 only matters at power-up, and Program Change (which would select one) is dropped by the AVR. Injecting the footswitch events is the way to step presets. The pedal reports each change as Bank Select + Program Change.
 - An injected event acts on whatever screen the pedal shows, exactly like the real control.
 - **Confirmed on the unit:** injected footswitch and knob events change presets. The remote presses the real buttons for its soft buttons, BACK, STORE and ▼ ▲ (option "Press the pedal's buttons too"), and uses the footswitch/knob events for ◀ ▶ and the knob on its preset screen.
