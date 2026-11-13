@@ -1,0 +1,74 @@
+{
+  "firmwares": [
+    {
+      "file": "PlayAcoustic 1.0.04 Build21.syx",
+      "version": "1.0.04 build 21",
+      "description": "This update contains various improvements and tweaks.\n\n      We highly recommend updating to ensure stability and performance.",
+      "size": 1065188,
+      "product": {
+        "productId": 112,
+        "prefix": "PlayAcoustic"
+      }
+    },
+    {
+      "file": "PlayAcoustic 1.1.00 Build27.syx",
+      "version": "1.1.00 build 27",
+      "description": "Adds MP-76 support.\n\n      Advanced BodyRez settings are now correctly stored over power cycles.",
+      "size": 1071379,
+      "product": {
+        "productId": 112,
+        "prefix": "PlayAcoustic"
+      }
+    },
+    {
+      "file": "PlayAcoustic 1.2.00 Build38.syx",
+      "version": "1.2.00 build 38",
+      "description": "A Guitar Delay effect was added as well as the ability to store\n\n      unique guitar effects with each preset (turn Global Guitar FX OFF in Setup).\n\n      \n\n      The Guitar Anti-Feedback menu now moves to Setup and remains global.\n\n      \n\n      A Looper click bug was resolved.\n\n      \n\n      Your edited Guitar effects, Vocal effects and Setup will not be lost\n\n      with this update but we recommend that you use the 'Backup All' feature\n\n      in the Preset tab as a precaution.",
+      "size": 1123916,
+      "product": {
+        "productId": 112,
+        "prefix": "PlayAcoustic"
+      }
+    },
+    {
+      "file": "PlayAcoustic 1.3.00 Build48.syx",
+      "version": "1.3.00 build 48",
+      "description": "This update doubles the amount of loop recording time in all output modes:\n\n      Stereo and Dual Mono are now 30 seconds, Mono is 1 minute.\n\n      Turning Loop Undo off in Setup doubles these times again.",
+      "size": 1127635,
+      "product": {
+        "productId": 112,
+        "prefix": "PlayAcoustic"
+      }
+    },
+    {
+      "file": "PlayAcoustic 1.4.00 Build51.syx",
+      "version": "1.4.00 build 51",
+      "description": "In the setup for Switch-3/6, MIDI commands (CC102 to CC107) appear.",
+      "size": 1129106,
+      "product": {
+        "productId": 112,
+        "prefix": "PlayAcoustic"
+      }
+    },
+    {
+      "file": "PlayElectric 1.2.00 Build31.syx",
+      "version": "1.2.00 build 31",
+      "description": "This update doubles the amount of loop recording time in all output modes:\n\n      Stereo and Dual Mono are now 30 seconds, Mono is 1 minute.\n\n      Turning Loop Undo off in Setup doubles these times again.",
+      "size": 1140637,
+      "product": {
+        "productId": 113,
+        "prefix": "PlayElectric"
+      }
+    },
+    {
+      "file": "PlayElectric 1.3.00 Build34.syx",
+      "version": "1.3.00 build 34",
+      "description": "In the setup for Switch-3/6, MIDI commands (CC102 to CC107) appear.",
+      "size": 1142200,
+      "product": {
+        "productId": 113,
+        "prefix": "PlayElectric"
+      }
+    }
+  ]
+}

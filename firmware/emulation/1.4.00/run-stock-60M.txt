@@ -1,0 +1,103 @@
+MemoryBuffer@213: MMU based DSP memory setup successful
+mem ok
+periph ok
+Jit@154: No profiler detected
+dsp ok
+loaded r00_P_000000.bin -> P:000000 (30449 words)
+loaded r01_X_031600.bin -> X:031600 (14277 words)
+loaded r02_X_400000.bin -> X:400000 (8565 words)
+loaded r03_X_40c000.bin -> X:40c000 (130742 words)
+loaded r04_X_42beb9.bin -> X:42beb9 (1350 words)
+loaded r05_X_42c400.bin -> X:42c400 (282 words)
+loaded r06_X_42c51e.bin -> X:42c51e (32 words)
+loaded r07_X_42c540.bin -> X:42c540 (15 words)
+loaded r08_X_42c550.bin -> X:42c550 (15 words)
+loaded r09_X_42c560.bin -> X:42c560 (55959 words)
+loaded r10_X_43a000.bin -> X:43a000 (257 words)
+loaded r11_X_43a180.bin -> X:43a180 (80980 words)
+starting
+writeTLR@252: Write Timer 1 TLR: 000000
+writeTPLR@270: Write Timer TPLR : 0203ff
+writeTransmitClockControlRegister@252: Write ESAI TCCR fc4301
+writeTransmitControlRegister@212: Write ESAI TCR 017d00
+writeReceiveClockControlRegister@266: Write ESAI RCCR 1c4301
+writeReceiveControlRegister@185: Write ESAI RCR 017d00
+writeControlRegister@336: Write ESAI CR 000040
+writeTransmitControlRegister@212: Write ESAI TCR 080000
+writeTransmitClockControlRegister@252: Write ESAI TCCR 1c4301
+writeTransmitControlRegister@212: Write ESAI TCR 017d00
+writeTransmitControlRegister@212: Write ESAI TCR 017d00
+writeReceiveControlRegister@185: Write ESAI RCR 117d00
+writeReceiveControlRegister@185: Write ESAI RCR 517d00
+writeReceiveControlRegister@185: Write ESAI RCR 517d08
+writeReceiveControlRegister@185: Write ESAI RCR 517d09
+writeTransmitControlRegister@212: Write ESAI TCR 017d08
+writeTransmitControlRegister@212: Write ESAI TCR 017d20
+writeTransmitClockControlRegister@252: Write ESAI TCCR fc4301
+writeTransmitClockControlRegister@252: Write ESAI TCCR fc4301
+[     1M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[     2M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[     3M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[     4M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[     5M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[     6M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[     7M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[     8M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[     9M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    10M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    11M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    12M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    13M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    14M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    15M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    16M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    17M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    18M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    19M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    20M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    21M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    22M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    23M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    24M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    25M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    26M] pc=006ebe  QSCCMapList map=7e89a5 size=000004
+[    27M] pc=40cd57  QSCCMapList map=7e89a5 size=000004
+[    28M] pc=40cd58  QSCCMapList map=7e89a5 size=000004
+[    29M] pc=40cd34  QSCCMapList map=7e89a5 size=000004
+[    30M] pc=40cd36  QSCCMapList map=7e89a5 size=000004
+[    31M] pc=40cd38  QSCCMapList map=7e89a5 size=000004
+[    32M] pc=00071a  QSCCMapList map=7e89a5 size=000004
+[    33M] pc=00071c  QSCCMapList map=7e89a5 size=000004
+[    34M] pc=00071e  QSCCMapList map=7e89a5 size=000004
+[    35M] pc=00071f  QSCCMapList map=7e89a5 size=000004
+[    36M] pc=000720  QSCCMapList map=7e89a5 size=000004
+[    37M] pc=000721  QSCCMapList map=7e89a5 size=000004
+[    38M] pc=000722  QSCCMapList map=7e89a5 size=000004
+[    39M] pc=000723  QSCCMapList map=7e89a5 size=000004
+[    40M] pc=000736  QSCCMapList map=7e89a5 size=000004
+[    41M] pc=000738  QSCCMapList map=7e89a5 size=000004
+[    42M] pc=000739  QSCCMapList map=7e89a5 size=000004
+[    43M] pc=000728  QSCCMapList map=7e89a5 size=000004
+[    44M] pc=000729  QSCCMapList map=7e89a5 size=000004
+[    45M] pc=00072a  QSCCMapList map=7e89a5 size=000004
+[    46M] pc=00072b  QSCCMapList map=7e89a5 size=000004
+[    47M] pc=00072c  QSCCMapList map=7e89a5 size=000004
+[    48M] pc=00072d  QSCCMapList map=7e89a5 size=000004
+[    49M] pc=00072e  QSCCMapList map=7e89a5 size=000004
+[    50M] pc=000730  QSCCMapList map=7e89a5 size=000004
+[    51M] pc=000731  QSCCMapList map=7e89a5 size=000004
+[    52M] pc=000732  QSCCMapList map=7e89a5 size=000004
+[    53M] pc=000734  QSCCMapList map=7e89a5 size=000004
+[    54M] pc=000735  QSCCMapList map=7e89a5 size=000004
+[    55M] pc=40cd3a  QSCCMapList map=7e89a5 size=000004
+[    56M] pc=40cd3c  QSCCMapList map=7e89a5 size=000004
+[    57M] pc=40cd3e  QSCCMapList map=7e89a5 size=000004
+[    58M] pc=40cd40  QSCCMapList map=7e89a5 size=000004
+[    59M] pc=40cd42  QSCCMapList map=7e89a5 size=000004
+[    60M] pc=40cd43  QSCCMapList map=7e89a5 size=000004
+hot PCs: 006ea6(82347) 006eb1(82347) 006eaf(82346) 006eba(82346) 006eb4(82346) 000723(13479) 40cd42(13479) 00072a(13479) 40cd53(13479) 000721(13479) 40cd38(13479) 000720(13479)
+FINAL QSCCMapList: map=7e89a5 size=4
+  CC   0 -> param 0x000075  aux 0x00001e
+  CC   1 -> param 0x000078  aux 0x00001f
+  CC   2 -> param 0x000285  aux 0x000072
+  CC   3 -> param 0x0002a8  aux 0x00001c

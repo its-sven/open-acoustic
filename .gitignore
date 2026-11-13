@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Editor / tooling scratch
+.claude/
+*.swp
+*~
+
+# Build outputs (if any emulator/disassembler builds land here later)
+build/
+*.o
+*.a
+*.node
+node_modules/

@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0d10">
+<title>Play Acoustic Remote</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap">
+<style>
+:root {
+  --bg: #f3f5f7; --surface: #fff; --ink: #16202b; --muted: #5a6773; --rule: #d9dfe5;
+  --accent: #1f6f8b; --accent-soft: #e2eef3; --ok: #2e7d4f; --warn: #9a5b00; --lcd: #dfe9ec; --lcd-ink: #10303b;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace; --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0f151b; --surface: #161e26; --ink: #e3e9ee; --muted: #94a3ae; --rule: #26313b;
+    --accent: #6cb6cf; --accent-soft: #1a2c36; --ok: #6fcf97; --warn: #e5a54a; --lcd: #1b2a31; --lcd-ink: #bfe3ee; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); padding: 24px max(16px, 3vw) 48px; }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+h1 { margin: 0; font-size: 1.6rem; font-weight: 600; }
+.sub { color: var(--muted); margin: 2px 0 0; }
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: end; }
+label.f { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
+select, button, input[type=number] { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 10px; }
+button { cursor: pointer; background: var(--accent-soft); border-color: transparent; color: var(--accent); font-weight: 500; }
+button:hover { filter: brightness(0.97); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.status { font-family: var(--mono); font-size: 13px; }
+.status.ok { color: var(--ok); } .status.bad { color: var(--warn); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 14px; }
+.ctl h2 { margin: 0; font-size: 1.05rem; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.ctl p { margin: 4px 0 10px; color: var(--muted); font-size: 13.5px; }
+.lcd { background: var(--lcd); color: var(--lcd-ink); font-family: var(--mono); border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; gap: 8px; font-variant-numeric: tabular-nums; }
+.lcd b { font-size: 1.35rem; font-weight: 500; }
+input[type=range] { width: 100%; margin: 12px 0 8px; accent-color: var(--accent); }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.btns button { padding: 4px 10px; font-size: 13px; }
+.toggle { width: 100%; padding: 14px; font-size: 1rem; margin-top: 10px; }
+.toggle.on { background: var(--accent); color: var(--bg); }
+.log { font-family: var(--mono); font-size: 12.5px; height: 220px; overflow: auto; background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px; white-space: pre; }
+.log .in { color: var(--ok); } .log .out { color: var(--muted); }
+details summary { cursor: pointer; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+label.f { min-width: 0 !important; max-width: 100%; }
+#quick, #pSel, #pFilter { width: 100%; min-width: 0; }
+.row > label.f { flex-basis: min(240px, 100%) !important; max-width: 100%; }
+select, input { max-width: 100%; }
+/* ── virtual front panel (layout follows the real unit) ── */
+.panel { display: grid; gap: 14px; justify-items: center; grid-template-columns: minmax(0,1fr); }
+.panel > * { min-width: 0; max-width: 100%; }
+#panelStatus { overflow-wrap: anywhere; }
+.chassis { background: linear-gradient(#15191d, #0b0d10); border-radius: 18px; padding: 12px 18px 22px; box-shadow: inset 0 1px 0 #3a434c, 0 8px 22px rgba(0,0,0,.35); width: 100%; max-width: 780px; display: grid; gap: 18px; color: #e6ebef; font: 600 11px/1.1 system-ui, sans-serif; letter-spacing: .05em; }
+.jacks { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; color: #cfd6dc; font-size: 10.5px; text-transform: uppercase; border-bottom: 1px solid #262d33; padding-bottom: 8px; }
+.screenrow { display: grid; grid-template-columns: 112px minmax(0,1fr) 112px; gap: 14px; align-items: stretch; background: #07090b; border-radius: 12px; padding: 14px 12px; box-shadow: inset 0 0 0 1px #1f262c; }
+.softcol { display: grid; grid-template-rows: repeat(3, 1fr); gap: 12px; padding: 18px 0 2px; }
+.soft { border-radius: 8px; border: 2px solid #a9dcf5; background: #5aa9d6; color: #3b7aa3; font: 700 12px/1.1 system-ui, sans-serif; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; min-height: 38px; padding: 4px 6px; transition: background .12s, box-shadow .12s, color .12s; }
+.soft.white { background: #e9eef5; color: #1d2a3a; border-color: #fff; box-shadow: 0 0 12px rgba(255,255,255,.45); }
+.soft.blue { background: #1f55e6; color: #b9cdfa; border-color: #4f86ff; box-shadow: 0 0 14px rgba(60,120,255,.75), inset 0 -2px 0 rgba(0,0,0,.25); }
+.soft.on { background: #4d82ff; color: #fff; box-shadow: 0 0 20px rgba(110,160,255,.95); }
+.soft:disabled { cursor: default; }
+.lcd2 { background: #1732d6; color: #e9eef2; border: 3px solid #2346ff; border-radius: 3px; font-family: "Silkscreen", "VT323", ui-monospace, monospace; min-height: 220px; display: grid; grid-template-rows: auto 1fr; box-shadow: 0 0 22px rgba(40,90,255,.55), inset 0 0 20px rgba(0,0,30,.35); overflow: hidden; }
+.lcdtitle { background: #dad9cf; color: #1a2a9a; text-align: center; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; padding: 2px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lcdgrid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); }
+.cell { display: grid; align-content: center; gap: 5px; padding: 4px 8px; min-width: 0; cursor: pointer; border-top: 2px solid #e9eef2; }
+.cell:nth-child(odd) { border-right: 2px solid #e9eef2; }
+.cell:nth-child(-n+2) { border-top: 0; }
+.cell .bar, .fxcell .bar { height: 11px; border: 2px solid currentColor; padding: 1px; display: flex; align-items: stretch; gap: 6px; }
+.cell .bar i, .fxcell .bar i { display: block; height: 100%; background: repeating-linear-gradient(90deg, currentColor 0 7px, transparent 7px 10px); }
+.cell .lab { font-size: 15px; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; }
+.cell .val { font-size: 12px; opacity: .85; font-variant-numeric: tabular-nums; min-height: 1em; }
+.cell.sel { background: #dad9cf; color: #1a2a9a; }
+.cell.empty { cursor: default; }
+.cell .vtxt { font-size: 14px; line-height: 1.1; padding-left: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cell.right .vtxt { padding-left: 0; }
+.lcdgrid.fx { grid-template-columns: 92fr 34fr; grid-template-rows: 48fr 9fr; gap: 2px 0; padding: 0; }
+.fximg { grid-row: 1; grid-column: 1; background: currentColor; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; image-rendering: pixelated; min-height: 0; }
+.fxright { grid-row: 1 / 3; grid-column: 2; display: grid; grid-template-rows: repeat(3, 1fr); border-left: 2px solid #e9eef2; min-width: 0; }
+.fxcell { cursor: pointer; padding: 2px 4px; min-width: 0; display: grid; align-content: center; justify-items: center; gap: 2px; text-align: center; }
+.fxcell + .fxcell { border-top: 2px solid #e9eef2; }
+.fxcell .bar { width: 100%; box-sizing: border-box; }
+.bval { font-size: 11px; line-height: 1; opacity: .9; }
+.fxcell .big { font-size: 20px; line-height: 1; }
+.fxcell .lab { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fxcell .vtxt { font-size: 12px; padding-left: 0; text-transform: uppercase; }
+.fxcell.sel, .fxstyle.sel { background: #dad9cf; color: #1a2a9a; }
+.fxstyle { grid-row: 2; grid-column: 1; font-size: 12px; margin-right: 4px; border-top: 2px solid #e9eef2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; padding: 0 3px; align-self: center; }
+.lcdgrid.info { grid-template-columns: 1fr; grid-template-rows: none; align-content: center; justify-items: center; gap: 6px; font-size: 13px; padding: 8px; }
+.pnum { font-size: 34px; }
+.lcdgrid.preset { grid-template-columns: 1fr; grid-template-rows: none; align-content: center; justify-items: center; gap: 6px; text-align: center; padding: 8px; }
+.pname { font-size: 30px; letter-spacing: .04em; }
+.pnote { font-size: 11px; opacity: .8; line-height: 1.4; }
+.cell.right { text-align: right; }
+.navrow { display: flex; justify-content: center; align-items: center; gap: 22px; flex-wrap: wrap; }
+.hwbtn { background: linear-gradient(#e6e8ea, #b9bdc1); color: #15191d; border: 2px solid #8d949a; border-radius: 6px; padding: 9px 14px; font: 700 13px/1 system-ui, sans-serif; letter-spacing: .04em; cursor: pointer; text-transform: uppercase; box-shadow: 0 3px 0 #4b5258; }
+.hwbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 #4b5258; }
+.hwbtn.store { background: #15191d; color: #f1f3f5; border-color: #e6e8ea; box-shadow: 0 0 10px rgba(255,255,255,.35); }
+.hwbtn.round { width: 54px; height: 54px; border-radius: 50%; padding: 0; font-size: 18px; background: radial-gradient(#2a3036 55%, #d8dcdf 58%); color: #e9edf0; border-color: #6f777e; }
+.hwbtn:focus-visible, .soft:focus-visible, .fsw:focus-visible { outline: 2px solid #9fd0ff; outline-offset: 2px; }
+.knob { width: 96px; height: 96px; border-radius: 50%; background: repeating-conic-gradient(#2b323a 0 6deg, #1f252b 6deg 12deg); box-shadow: 0 0 0 6px #0a0c0e, 0 0 0 8px #2a3138, 0 5px 12px rgba(0,0,0,.6); position: relative; cursor: ns-resize; touch-action: none; }
+.knob::before { content: ""; position: absolute; inset: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #4a535c, #1d2329 75%); }
+.knob::after { content: ""; position: absolute; left: 50%; top: 9px; width: 4px; height: 18px; margin-left: -2px; background: #dfe8ef; border-radius: 2px; transform-origin: 2px 39px; transform: rotate(var(--ang, 0deg)); }
+.knob:focus-visible { outline: 2px solid #9fd0ff; outline-offset: 6px; }
+.footrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; border-top: 1px solid #262d33; padding-top: 16px; justify-items: center; text-align: center; }
+.fsw { display: grid; justify-items: center; gap: 8px; background: none; border: 0; color: #e6ebef; cursor: pointer; font: 800 15px/1.1 system-ui, sans-serif; }
+.fsw small { font-size: 10px; font-weight: 600; color: #b9c1c8; }
+.fsw .led { width: 9px; height: 9px; border-radius: 50%; background: #3a3f44; box-shadow: inset 0 1px 1px rgba(0,0,0,.6); }
+.fsw .led.lit { background: #ff4a3d; box-shadow: 0 0 10px #ff4a3d; }
+.fsw .cap { width: 58px; height: 58px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #f4f6f8, #8b9399 60%, #4b5258); box-shadow: 0 4px 8px rgba(0,0,0,.6); }
+.fsw:disabled { cursor: default; opacity: .55; }
+.fsw:not(:disabled):active .cap { transform: translateY(2px); }
+.paneltools { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; justify-content: center; font-size: 13px; }
+.panelhint { color: var(--muted); font-size: 12.5px; max-width: 780px; }
+@media (max-width: 640px) {
+  .screenrow { grid-template-columns: 52px minmax(0,1fr) 52px; gap: 5px; padding: 8px 4px; }
+  .softcol { padding-top: 14px; gap: 8px; }
+  .soft { font-size: 8px; padding: 1px; min-width: 0; overflow-wrap: anywhere; }
+  .chassis { padding: 10px 8px 14px; }
+  .jacks { display: none; }
+  .lcd2 { min-height: 170px; }
+  .cell { padding: 3px 4px; } .cell .lab { font-size: 10px; } .lcdtitle { font-size: 12px; }
+  .navrow { gap: 10px; } .knob { width: 76px; height: 76px; } .knob::after { transform-origin: 2px 29px; height: 14px; }
+  .hwbtn { padding: 8px 9px; font-size: 11px; } .hwbtn.round { width: 44px; height: 44px; }
+}
+/* ── tablets / touch (iPad) ── */
+body { padding-left: max(16px, 3vw, env(safe-area-inset-left)); padding-right: max(16px, 3vw, env(safe-area-inset-right)); padding-bottom: max(48px, env(safe-area-inset-bottom)); }
+/* keep the whole front panel inside the viewport height (landscape tablets) */
+.chassis { max-width: min(780px, calc((100svh - 40px) * 1.12)); }
+.chassis, .chassis * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+button, .soft, .hwbtn, .fsw, .cell, .fxcell, .fxstyle { touch-action: manipulation; }
+@media (pointer: coarse) {
+  button, select, input[type=number], input:not([type]) { min-height: 44px; }
+  .btns button { padding: 8px 16px; font-size: 15px; }
+  input[type=checkbox] { width: 22px; height: 22px; }
+  input[type=range] { height: 36px; }
+  .soft { min-height: 48px; }
+  .hwbtn { padding: 12px 18px; }
+  .hwbtn.round { width: 58px; height: 58px; }
+  .knob { width: 110px; height: 110px; } .knob::after { transform-origin: 2px 46px; height: 20px; top: 9px; }
+  .log { font-size: 13px; }
+}
+@media (pointer: coarse) and (max-width: 640px) {
+  .knob { width: 84px; height: 84px; } .knob::after { transform-origin: 2px 33px; height: 15px; }
+  .hwbtn.round { width: 48px; height: 48px; }
+}
+.notice { background: #fff4e0; color: #6b4300; border: 1px solid #f0d3a0; border-radius: 8px; padding: 10px 14px; font-size: 14px; }
+@media (prefers-color-scheme: dark) { .notice { background: #2e2310; color: #f3cf8f; border-color: #5a4320; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Play Acoustic Remote</h1>
+    <p class="sub">Live control of a TC-Helicon Play Acoustic over USB-MIDI, using the firmware's built-in SysEx commands. Works with the stock firmware.</p>
+  </header>
+
+  <div class="notice" id="noMidi" hidden>This browser has no Web MIDI, so it can't talk to the pedal. Safari and the other iPad/iPhone browsers don't support it. On iPad, open this page in a MIDI browser app that adds Web MIDI (with SysEx); on a Mac or PC use Chrome or Edge. The panel still works as a preview.</div>
+  <div class="card">
+    <div class="row">
+      <label class="f">Send to (MIDI out)<select id="outSel"><option>—</option></select></label>
+      <label class="f">Listen to (MIDI in)<select id="inSel"><option>—</option></select></label>
+      <button id="connectBtn">Connect MIDI</button>
+      <span id="status" class="status">Not connected</span>
+    </div>
+  </div>
+
+
+  <div class="card panel" id="panelCard">
+    <div class="row" style="justify-content:space-between;width:100%">
+      <strong>Virtual front panel</strong>
+      <span id="panelStatus" class="status">Connect MIDI to sync with the pedal</span>
+    </div>
+    <div class="chassis">
+      <div class="jacks" aria-hidden="true"><span>Mic in</span><span>Guitar in</span><span>Aux in</span><span>Pedal</span><span>Voice-out-Guitar DI</span><span>🎧</span><span>USB</span><span>Power</span></div>
+      <div class="screenrow">
+        <div class="softcol"><button class="soft" data-slot="0">Vocal FX</button><button class="soft" data-slot="2">Guitar FX</button><button class="soft" data-slot="4">Mix</button></div>
+        <div class="lcd2" id="lcd" aria-live="polite">
+          <div class="lcdtitle" id="lcdTitle">PRESET</div>
+          <div class="lcdgrid" id="lcdGrid"></div>
+        </div>
+        <div class="softcol"><button class="soft" data-slot="1">Favorite</button><button class="soft" data-slot="3">Genre</button><button class="soft" data-slot="5">Setup</button></div>
+      </div>
+      <div class="navrow">
+        <button class="hwbtn" id="hwBack">Back</button>
+        <button class="hwbtn round" id="hwPrev" aria-label="Previous page">◀</button>
+        <div class="knob" id="knob" tabindex="0" role="slider" aria-label="Control knob" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0" title="Control knob: drag, scroll or arrow keys (Shift = ×10)"></div>
+        <button class="hwbtn round" id="hwNext" aria-label="Next page">▶</button>
+        <button class="hwbtn store" id="hwStore" title="Store isn't mapped to a SysEx command">Store</button>
+      </div>
+      <div class="footrow">
+        <button class="fsw" disabled title="Preset down: not mapped"><span style="font-size:22px">▼</span><span class="led"></span><span class="cap"></span></button>
+        <button class="fsw" disabled title="Preset up: not mapped"><span style="font-size:22px">▲</span><span class="led"></span><span class="cap"></span></button>
+        <button class="fsw" id="hwHit" title="Toggle HIT (param 0x2A8)"><span>HIT<br><small>HOLD FOR TALK</small></span><span class="led" id="hitLed"></span><span class="cap"></span></button>
+      </div>
+    </div>
+    <div class="paneltools"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="advChk"> Advanced pages (Vocal FX / Guitar FX open the ADV menus)</label></div>
+    <p class="panelhint">Pages and cell positions come from the firmware's own menu tables (still being checked against the real unit); labels are the firmware's display names. Values are read live (SysEx 0x47) and set with the knob (0x22). Shift = ×10. On the preset screen (the pedal's main screen) the six soft buttons open the menus (white); inside a menu they turn blue and select the cell beside them, as on the pedal. Favorite, Genre, Store and the preset footswitches aren't mapped. The bars and labels follow the pedal's layout; the pixels are an approximation.</p>
+  </div>
+  <div class="card" id="liveCard">
+    <div class="row" style="justify-content:space-between">
+      <strong>Live parameter control (SysEx 0x22 / 0x47, stock firmware)</strong>
+      <span id="liveStatus" class="status">Connect MIDI first</span>
+    </div>
+    <p class="sub" style="margin:6px 0 12px">Sets one parameter directly through the firmware's built-in "set parameter" SysEx command, the same setter the Control knob uses. Works on the stock firmware; no patch needed.</p>
+    <div class="row">
+      <label class="f" style="flex:1 1 240px">By screen (from the firmware's menu tables)<select id="quick"></select></label>
+      <label class="f" style="flex:1;min-width:220px">Any parameter (type to filter)<input id="pFilter" placeholder="e.g. tempo, harmony, reverb, 0x283" style="font:inherit;padding:6px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--surface);color:var(--ink)"></label>
+      <label class="f" style="flex:1 1 220px">Parameter<select id="pSel"></select></label>
+      <button id="pGet">Read value</button>
+    </div>
+    <div class="lcd" style="margin-top:12px"><span id="pInfo">—</span><span><b id="pVal">—</b></span></div>
+    <input type="range" id="pSlider" min="0" max="100" value="0" aria-label="Parameter value">
+    <div class="btns">
+      <button id="pMin">Min</button><button id="pMid">Mid</button><button id="pMax">Max</button><button id="pSweep">Sweep</button>
+      <label class="f" style="flex-direction:row;display:flex;gap:6px;align-items:center"><input type="checkbox" id="pReadBack" checked> read back after each change</label>
+      <label class="f" style="flex-direction:row;display:flex;gap:6px;align-items:center"><input type="checkbox" id="pAuto" checked> auto-refresh (poll every 0.5 s)</label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <strong>MIDI monitor</strong>
+      <div class="btns"><label class="f" style="flex-direction:row;display:flex;gap:6px;align-items:center"><input type="checkbox" id="showOut" checked> show sent</label><button id="clearLog">Clear</button></div>
+    </div>
+    <div class="log" id="log" aria-live="polite"></div>
+  </div>
+</div>
+
+<script src="pa-menus.js"></script>
+<script src="pa-images.js"></script>
+<script>
+let access = null, out = null, inp = null;
+const $ = id => document.getElementById(id);
+const logEl = $("log");
+function log(text, cls) {
+  if (cls === "out" && !$("showOut").checked) return;
+  const t = new Date().toLocaleTimeString([], { hour12: false });
+  const line = document.createElement("div"); line.className = cls || ""; line.textContent = `${t}  ${text}`;
+  logEl.appendChild(line); while (logEl.childNodes.length > 400) logEl.removeChild(logEl.firstChild);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+// ── SysEx helpers ──
+const sysexWaiters = new Set();
+let devCh = 0, devPid = 0x70;
+const delay = ms => new Promise(r => setTimeout(r, ms));
+const dec28 = (p, o) => { let v = (p[o] << 21) | (p[o + 1] << 14) | (p[o + 2] << 7) | p[o + 3]; if (v >= (1 << 27)) v -= (1 << 28); return v; };
+const enc28 = v => { if (v < 0) v += (1 << 28); return [(v >> 21) & 0x7f, (v >> 14) & 0x7f, (v >> 7) & 0x7f, v & 0x7f]; };
+function collect(timeoutMs, count, pred) {
+  return new Promise(res => { const got = []; const h = m => { if (pred(m)) { got.push(m); if (got.length >= count) done(); } };
+    const done = () => { clearTimeout(t); sysexWaiters.delete(h); res(got); }; const t = setTimeout(done, timeoutMs); sysexWaiters.add(h); });
+}
+const hdr = () => [0xF0, 0x00, 0x01, 0x38, devCh, devPid];
+const sx = a => { out.send(a); log(`→ SysEx ${a.length} B: ${a.slice(0, 10).map(x => x.toString(16).padStart(2, "0")).join(" ")}${a.length > 10 ? " …" : ""}`, "out"); };
+async function identify() {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const p = collect(1200, 1, m => m[0] === 0xF0 && m[1] === 0x7E && m[3] === 0x06 && m[4] === 0x02);
+    out.send([0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7]);
+    log(`→ identity request (port: ${out.name})`, "out");
+    const r = await p;
+    if (r.length) { devCh = r[0][2]; const pid = r[0].findIndex((x, i) => i > 4 && (x === 0x70 || x === 0x71)); if (pid > 0) devPid = r[0][pid];
+      log(`← identity reply: SysEx channel byte ${devCh}, product 0x${devPid.toString(16)}`, "in"); return; }
+  }
+  // No reply: carry on with the wildcard channel byte 7F, which the DSP's header filter also accepts (docs/SYSEX.md).
+  devCh = 0x7F; devPid = 0x70;
+  log(`No identity reply on "${inp ? inp.name : "no input"}". Using channel byte 7F (wildcard) instead.`, "in");
+}
+const PARAMS = [[0,"PreFX LowCut",0,3],[1,"PreFX Dynamics",0,3],[2,"THRESH",-60,0],[3,"RATIO",0,14],[4,"PreFX NoiseGate",-71,0],[5,"ENABLED",0,1],[6,"SHAPE",0,100],[7,"WARMTH",0,1],[8,"ADAPTIVE",0,1],[9,"AutoShape LBFreq",0,240],[10,"AutoShape HBFreq",0,240],[11,"AutoShape LBGainLow",-120,120],[12,"AutoShape LBGainHigh",-120,120],[13,"AutoShape HBGainLow",-120,120],[14,"AutoShape HBGainHigh",-120,120],[15,"AutoShape GlideSpeed",1,60],[16,"AutoShape RmsSpeed",0,4],[17,"AutoShape TargetLow",0,25],[18,"AutoShape TargetHigh",0,25],[19,"AutoShape Meta1",0,3],[20,"AutoShape Meta2",0,3],[21,"ENABLED",0,1],[22,"COMPRESS",0,100],[23,"ADAPTIVE",0,1],[24,"THRESHOLD",-30,0],[25,"RATIO",10,40],[26,"ATTACK",0,19],[27,"RELEASE",0,19],[28,"SMOOTH",0,2],[29,"TLRATIO",0,100],[30,"ENABLED",0,1],[31,"DE-ESS",0,100],[32,"ATTACK",0,19],[33,"RELEASE",0,19],[34,"SMOOTH",0,2],[35,"TLRATIO",0,100],[36,"ENABLE",0,1],[37,"ENABLE",0,1],[38,"ENABLE",0,1],[39,"ENABLE",0,1],[40,"ENABLE",0,1],[41,"ENABLE",0,1],[42,"GAIN",-12,12],[43,"GAIN",-12,12],[44,"PARA 1 GAIN",-12,12],[45,"LOW GAIN",-12,12],[46,"PARA 1 GAIN",-12,12],[47,"LOW GAIN",-12,12],[48,"FREQ",0,240],[49,"FREQ",0,240],[50,"PARA 1 FREQ",0,240],[51,"LOW FREQ",0,240],[52,"PARA 1 FREQ",0,240],[53,"LOW FREQ",0,240],[54,"WIDTH",0,32],[55,"WIDTH",0,32],[56,"PARA 1 WIDTH",0,32],[57,"LOW WIDTH",0,32],[58,"PARA 1 WIDTH",0,32],[59,"LOW WIDTH",0,32],[60,"GAIN",-12,12],[61,"GAIN",-12,12],[62,"GAIN",-12,12],[63,"NOTCH GAIN",-12,12],[64,"FREQ",0,240],[65,"FREQ",0,240],[66,"FREQ",0,240],[67,"NOTCH FREQ",0,240],[68,"WIDTH",0,32],[69,"WIDTH",0,32],[70,"WIDTH",0,32],[71,"NOTCH WIDTH",0,32],[72,"GAIN",-12,12],[73,"GAIN",-12,12],[74,"PARA 2 GAIN",-12,12],[75,"HI GAIN",-12,12],[76,"PARA 2 GAIN",-12,12],[77,"HI GAIN",-12,12],[78,"FREQ",0,240],[79,"FREQ",0,240],[80,"PARA 2 FREQ",0,240],[81,"HI FREQ",0,240],[82,"PARA 2 FREQ",0,240],[83,"HI FREQ",0,240],[84,"WIDTH",0,32],[85,"WIDTH",0,32],[86,"PARA 2 WIDTH",0,32],[87,"HI WIDTH",0,32],[88,"PARA 2 WIDTH",0,32],[89,"HI WIDTH",0,32],[90,"NOTCH FREQ",45,97],[91,"GATE",0,2],[92,"THRESHOLD",-61,0],[93,"GATE",0,2],[94,"GATE THRESHOLD",-61,0],[95,"GATE",0,1],[96,"STYLE",0,3],[97,"LEAD ENABLE",0,1],[98,"HARM ENABLE",0,1],[99,"LEAD ATTEN",-61,0],[100,"HARM ATTEN",-61,0],[101,"LEAD ATTACK",0,4],[102,"HARM ATTACK",0,4],[103,"LEAD RELEASE",0,4],[104,"HARM RELEASE",0,4],[105,"AutoMix Guitar_Thru_Sense",0,1],[106,"NATPLAY SOURCE",0,2],[107,"STYLE",0,27],[108,"STYLE",0,3],[109,"STYLE",0,3],[110,"STYLE",0,3],[111,"HUMANIZE STYLE",0,6],[112,"VIBRATO STYLE",0,7],[113,"HUMANIZE",0,100],[114,"VIBRATO AMOUNT",0,100],[115,"",0,100],[116,"VIBBOOST",0,1],[117,"KEY",0,12],[118,"NATURALPLAY",0,8],[119,"KEY",0,11],[120,"SCALE",0,5],[121,"ROOT",0,11],[122,"CHORD",0,20],[123,"TUNING",0,2],[124,"",0,6],[125,"",0,6],[126,"",0,28],[127,"",0,28],[128,"",-24,24],[129,"",-24,24],[130,"NOTES",0,1],[131,"NOTES",0,1],[132,"SMOOTH",0,100],[133,"SMOOTH",0,100],[134,"LATCH",0,1],[135,"GUITAR CHORDS",0,1],[136,"ATTACK",0,1000],[137,"DECAY",0,500],[138,"RELEASE",0,2000],[139,"RAND",0,100],[140,"Hold Release",0,1],[141,"HOLD RELEASE",0,100],[142,"DETUNE",0,100],[143,"HARM DOUBLING DETUNE",0,100],[144,"NOTES EXTENSION",0,1],[145,"GENDER",-50,50],[146,"GENDER",-50,50],[147,"PORTAMENTO",0,200],[148,"PORTAMENTO",0,200],[149,"MAP IN NOTE",0,11],[150,"MAP IN SOURCE",0,1],[151,"MAP OUT",-24,25],[152,"MAP OUT",-24,25],[153,"PAN",0,2],[154,"SMOOTH",0,100],[155,"GENDER",-50,50],[156,"PORTA",0,200],[157,"STYLE",0,9],[158,"HUMANIZE STYLE",0,24],[159,"HUMANIZE AMOUNT",0,100],[160,"V1 SMOOTH",0,100],[161,"V2 SMOOTH",0,100],[162,"V1 PORTA",0,200],[163,"V2 PORTA",0,200],[164,"V1 OCTAVE SHIFT",-1200,1200],[165,"V2 OCTAVE SHIFT",-1200,1200],[166,"DOUBLING",0,1],[167,"DOUBLE",0,3],[168,"Voices Global_Pitch",0,100],[169,"Voices Global_Time",0,100],[170,"Voices Global_Level",0,100],[171,"LEAD TO UMOD LEVEL",-36,0],[172,"HARM TO UMOD LEVEL",-36,0],[173,"LEAD TO DELAY LEVEL",-36,0],[174,"HARM TO DELAY LEVEL",-36,0],[175,"UMOD TO DELAY LEVEL",-36,0],[176,"GTR2DELAY LEVEL",-36,0],[177,"LEAD TO REVERB LEVEL",-36,0],[178,"HARM TO REVERB LEVEL",-36,0],[179,"DELAY TO REVERB LEVEL",-36,0],[180,"UMOD TO REV LEVEL",-36,0],[181,"GTR TO UMOD LEVEL",-36,0],[182,"GTR TO REV LEVEL",-36,0],[183,"GTR UMOD TO REV LEVEL",-36,0],[184,"VOICESFX LEVEL",-36,0],[185,"LEVEL",-36,0],[186,"LEVEL",-36,0],[187,"GUITAR LEVEL",-36,0],[188,"OUT LEVEL",-36,0],[189,"USB OUT LEVEL",-36,0],[190,"HEADPHONE LEVEL",-36,0],[191,"USB IN LEVEL",-36,0],[192,"DELAY/REVERB",-36,6],[193,"HARMONY",-36,6],[194,"",-36,6],[195,"RS MIC LEVEL",-36,12],[196,"",-36,12],[197,"LEAD LEVEL",-36,0],[198,"V1 LEVEL",-36,0],[199,"V2 LEVEL",-36,0],[200,"V1 LEVEL",-36,0],[201,"V2 LEVEL",-36,0],[202,"LEVEL",-36,0],[203,"LEVEL",-36,0],[204,"LEAD PAN",-100,100],[205,"V1 PAN",-100,100],[206,"V2 PAN",-100,100],[207,"V1 PAN",-100,100],[208,"V2 PAN",-100,100],[209,"PAN",-100,100],[210,"PAN",-100,100],[211,"LEVEL",-51,0],[212,"LEVEL",-51,0],[213,"LEVEL",-51,0],[214,"UMOD LEVEL",-51,0],[215,"DELAY LEVEL",-51,0],[216,"REVERB LEVEL",-51,0],[217,"LEVEL",-51,0],[218,"UMOD LEVEL",-51,0],[219,"DELAY LEVEL",-51,0],[220,"REVERB LEVEL",-51,0],[221,"LEVEL",-51,0],[222,"WIDTH",0,100],[223,"WIDTH",0,100],[224,"WIDTH",0,100],[225,"UMOD WIDTH",0,100],[226,"DELAY WIDTH",0,100],[227,"REVERB WIDTH",0,100],[228,"WIDTH",0,100],[229,"UMOD WIDTH",0,100],[230,"DELAY WIDTH",0,100],[231,"REVERB WIDTH",0,100],[232,"WIDTH",0,100],[233,"OUTPUT",0,3],[234,"AUX LOOP GAIN",-61,0],[235,"HEADPHONE OUT DRY VOICE GAIN",-61,0],[236,"ANALOG OUT DRY VOICE GAIN",-61,0],[237,"DIGITAL DRY VOICE GAIN",-61,0],[238,"HEADPHONE OUT DRY VOICE ROUTING",0,4],[239,"ANALOG OUT DRY VOICE ROUTING",0,4],[240,"DIGITAL DRY VOICE ROUTING",0,4],[241,"HEADPHONE OUT WET VOICE GAIN",-61,0],[242,"ANALOG OUT WET VOICE GAIN",-61,0],[243,"DIGITAL WET VOICE GAIN",-61,0],[244,"HEADPHONE OUT WET VOICE ROUTING",0,4],[245,"ANALOG OUT WET VOICE ROUTING",0,4],[246,"DIGITAL WET VOICE ROUTING",0,4],[247,"HEADPHONE OUT WET GUITAR GAIN",-61,0],[248,"ANALOG OUT WET GUITAR GAIN",-61,0],[249,"DIGITAL WET GUITAR GAIN",-61,0],[250,"HEADPHONE OUT WET GUITAR ROUTING",0,4],[251,"ANALOG OUT WET GUITAR ROUTING",0,4],[252,"DIGITAL WET GUITAR ROUTING",0,4],[253,"HEADPHONE OUT DIGITAL GAIN",-61,0],[254,"ANALOG OUT DIGITAL GAIN",-61,0],[255,"DIGITAL DIGITAL GAIN",-61,0],[256,"HEADPHONE OUT DIGITAL ROUTING",0,4],[257,"ANALOG OUT DIGITAL ROUTING",0,4],[258,"DIGITAL DIGITAL ROUTING",0,4],[259,"HEADPHONE OUT LOOP GAIN",-61,0],[260,"ANALOG OUT LOOP GAIN",-61,0],[261,"DIGITAL LOOP GAIN",-61,0],[262,"HEADPHONE OUT LOOP ROUTING",0,4],[263,"ANALOG OUT LOOP ROUTING",0,4],[264,"DIGITAL LOOP ROUTING",0,4],[265,"HEADPHONE OUT AUX GAIN",-61,0],[266,"ANALOG OUT AUX GAIN",-61,0],[267,"DIGITAL AUX GAIN",-61,0],[268,"HEADPHONE OUT AUX ROUTING",0,4],[269,"ANALOG OUT AUX ROUTING",0,4],[270,"DIGITAL AUX ROUTING",0,4],[271,"HEADPHONE OUT ROOM SENSE GAIN",-61,0],[272,"ANALOG OUT ROOM SENSE GAIN",-61,0],[273,"DIGITAL ROOM SENSE GAIN",-61,0],[274,"HEADPHONE OUT ROOM SENSE ROUTING",0,4],[275,"ANALOG OUT ROOM SENSE ROUTING",0,4],[276,"DIGITAL ROOM SENSE ROUTING",0,4],[277,"HEADPHONE OUT PITCH PIPE GAIN",-61,0],[278,"ANALOG OUT PITCH PIPE GAIN",-61,0],[279,"DIGITAL PITCH PIPE GAIN",-61,0],[280,"HEADPHONE OUT PITCH PIPE ROUTING",0,4],[281,"ANALOG OUT PITCH PIPE ROUTING",0,4],[282,"DIGITAL PITCH PIPE ROUTING",0,4],[283,"INPUT",0,5],[284,"WET VOICE GAIN",-61,0],[285,"WET VOICE ROUTING",0,3],[286,"WET GUITAR GAIN",-61,0],[287,"WET GUITAR ROUTING",0,3],[288,"AUX GAIN",-61,0],[289,"AUX ROUTING",0,3],[290,"ROOM SENSE GAIN",-61,0],[291,"ROOM SENSE ROUTING",0,3],[292,"uMOD STYLE",0,23],[293,"uMOD",0,5],[294,"uMOD",0,5],[295,"DETUNE LEFT",-25,25],[296,"DETUNE LEFT",-25,25],[297,"DETUNE RIGHT",-25,25],[298,"DETUNE RIGHT",-25,25],[299,"DEPTH",0,100],[300,"DEPTH",0,100],[301,"DEPTH",0,100],[302,"DEPTH",0,100],[303,"DEPTH",0,100],[304,"SPEED",5,1000],[305,"SPEED",5,1000],[306,"SPEED",5,1000],[307,"PHASE",0,180],[308,"PHASE",0,180],[309,"WAVE",0,2],[310,"WAVE",0,2],[311,"DELAY L",0,230],[312,"DELAY L",0,230],[313,"DELAY R",0,230],[314,"DELAY R",0,230],[315,"FEEDBACK L",-100,100],[316,"FEEDBACK L",-100,100],[317,"FEEDBACK R",-100,100],[318,"FEEDBACK R",-100,100],[319,"XFB L",-100,100],[320,"XFB L",-100,100],[321,"XFB R",-100,100],[322,"XFB R",-100,100],[323,"LOWCUT L",0,240],[324,"LOWCUT L",0,240],[325,"LOWCUT R",0,240],[326,"LOWCUT R",0,240],[327,"HICUT L",0,240],[328,"HICUT L",0,240],[329,"HICUT R",0,240],[330,"HICUT R",0,240],[331,"OUT PHASE",0,3],[332,"OUT PHASE",0,3],[333,"DELAY STYLE",0,17],[334,"DELAY STYLE",0,17],[335,"DELAY STYLE",0,17],[336,"DELAY STYLE",0,17],[337,"DELAY",0,15],[338,"DELAY",0,15],[339,"",0,17],[340,"",0,17],[341,"SOURCE",0,2],[342,"SOURCE",0,2],[343,"SOURCE",0,2],[344,"TEMPO",45,300],[345,"DELAY TIME",0,1333],[346,"DELAY TIME",0,1333],[347,"DELAY TIME",0,1333],[348,"DELAY TIME",0,1333],[349,"TIME",0,1333],[350,"TIME",0,1333],[351,"TIME",0,1333],[352,"TIME",0,1333],[353,"DIV L",0,19],[354,"DIV L",0,19],[355,"DIV L",0,19],[356,"DIV R",0,19],[357,"DIV R",0,19],[358,"DIV R",0,19],[359,"FEEDBACK",0,100],[360,"FEEDBACK",0,100],[361,"DEPTH FEEDBACK",0,100],[362,"FEEDBACK",0,100],[363,"FEEDBACK L",0,100],[364,"FEEDBACK L",0,100],[365,"FEEDBACK L",0,100],[366,"FEEDBACK R",0,100],[367,"FEEDBACK R",0,100],[368,"FEEDBACK R",0,100],[369,"XFB L TO R",0,100],[370,"XFB L TO R",0,100],[371,"XFB L TO R",0,100],[372,"XFB R TO L",0,100],[373,"XFB R TO L",0,100],[374,"XFB R TO L",0,100],[375,"MODDEPTH",0,100],[376,"MODDEPTH",0,100],[377,"MODDEPTH",0,100],[378,"MODSPEED",10,1000],[379,"MODSPEED",10,1000],[380,"MODSPEED",10,1000],[381,"FILTER",0,12],[382,"FILTER",0,12],[383,"FILTER",0,12],[384,"FILTER STYLE",0,12],[385,"LOCUT L",0,240],[386,"LOCUT L",0,240],[387,"DEPTH LOCUT L",0,240],[388,"LOCUT L",0,240],[389,"LOCUT R",0,240],[390,"LOCUT R",0,240],[391,"DEPTH LOCUT R",0,240],[392,"LOCUT R",0,240],[393,"HICUT L",0,240],[394,"HICUT L",0,240],[395,"DEPTH HICUT L",0,240],[396,"HICUT L",0,240],[397,"HICUT R",0,240],[398,"HICUT R",0,240],[399,"DEPTH HICUT R",0,240],[400,"HICUT R",0,240],[401,"LOW CUT IN",0,240],[402,"LOW CUT IN",0,240],[403,"LOW CUT IN",0,240],[404,"HIGH CUT IN",0,240],[405,"HIGH CUT IN",0,240],[406,"HIGH CUT IN",0,240],[407,"MIDI CLOCK",0,1],[408,"MIDI CLOCK",0,1],[409,"MIDI CLOCK",0,1],[410,"REVERB STYLE",0,27],[411,"REVERB",0,35],[412,"REVERB",0,35],[413,"TYPE",0,13],[414,"REVERB TYPE",0,13],[415,"DECAY",1,290],[416,"REVERB DECAY",1,290],[417,"DECAY",1,290],[418,"PRE DLY",0,100],[419,"REVERB PRE DLY",0,100],[420,"PRE DLY",0,100],[421,"DIFFUSE",-50,50],[422,"REVERB DIFFUSE",-50,50],[423,"LOCOLOR",-50,50],[424,"REVERB LOCOLOR",-50,50],[425,"HICOLOR",-50,50],[426,"REVERB HICOLOR",-50,50],[427,"HIFACTOR",-25,25],[428,"REVERB HIFACTOR",-25,25],[429,"SPEED",-25,25],[430,"REVERB SPEED",-25,25],[431,"DEPTH",-25,25],[432,"REVERB DEPTH",-25,25],[433,"EARLY REFLECTIONS",-25,0],[434,"REVERB EARLY REFLECTIONS",-25,0],[435,"TAIL LEVEL",-25,0],[436,"REVERB TAIL LEVEL",-25,0],[437,"LEAD MIX",-25,0],[438,"REVERB LEAD MIX",-25,0],[439,"V1 Inflection Style",0,37],[440,"V2 Inflection Style",0,37],[441,"DL1 Inflection Style",0,37],[442,"DL2 Inflection Style",0,37],[443,"V1 Inflection Amount",0,100],[444,"V2 Inflection Amount",0,100],[445,"DL1 Inflection Amount",0,100],[446,"DL2 Inflection Amount",0,100],[447,"V1 Inflection RandomizationMod",0,10],[448,"V2 Inflection RandomizationMod",0,10],[449,"DL1 Inflection RandomizationMod",0,10],[450,"DL2 Inflection RandomizationMod",0,10],[451,"V1 Inflection Type",0,1],[452,"V2 Inflection Type",0,1],[453,"DL1 Inflection Type",0,1],[454,"DL2 Inflection Type",0,1],[455,"V1 Inflection MinInterval",0,50],[456,"V2 Inflection MinInterval",0,50],[457,"DL1 Inflection MinInterval",0,50],[458,"DL2 Inflection MinInterval",0,50],[459,"V1 Inflection OvershootMean",0,100],[460,"V2 Inflection OvershootMean",0,100],[461,"DL1 Inflection OvershootMean",0,100],[462,"DL2 Inflection OvershootMean",0,100],[463,"V1 Inflection OvershootDev",0,10],[464,"V2 Inflection OvershootDev",0,10],[465,"DL1 Inflection OvershootDev",0,10],[466,"DL2 Inflection OvershootDev",0,10],[467,"V1 Inflection TimeBreakMean",0,100],[468,"V2 Inflection TimeBreakMean",0,100],[469,"DL1 Inflection TimeBreakMean",0,100],[470,"DL2 Inflection TimeBreakMean",0,100],[471,"V1 Inflection TimeBreakDev",0,10],[472,"V2 Inflection TimeBreakDev",0,10],[473,"DL1 Inflection TimeBreakDev",0,10],[474,"DL2 Inflection TimeBreakDev",0,10],[475,"V1 Inflection TimeDurationMean",0,160],[476,"V2 Inflection TimeDurationMean",0,160],[477,"DL1 Inflection TimeDurationMean",0,160],[478,"DL2 Inflection TimeDurationMean",0,160],[479,"V1 Inflection TimeDurationDev",0,30],[480,"V2 Inflection TimeDurationDev",0,30],[481,"DL1 Inflection TimeDurationDev",0,30],[482,"DL2 Inflection TimeDurationDev",0,30],[483,"V1 Inflection MagMean",-50,50],[484,"V2 Inflection MagMean",-50,50],[485,"DL1 Inflection MagMean",-50,50],[486,"DL2 Inflection MagMean",-50,50],[487,"V1 Inflection MagDev",0,80],[488,"V2 Inflection MagDev",0,80],[489,"DL1 Inflection MagDev",0,80],[490,"DL2 Inflection MagDev",0,80],[491,"V1 Inflection UVmod",0,100],[492,"V2 Inflection UVmod",0,100],[493,"DL1 Inflection UVmod",0,100],[494,"DL2 Inflection UVmod",0,100],[495,"V1 Inflection UVattenuation",-61,0],[496,"V2 Inflection UVattenuation",-61,0],[497,"DL1 Inflection UVattenuation",-61,0],[498,"DL2 Inflection UVattenuation",-61,0],[499,"V1 Inflection PitchMaxDev",0,60],[500,"V2 Inflection PitchMaxDev",0,60],[501,"DL1 Inflection PitchMaxDev",0,60],[502,"DL2 Inflection PitchMaxDev",0,60],[503,"V1 Inflection PitchRate",0,100],[504,"V2 Inflection PitchRate",0,100],[505,"DL1 Inflection PitchRate",0,100],[506,"DL2 Inflection PitchRate",0,100],[507,"V1 Inflection TimeMaxDev",0,20],[508,"V2 Inflection TimeMaxDev",0,20],[509,"DL1 Inflection TimeMaxDev",0,20],[510,"DL2 Inflection TimeMaxDev",0,20],[511,"V1 Inflection TimeRate",0,100],[512,"V2 Inflection TimeRate",0,100],[513,"DL1 Inflection TimeRate",0,100],[514,"DL2 Inflection TimeRate",0,100],[515,"V1 Inflection EnergyMaxDev",0,24],[516,"V2 Inflection EnergyMaxDev",0,24],[517,"DL1 Inflection EnergyMaxDev",0,24],[518,"DL2 Inflection EnergyMaxDev",0,24],[519,"V1 Inflection EnergyRate",0,100],[520,"V2 Inflection EnergyRate",0,100],[521,"DL1 Inflection EnergyRate",0,100],[522,"DL2 Inflection EnergyRate",0,100],[523,"V1 Inflection Bandwidth",0,100],[524,"V2 Inflection Bandwidth",0,100],[525,"DL1 Inflection Bandwidth",0,100],[526,"DL2 Inflection Bandwidth",0,100],[527,"Inflection FixedDelay",0,20],[528,"Inflection FixedDelay",0,20],[529,"Inflection FixedPitch",-20,20],[530,"Inflection FixedPitch",-20,20],[531,"Inflection FixedLevel",-61,0],[532,"Inflection FixedLevel",-61,0],[533,"V1 Vibrato Style",0,28],[534,"V2 Vibrato Style",0,28],[535,"V1 Vibrato Amount",0,100],[536,"V2 Vibrato Amount",0,100],[537,"V1 Vibrato RandomizationMod",0,100],[538,"V2 Vibrato RandomizationMod",0,100],[539,"V1 Vibrato RateMean",30,100],[540,"V2 Vibrato RateMean",30,100],[541,"V1 Vibrato RateDev",0,20],[542,"V2 Vibrato RateDev",0,20],[543,"V1 Vibrato AmpMean",0,60],[544,"V2 Vibrato AmpMean",0,60],[545,"V1 Vibrato AmpDev",0,10],[546,"V2 Vibrato AmpDev",0,10],[547,"V1 Vibrato BiasMean",-100,100],[548,"V2 Vibrato BiasMean",-100,100],[549,"V1 Vibrato BiasDev",0,100],[550,"V2 Vibrato BiasDev",0,100],[551,"V1 Vibrato OnsetTimeMean",0,200],[552,"V2 Vibrato OnsetTimeMean",0,200],[553,"V1 Vibrato OnsetTimeDev",0,32],[554,"V2 Vibrato OnsetTimeDev",0,32],[555,"V1 Vibrato AttackTimeMean",0,64],[556,"V2 Vibrato AttackTimeMean",0,64],[557,"V1 Vibrato AttackTimeDev",0,11],[558,"V2 Vibrato AttackTimeDev",0,11],[559,"V1 Vibrato SustainTimeMean",0,1000],[560,"V2 Vibrato SustainTimeMean",0,1000],[561,"V1 Vibrato SustainTimeDev",0,60],[562,"V2 Vibrato SustainTimeDev",0,60],[563,"V1 Vibrato ReleaseTimeMean",0,300],[564,"V2 Vibrato ReleaseTimeMean",0,300],[565,"V1 Vibrato ReleaseTimeDev",0,50],[566,"V2 Vibrato ReleaseTimeDev",0,50],[567,"V1 Vibrato GainAmpMean",0,12],[568,"V2 Vibrato GainAmpMean",0,12],[569,"V1 Vibrato GainAmpDev",0,6],[570,"V2 Vibrato GainAmpDev",0,6],[571,"V1 Vibrato GainBiasMean",-200,200],[572,"V2 Vibrato GainBiasMean",-200,200],[573,"V1 Vibrato GainBiasDev",0,50],[574,"V2 Vibrato GainBiasDev",0,50],[575,"V1 Vibrato RateDecr",0,10],[576,"V2 Vibrato RateDecr",0,10],[577,"V1 Vibrato RateDecrMinRate",25,100],[578,"V2 Vibrato RateDecrMinRate",25,100],[579,"V1 Vibrato GainBeta",0,100],[580,"V2 Vibrato GainBeta",0,100],[581,"V1 Vibrato GainPhase",-100,100],[582,"V2 Vibrato GainPhase",-100,100],[583,"V1 Vibrato GainAlign",0,3],[584,"V2 Vibrato GainAlign",0,3],[585,"STYLE",0,7],[586,"ROUTING",0,1],[587,"DRIVE",0,100],[588,"LOW CUT",50,240],[589,"HIGH CUT",75,238],[590,"TRANSDUCER IN GAIN",-20,20],[591,"GAIN",-20,20],[592,"DISTORTION TYPE",0,14],[593,"",-60,60],[594,"",-60,60],[595,"",-60,60],[596,"",0,240],[597,"",0,16],[598,"",-60,60],[599,"",0,240],[600,"",0,16],[601,"",-100,-1],[602,"",-100,100],[603,"",-20,20],[604,"",-20,20],[605,"",0,100],[606,"",0,100],[607,"PRESENCE GAIN",-20,20],[608,"PRES FREQ",100,195],[609,"PRES WIDTH",0,16],[610,"",1,4],[611,"FILTER",0,100],[612,"",-60,60],[613,"",-60,60],[614,"STYLE",0,6],[615,"HARDTUNE KEY",0,3],[616,"HARDTUNE AMOUNT",0,100],[617,"HARDTUNE WINDOW",0,60],[618,"HARDTUNE RATE",0,100],[619,"SHIFT",-36,36],[620,"KEY",0,11],[621,"ENABLED",0,1],[622,"NOTE",0,11],[623,"SCALE",0,5],[624,"PITCH CORRECTION",0,100],[625,"GENDER",-50,50],[626,"INPUT",0,6],[627,"INPUT",0,6],[628,"IN GAIN",0,66],[629,"AUX",-61,0],[630,"ROOMSENSE",-36,0],[631,"PITCH PIPE LEVEL",-36,0],[632,"MIDI CTRL",0,2],[633,"MIDI CHAN",0,16],[634,"CC CHAN",0,16],[635,"FILTER",0,3],[636,"SYSEXID",0,127],[637,"PBRANGE",0,12],[638,"TRANSPOSE",-4,4],[639,"SPLITDIR",0,1],[640,"SPLITNOTE",0,127],[641,"TUNE REFERENCE",840,920],[642,"HEADROOM",0,12],[643,"GUITAR",-31,24],[644,"GUITAR MUTE",0,1],[645,"BYPASS",0,1],[646,"GLOBAL GUITAR FX",0,1],[647,"GLOBAL KEY",0,1],[648,"NAT PLAY GBL",0,9],[649,"KEY/SCALE GBL",0,1],[650,"KEY",0,12],[651,"GLOBAL TEMPO",0,1],[652,"LEAD DELAY",0,2],[653,"LEAD MUTE",0,1],[654,"LEAD LEVEL",-61,0],[655,"LEAD LEVEL",-61,0],[656,"LEAD LEVEL",-61,0],[657,"LEAD LEVEL",-61,0],[658,"LEAD LEVEL",-61,0],[659,"LEAD LEVEL",-61,0],[660,"BPMODE",0,4],[661,"Utility Aux_In_Sense",0,1],[662,"Utility Guitar_In_Sense",0,1],[663,"Utility Midi_In_Sense",0,1],[664,"Utility Usb_Sense",0,1],[665,"Utility Pedal_Sense",0,1],[666,"Utility Auto_Sense",0,1],[667,"Utility HP_Sense",0,1],[668,"Utility InputMute",0,1],[669,"Utility OutputMute",0,1],[670,"MP75 CONTROL",0,3],[671,"LCD CONTRAST",0,5],[672,"UP/DN FUNCTION",0,1],[673,"LOOP FEEDBACK",0,100],[674,"UNDO",0,1],[675,"",-61,0],[676,"",0,65535],[677,"",0,17],[678,"ROOM GAIN",0,1],[679,"ROOMSENSE",0,1],[680,"",0,1],[681,"TONE STYLE",0,8],[682,"AUX IN TYPE",0,1],[683,"AUX TO MAIN OUT",0,1],[684,"LOOP LEVEL",-36,0],[685,"STYLE",0,7],[686,"STYLE",0,7],[687,"AMOUNT",0,10],[688,"AMOUNT",0,10],[689,"PARA 1 GAIN",-12,12],[690,"PARA 1 GAIN",-12,12],[691,"LOW GAIN",-12,12],[692,"LOW GAIN",-12,12],[693,"PARA 2 GAIN",-12,12],[694,"PARA 2 GAIN",-12,12],[695,"HI GAIN",-12,12],[696,"HI GAIN",-12,12],[697,"AMBIENCE",-21,0],[698,"AMBIENCE",-21,0],[699,"THRESHOLD",-30,0],[700,"THRESHOLD",-30,0],[701,"MAKEUP GAIN",0,12],[702,"MAKEUP GAIN",0,12],[703,"LEAD EFFECT SENDS",0,1]];
+// ── Live parameter control: firmware SysEx 0x22 (set) / 0x47 (get -> replies 0x22) ──
+// set: F0 00 01 38 <ch> <pid> 22 <p>>7 p&7F> <28-bit value as 4x7 bits> F7
+const UIMAP = [["Mixer",[[187,"MIX page 1, row 1 left: GUITAR level (confirmed)"],[190,"MIX page 1, row 1 right: HEADPHONE LEVEL"],[684,"MIX page 1, row 2 left: LOOP LEVEL (confirmed)"],[629,"MIX page 1, row 3 left: AUX"],[188,"MIX page 1, row 3 right: OUT LEVEL"],[191,"MIX page 2, row 1 left: USB IN LEVEL"],[193,"MIX page 2, row 1 right: HARMONY"],[189,"MIX page 2, row 2 left: USB OUT LEVEL"],[192,"MIX page 2, row 2 right: DELAY/REVERB"],[630,"MIX page 1, row 3 left: ROOMSENSE"]]],["Effects",[[107,"HARMONY: STYLE"],[185,"HARMONY: LEVEL"],[117,"HARMONY: KEY"],[157,"DOUBLE: STYLE"],[186,"DOUBLE: LEVEL"],[336,"DELAY: DELAY STYLE"],[212,"DELAY: LEVEL"],[359,"DELAY: FEEDBACK"],[410,"REVERB: REVERB STYLE"],[213,"REVERB: LEVEL"],[415,"REVERB: DECAY"],[614,"HARDTUNE: STYLE"],[619,"HARDTUNE: SHIFT"],[625,"HARDTUNE: GENDER"],[585,"TRANSDUCER: STYLE"],[587,"TRANSDUCER: DRIVE"],[611,"TRANSDUCER: FILTER"],[292,"uMOD: uMOD STYLE"],[211,"uMOD: LEVEL"],[304,"uMOD: SPEED"]]],["EffectsAdvanced",[[120,"HARMONY: SCALE"],[113,"HARMONY: HUMANIZE"],[147,"HARMONY: PORTAMENTO"],[381,"DELAY: FILTER"],[344,"DELAY: TEMPO"],[345,"DELAY: DELAY TIME"],[586,"TRANSDUCER: ROUTING"],[591,"TRANSDUCER: GAIN"],[94,"TRANSDUCER: GATE THRESHOLD"]]],["Guitar",[[411,"GUITAR REVERB: REVERB"],[216,"GUITAR REVERB: REVERB LEVEL"],[416,"GUITAR REVERB: DECAY"],[337,"GUITAR DELAY: DELAY"],[215,"GUITAR DELAY: DELAY LEVEL"],[360,"GUITAR DELAY: FEEDBACK"],[293,"GUITAR uMOD: uMOD"],[214,"GUITAR uMOD: UMOD LEVEL"],[305,"GUITAR uMOD: SPEED"],[685,"BODYREZ EQ: STYLE"],[687,"BODYREZ EQ: AMOUNT"],[691,"BODYREZ EQ: LOW GAIN"],[695,"BODYREZ EQ: HI GAIN"]]],["GuitarAdvanced",[[419,"GUITAR REVERB: PRE DLY"],[344,"GUITAR DELAY: TEMPO"],[382,"GUITAR DELAY: FILTER"],[346,"GUITAR DELAY: DELAY TIME"],[300,"GUITAR uMOD: DEPTH"],[411,"GUITAR REVERB: REVERB"],[216,"GUITAR REVERB: REVERB LEVEL"],[416,"GUITAR REVERB: DECAY"],[337,"GUITAR DELAY: DELAY"],[215,"GUITAR DELAY: DELAY LEVEL"],[360,"GUITAR DELAY: FEEDBACK"],[293,"GUITAR uMOD: uMOD"],[214,"GUITAR uMOD: UMOD LEVEL"],[305,"GUITAR uMOD: SPEED"],[685,"BODYREZ EQ: STYLE"],[687,"BODYREZ EQ: AMOUNT"],[691,"BODYREZ EQ: LOW GAIN"],[695,"BODYREZ EQ: HI GAIN"],[51,"BODYREZ SHELF EQ: FREQ"],[81,"BODYREZ SHELF EQ: FREQ"],[50,"BODYREZ PARAMETRIC EQ: FREQ"],[80,"BODYREZ PARAMETRIC EQ: FREQ"],[56,"BODYREZ PARAMETRIC EQ: WIDTH"],[86,"BODYREZ PARAMETRIC EQ: WIDTH"],[689,"BODYREZ PARAMETRIC EQ: PARA 1 GAIN"],[693,"BODYREZ PARAMETRIC EQ: PARA 2 GAIN"],[699,"BODYREZ COMPRESSOR: THRESHOLD"],[701,"BODYREZ COMPRESSOR: MAKEUP GAIN"],[697,"BODYREZ COMPRESSOR: AMBIENCE"]]],["Setup",[[626,"INPUT: INPUT"],[679,"INPUT: ROOMSENSE"],[681,"INPUT: TONE STYLE"],[643,"INPUT: GUITAR"],[624,"INPUT: PITCH CORRECTION"],[233,"OUTPUT: OUTPUT"],[653,"OUTPUT: LEAD MUTE"],[671,"SYSTEM: LCD CONTRAST"],[641,"SYSTEM: TUNE REFERENCE"],[672,"SYSTEM: UP/DN FUNCTION"],[683,"SYSTEM: AUX TO MAIN OUT"],[652,"SYSTEM: LEAD DELAY"],[682,"SYSTEM: AUX IN TYPE"],[647,"SYSTEM: GLOBAL KEY"],[651,"SYSTEM: GLOBAL TEMPO"],[63,"GUITAR ANTI-FEEDBACK: GAIN"],[90,"GUITAR ANTI-FEEDBACK: NOTCH FREQ"],[646,"SYSTEM: GLOBAL GUITAR FX"],[670,"MIC CONTROL: MP75 CONTROL"],[283,"LOOP: INPUT"],[674,"LOOP: UNDO"],[673,"LOOP: LOOP FEEDBACK"]]]];
+const QUICK = [];
+// 0x95-0x98, 0x26D, 0x26E: refused by the firmware. 0x278 MIDI CTRL and 0x27B FILTER: hidden from the list on purpose;
+// MIDI CTRL = MIDI or FILTER = SYSEX makes the pedal ignore USB SysEx after the next power cycle, and the Play Acoustic
+// has no 5-pin MIDI socket to undo it (only a factory initialisation recovers).
+const BLOCKED = new Set([0x95,0x96,0x97,0x98,0x26D,0x26E,0x278,0x27B]);
+let identified = false, cur = null, lastSend = 0, sendTimer = null;
+const pById = new Map(PARAMS.map(r => [r[0], r]));
+function fillParams(filter) {
+  const sel = $("pSel"), f = (filter || "").trim().toLowerCase(), keep = sel.value; sel.innerHTML = "";
+  for (const [id, name, lo, hi] of PARAMS) {
+    if (BLOCKED.has(id) || lo === hi) continue;
+    const label = `0x${id.toString(16).toUpperCase().padStart(3, "0")}  ${name || "(unnamed)"}  [${lo}…${hi}]`;
+    if (f && !label.toLowerCase().includes(f)) continue;
+    sel.add(new Option(label, String(id)));
+  }
+  if ([...sel.options].some(o => o.value === keep)) sel.value = keep;
+}
+{ const q = $("quick"); q.add(new Option("HIT (confirmed)", String(0x2A8)));
+  for (const [g, items] of UIMAP) { const og = document.createElement("optgroup"); og.label = g;
+    for (const [id, lab] of items) og.appendChild(new Option(`${lab}  (0x${id.toString(16).toUpperCase()})`, String(id))); q.appendChild(og); } }
+fillParams("");
+function selectParam(id) {
+  const r = pById.get(id); if (!r) return; cur = r;
+  if (![...$("pSel").options].some(o => +o.value === id)) { $("pFilter").value = ""; fillParams(""); }
+  $("pSel").value = String(id);
+  const sl = $("pSlider"); sl.min = r[2]; sl.max = r[3]; sl.step = 1;
+  $("pInfo").textContent = `0x${id.toString(16).toUpperCase()} ${r[1] || "(unnamed)"}  range ${r[2]}…${r[3]}`;
+  $("pVal").textContent = "—";
+  if (out && inp) getParam(id);
+}
+let idPromise = null;   // one identity exchange at a time (several polls used to start their own)
+async function ensureId() { if (identified) return; idPromise ??= identify().finally(() => { idPromise = null; }); await idPromise; identified = true; }
+function setParam(id, v) {
+  if (id === 0x278 || id === 0x27B) { log(`(refused: 0x${id.toString(16)} would lock out USB SysEx)`, "out"); return; }
+  const m = [...hdr(), 0x22, (id >> 7) & 0x7F, id & 0x7F, ...enc28(v), 0xF7]; out.send(m);
+  log(`→ SET 0x${id.toString(16)} = ${v}   (${m.map(x => x.toString(16).padStart(2, "0")).join(" ")})`, "out");
+}
+async function getParam(id, quiet) {
+  try {
+    await ensureId();
+    const p = collect(800, 1, m => m[0] === 0xF0 && m[3] === 0x38 && m[6] === 0x22 && (((m[7] << 7) | m[8]) === id));
+    out.send([...hdr(), 0x47, (id >> 7) & 0x7F, id & 0x7F, 0xF7]);
+    const r = await p;
+    if (!r.length) { $("liveStatus").textContent = "No reply to read (0x47)"; $("liveStatus").className = "status bad"; return null; }
+    const v = dec28(r[0], 9); $("pVal").textContent = v; $("pSlider").value = v;
+    $("liveStatus").textContent = `Read 0x${id.toString(16)} = ${v}`; $("liveStatus").className = "status ok";
+    if (!quiet) log(`← VALUE 0x${id.toString(16)} = ${v}`, "in"); return v;
+  } catch (e) { $("liveStatus").textContent = "Read failed: " + e.message; $("liveStatus").className = "status bad"; return null; }
+}
+async function push(v) {
+  lastUser = performance.now();
+  if (!cur || !out) { $("liveStatus").textContent = "Connect MIDI and pick a parameter"; $("liveStatus").className = "status bad"; return; }
+  await ensureId();
+  v = Math.max(cur[2], Math.min(cur[3], Math.round(v)));
+  $("pVal").textContent = v; setParam(cur[0], v);
+  $("liveStatus").textContent = `Sent 0x${cur[0].toString(16)} = ${v}`; $("liveStatus").className = "status";
+  if ($("pReadBack").checked) { clearTimeout(sendTimer); sendTimer = setTimeout(() => getParam(cur[0]), 250); }
+}
+$("quick").onchange = () => selectParam(+$("quick").value);
+$("pFilter").oninput = () => fillParams($("pFilter").value);
+$("pSel").onchange = () => selectParam(+$("pSel").value);
+$("pGet").onclick = () => cur && getParam(cur[0]);
+$("pSlider").oninput = () => { const v = +$("pSlider").value, now = performance.now(); $("pVal").textContent = v;
+  if (now - lastSend > 40) { lastSend = now; push(v); } else { clearTimeout(sendTimer); sendTimer = setTimeout(() => { lastSend = performance.now(); push(+$("pSlider").value); }, 45); } };
+$("pMin").onclick = () => { if (cur) { $("pSlider").value = cur[2]; push(cur[2]); } };
+$("pMax").onclick = () => { if (cur) { $("pSlider").value = cur[3]; push(cur[3]); } };
+$("pMid").onclick = () => { if (cur) { const v = Math.round((cur[2] + cur[3]) / 2); $("pSlider").value = v; push(v); } };
+$("pSweep").onclick = () => { if (!cur) return; const lo = cur[2], hi = cur[3], st = Math.max(1, Math.round((hi - lo) / 30)); let v = lo, dir = 1, n = 0;
+  const rb = $("pReadBack").checked; $("pReadBack").checked = false;
+  const t = setInterval(() => { $("pSlider").value = v; push(v); v += dir * st; if (v >= hi) { v = hi; dir = -1; } if (++n > 70 || (dir < 0 && v <= lo)) { clearInterval(t); push(lo); $("pReadBack").checked = rb; } }, 60); };
+selectParam(0x158);
+let lastUser = 0;
+$("pSlider").addEventListener("pointerdown", () => { lastUser = performance.now(); });
+setInterval(() => {
+  if (!$("pAuto").checked || !cur || !out || !inp) return;
+  if (performance.now() - lastUser < 1500 || performance.now() - lastSend < 1000) return;  // don't fight the user
+  getParam(cur[0], true);
+}, 500);
+// Menu pages come from pa-menus.js (editable JSON, see MENUS-FORMAT.md), loaded before this script.
+// Internal form per page: { t: title, w: {selector param id: value}, s: [6 cells row by row, left/right], text?: [lines] };
+// cell = [param id, label, min, max, format, default, value names?]
+const MENUS = {};
+try {
+  const cell = c => c ? [parseInt(c.param, 16), c.label, c.min, c.max, c.format || "number", c.default ?? c.min].concat(c.values ? [c.values] : []) : null;
+  for (const [key, menu] of Object.entries(window.PA_MENUS || {})) MENUS[key] = menu.pages.map(p => {
+    let s = (p.rows || [[null, null], [null, null], [null, null]]).flat().map(cell);
+    // Picture pages use the pedal's FX layout: STYLE (first cell) on the bottom-left soft button, the other cells
+    // on the right buttons top to bottom, the effect's CONTROL (OFF/ON/HIT) on the bottom-right button.
+    if (p.layout === "image") { const rest = s.slice(1).filter(Boolean); s = [null, rest[0] || null, null, rest[1] || null, s[0], cell(p.control)]; }
+    return { t: p.title, text: p.text, layout: p.layout, images: p.images, s,
+      w: Object.fromEntries(Object.entries(p.showWhen || {}).map(([id, v]) => [String(parseInt(id, 16)), v])) };
+  });
+  if (!Object.keys(MENUS).length) throw new Error("pa-menus.js not loaded");
+} catch (e) { setTimeout(() => { $("panelStatus").textContent = "Menu file problem: " + e.message; $("panelStatus").className = "status bad"; }, 0); }
+// ── virtual front panel logic ──
+const pnl = { page: "PRESET", sub: 0, sel: 0, vals: {}, touched: 0, sendT: null };
+const pDef = new Map(); for (const k in MENUS) for (const e of MENUS[k]) for (const c of e.s) if (c) pDef.set(c[0], c[5]);
+pDef.set(0x295, 0); pDef.set(0x39F, 1); pDef.set(0x362, 0);
+const val = id => pnl.vals[id] ?? pDef.get(id);
+const isHome = () => pnl.page === "PRESET";   // the pedal has no home page: its main screen is the current preset
+function pages() {   // sub-pages the pedal shows right now, given the selector settings it depends on
+  if (isHome()) return [{ t: "PRESET", w: {}, s: [null, null, null, null, null, null] }];
+  const p = (MENUS[pnl.page] || []).filter(e => Object.entries(e.w).every(([id, v]) => val(+id) === v));
+  return p.length ? p : [{ t: pnl.page, w: {}, s: [null, null, null, null, null, null] }];
+}
+function curSub() { const p = pages(); return p[Math.min(pnl.sub, p.length - 1)]; }
+function selectors() { return isHome() ? [] : [...new Set((MENUS[pnl.page] || []).flatMap(e => Object.keys(e.w).map(Number)))]; }
+function fmtV(c, v) {
+  if (v == null) return "··";
+  if (c[6] && v - c[2] >= 0 && v - c[2] < c[6].length) return c[6][v - c[2]];
+  switch (c[4]) {
+    case "dB": return `${v} dB`;
+    case "%": return `${v} %`;
+    case "Hz/2": return `${(v / 2).toFixed(1)} Hz`;
+    case "OFF/%": return v ? `${v} %` : "OFF";
+    case "BPM": return `${v} BPM`;
+    case "ms": return `${v} ms`;
+    default: return String(v);
+  }
+}
+const isProductInfo = sp => !!sp.text;   // text-only page (Product Info)
+function firstSlot(sp) { if (sp.layout === "image" && sp.s[4]) return 4; const i = sp.s.findIndex(x => x); return i < 0 ? 0 : i; }
+function renderPanel() {
+  const pg = pages(), sp = curSub(), n = pg.length;
+  const name = isHome() ? "" : sp.t + (pnl.page.endsWith("ADV") ? " ADV" : "");
+  $("lcdTitle").textContent = isHome() ? "" : (pnl.sub > 0 ? "◀ " : "") + name + ` ${pnl.sub + 1}/${n}` + (pnl.sub < n - 1 ? " ▶" : "");
+  $("lcdTitle").style.visibility = isHome() ? "hidden" : "visible";
+  const g = $("lcdGrid"); g.innerHTML = ""; g.className = "lcdgrid" + (isHome() ? " preset" : isProductInfo(sp) ? " info" : "");
+  if (isHome()) { g.innerHTML = `<div class="pname"></div><div class="pnum"></div>`;
+    g.querySelector(".pname").textContent = pnl.presetName || (pnl.preset == null ? "PRESET" : "");
+    g.querySelector(".pnum").textContent = pnl.preset == null ? "—" : String(pnl.preset); }
+  else if (isProductInfo(sp)) for (const line of sp.text) { const d = document.createElement("div"); d.textContent = line; g.appendChild(d); }
+  else if (sp.layout === "image") renderFx(g, sp);
+  else sp.s.forEach((c, i) => {
+    const d = document.createElement("div");
+    d.className = "cell" + (i % 2 ? " right" : "") + (c ? (i === pnl.sel ? " sel" : "") : " empty");
+    if (c) {
+      const v = val(c[0]);
+      if (pnl.page === "MIX") {   // Mix cells: bar graph over the label
+        const f = v == null ? 0 : (v - c[2]) / Math.max(1, c[3] - c[2]);
+        d.innerHTML = `<div class="bar"><i style="width:${Math.round(Math.max(0, Math.min(1, f)) * 100)}%"></i></div><div class="lab"></div>` + (i === pnl.sel ? `<div class="bval">${fmtV(c, pnl.vals[c[0]])}</div>` : "");
+      } else d.innerHTML = `<div class="lab"></div><div class="vtxt"></div>`;
+      d.querySelector(".lab").textContent = c[1];
+      if (d.querySelector(".vtxt")) d.querySelector(".vtxt").textContent = pnl.vals[c[0]] == null ? "··" : fmtV(c, v);
+      d.title = `${c[1]} = ${fmtV(c, pnl.vals[c[0]])} (param 0x${c[0].toString(16).toUpperCase()}, ${c[2]}…${c[3]})`;
+      d.onclick = () => selSlot(i);
+    }
+    g.appendChild(d);
+  });
+  document.querySelectorAll(".soft").forEach(b => { const i = +b.dataset.slot;
+    if (isHome()) { const ok = !!MENU[i]; b.className = "soft" + (ok ? " white" : ""); b.disabled = !ok; }
+    else { const ok = !isProductInfo(sp) && !!sp.s[i]; b.className = "soft" + (ok ? " blue" : "") + (ok && i === pnl.sel ? " on" : ""); b.disabled = !ok; } });
+  $("hitLed").classList.toggle("lit", !!pnl.vals[0x2A8]);
+  const c = isHome() ? null : sp.s[pnl.sel], k = $("knob");
+  if (c) { const v = val(c[0]) ?? c[2]; const f = (v - c[2]) / Math.max(1, c[3] - c[2]);
+    k.style.setProperty("--ang", `${-135 + 270 * f}deg`); k.setAttribute("aria-valuemin", c[2]); k.setAttribute("aria-valuemax", c[3]); k.setAttribute("aria-valuenow", v); k.setAttribute("aria-valuetext", `${c[1]} ${fmtV(c, v)}`); }
+}
+// Vocal FX / Guitar FX pages (firmware func_446ce8): picture 92x48 at (0,7) chosen by the STYLE value (func_446c06),
+// "STYLE: name" line at the bottom left, the page's other cells in a narrow column on the right (x 94-127).
+function renderFx(g, sp) {
+  g.className = "lcdgrid fx";
+  // Only draw the picture for a STYLE value actually read from the pedal; falling back to the default value made the
+  // default style's picture flash up on every page change until the first read arrived. Offline, use the default.
+  const st = sp.s[4], v = st ? (pnl.vals[st[0]] ?? (out ? null : val(st[0]))) : null;
+  const n = st && v != null && sp.images ? sp.images[v - st[2]] : null;
+  const pic = document.createElement("div"); pic.className = "fximg";
+  const uri = (window.PA_IMAGES || {})[n ?? 39];
+  if (uri && v != null) { pic.style.webkitMaskImage = pic.style.maskImage = `url(${uri})`; }
+  pic.title = n != null ? `firmware image ${n}` : "";
+  const right = document.createElement("div"); right.className = "fxright";
+  for (const i of [1, 3, 5]) {   // one box per right-hand soft button
+    const c = sp.s[i], d = document.createElement("div"); d.className = "fxcell" + (c && i === pnl.sel ? " sel" : "");
+    if (c) {
+      const has = pnl.vals[c[0]] != null, cv = val(c[0]);
+      if (c[4] === "dB") {   // levels: bar graph over the label
+        const f = has ? (cv - c[2]) / Math.max(1, c[3] - c[2]) : 0;
+        d.innerHTML = `<div class="bar"><i style="width:${Math.round(Math.max(0, Math.min(1, f)) * 100)}%"></i></div><div class="lab"></div>` + (i === pnl.sel ? `<div class="bval">${fmtV(c, pnl.vals[c[0]])}</div>` : "");
+      } else d.innerHTML = `<div class="${i === 5 ? "big" : "vtxt"}"></div><div class="lab"></div>`;
+      d.querySelector(".lab").textContent = c[1];
+      const vt = d.querySelector(".vtxt, .big"); if (vt) vt.textContent = has ? fmtV(c, cv) : "··";
+      d.title = `${c[1]} = ${fmtV(c, pnl.vals[c[0]])} (param 0x${c[0].toString(16).toUpperCase()})`;
+      d.onclick = () => selSlot(i);
+    }
+    right.appendChild(d);
+  }
+  const line = document.createElement("div"); line.className = "fxstyle" + (pnl.sel === 4 ? " sel" : "");
+  line.textContent = st ? `${st[1]}: ${pnl.vals[st[0]] == null ? "··" : fmtV(st, v)}` : "";
+  if (st) line.onclick = () => selSlot(4);
+  g.append(pic, right, line);
+}
+// soft-button menu functions on the preset screen, by slot: left 0/2/4, right 1/3/5
+const MENU = { 0: () => $("advChk").checked ? "VOCAL ADV" : "VOCAL", 2: () => $("advChk").checked ? "GUITAR ADV" : "GUITAR", 4: () => "MIX", 5: () => "SETUP" };
+function selSlot(i) { const sp = curSub(); if (!isHome() && sp.s[i]) { pnl.sel = i; renderPanel(); } }
+function softPress(i) { if (isHome()) { const m = MENU[i]; if (m) gotoPage(m()); } else selSlot(i); }
+function gotoPage(name) { pnl.page = name; pnl.sub = 0; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true); }
+function gotoSub(d) { if (isHome()) return; const n = pages().length, s = Math.max(0, Math.min(n - 1, pnl.sub + d)); if (s === pnl.sub) return; pnl.sub = s; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true); }
+async function panelRead(id) {
+  const p = collect(600, 1, m => m[0] === 0xF0 && m[3] === 0x38 && m[6] === 0x22 && (((m[7] << 7) | m[8]) === id));
+  out.send([...hdr(), 0x47, (id >> 7) & 0x7F, id & 0x7F, 0xF7]);
+  const r = await p; return r.length ? dec28(r[0], 9) : null;
+}
+// Current preset: number = param 0x2A4 (set by the firmware's preset loader, func_444889).
+// Name = 15 bytes in the preset header (cmd 0x20) the unit sends for "request preset 0" (45 00 00 = current preset).
+async function readPreset() {
+  const n = await panelRead(0x2A4); if (n == null) return;
+  const changed = n !== pnl.preset; pnl.preset = n;
+  if (changed || pnl.presetName == null) {
+    const p = collect(1000, 1, m => m[0] === 0xF0 && m[3] === 0x38 && m[6] === 0x20 && m.length >= 31);
+    out.send([...hdr(), 0x45, 0x00, 0x00, 0xF7]);
+    const r = await p;
+    // 15-byte name buffer: the name ends at the first 00; bytes after it are leftovers from the previous (longer) name.
+    if (r.length) { const raw = [...r[0].slice(11, 26)], end = raw.indexOf(0);
+      pnl.presetName = String.fromCharCode(...(end < 0 ? raw : raw.slice(0, end)).filter(c => c >= 0x20 && c < 0x7F)).trim(); }
+  }
+}
+let polling = false;
+async function pollPanel(force) {
+  if (polling || !out || !inp) return;
+  if (!force && performance.now() - pnl.touched < 1200) return;
+  polling = true;
+  try {
+    await ensureId();
+    for (const id of selectors()) { const v = await panelRead(id); if (v != null) pnl.vals[id] = v; }
+    const sp = curSub(); let got = 0, want = 0;
+    if (!isHome() && !isProductInfo(sp)) for (const c of sp.s) { if (!c) continue; want++; const v = await panelRead(c[0]); if (v != null) { pnl.vals[c[0]] = v; got++; } }
+    const hit = await panelRead(0x2A8); if (hit != null) pnl.vals[0x2A8] = hit;
+    await readPreset();
+    $("panelStatus").textContent = got === want ? "In sync with the pedal" : `Read ${got}/${want} values`; $("panelStatus").className = "status " + (got === want ? "ok" : "bad");
+    const n = pages().length; if (pnl.sub >= n) pnl.sub = n - 1;
+    renderPanel();
+  } catch (e) { $("panelStatus").textContent = "Read failed: " + e.message; $("panelStatus").className = "status bad"; }
+  polling = false;
+}
+function turn(delta) {
+  if (isHome()) return;
+  const c = curSub().s[pnl.sel]; if (!c) return;
+  const v = Math.max(c[2], Math.min(c[3], (val(c[0]) ?? c[2]) + delta));
+  pnl.vals[c[0]] = v; pnl.touched = performance.now(); renderPanel();
+  clearTimeout(pnl.sendT);
+  pnl.sendT = setTimeout(async () => { if (!out) { $("panelStatus").textContent = "Not connected: change not sent"; $("panelStatus").className = "status bad"; return; } await ensureId(); setParam(c[0], pnl.vals[c[0]]); }, 35);
+}
+document.querySelectorAll(".soft").forEach(b => b.onclick = () => softPress(+b.dataset.slot));
+$("hwPrev").onclick = () => gotoSub(-1); $("hwNext").onclick = () => gotoSub(1);
+$("hwBack").onclick = () => gotoPage("PRESET");
+$("hwHit").onclick = async () => { if (!out) return; await ensureId(); const v = await panelRead(0x2A8); pnl.vals[0x2A8] = v ? 0 : 1; setParam(0x2A8, pnl.vals[0x2A8]); renderPanel(); setTimeout(() => pollPanel(true), 200); };
+const knob = $("knob");
+knob.addEventListener("wheel", e => { e.preventDefault(); turn((e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 10 : 1)); }, { passive: false });
+$("lcd").addEventListener("wheel", e => { e.preventDefault(); turn((e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 10 : 1)); }, { passive: false });
+let dragY = null, acc = 0;
+knob.addEventListener("pointerdown", e => { dragY = e.clientY; acc = 0; knob.setPointerCapture(e.pointerId); });
+knob.addEventListener("pointermove", e => { if (dragY == null) return; acc += dragY - e.clientY; dragY = e.clientY; const step = e.shiftKey ? 10 : 1; while (Math.abs(acc) >= 6) { turn(Math.sign(acc) * step); acc -= Math.sign(acc) * 6; } });
+knob.addEventListener("pointerup", () => { dragY = null; });
+knob.addEventListener("keydown", e => { const m = e.shiftKey ? 10 : 1;
+  if (e.key === "ArrowUp" || e.key === "ArrowRight") { e.preventDefault(); turn(m); } else if (e.key === "ArrowDown" || e.key === "ArrowLeft") { e.preventDefault(); turn(-m); }
+  else if (e.key === "PageUp") { e.preventDefault(); turn(10); } else if (e.key === "PageDown") { e.preventDefault(); turn(-10); } });
+setInterval(() => pollPanel(false), 800);
+gotoPage("PRESET");
+function onMsg(e) {
+  const d = e.data; if (!d || !d.length) return;
+  if (d[0] === 0xF0) for (const h of [...sysexWaiters]) h(d);
+  const st = d[0] & 0xF0, ch = (d[0] & 0x0F) + 1;
+  if (st === 0xB0 || st === 0xC0) log(`← ch${ch} ${[...d].map(x => x.toString(16).padStart(2, "0")).join(" ")}`, "in");
+  else if (d[0] === 0xF0) log(`← SysEx ${d.length} bytes: ${[...d.slice(0, 12)].map(x => x.toString(16).padStart(2, "0")).join(" ")}${d.length > 12 ? " …" : ""}`, "in");
+  else if (d[0] !== 0xF8 && d[0] !== 0xFE) log(`← ${[...d].map(x => x.toString(16).padStart(2, "0")).join(" ")}`, "in");
+}
+function fill() {
+  const pick = (sel, ports) => { const prev = sel.value; sel.innerHTML = "";
+    for (const p of ports) sel.add(new Option(p.name, p.id));
+    const pa = [...sel.options].find(o => /play|helicon|tc/i.test(o.text));
+    if ([...sel.options].some(o => o.value === prev)) sel.value = prev; else if (pa) sel.value = pa.value; };
+  pick($("outSel"), access.outputs.values()); pick($("inSel"), access.inputs.values()); bind();
+}
+function bind() {
+  identified = false;
+  out = access.outputs.get($("outSel").value) || null;
+  if (inp) inp.onmidimessage = null;
+  inp = access.inputs.get($("inSel").value) || null; if (inp) inp.onmidimessage = onMsg;
+  const s = $("status");
+  if (out) { s.textContent = "Connected: " + out.name; s.className = "status ok"; } else { s.textContent = "No MIDI output found"; s.className = "status bad"; }
+}
+$("connectBtn").onclick = async () => {
+  if (!navigator.requestMIDIAccess) { $("status").textContent = "Web MIDI not available in this browser."; $("status").className = "status bad"; $("noMidi").hidden = false; return; }
+  try { access = await navigator.requestMIDIAccess({ sysex: true }); access.onstatechange = fill; fill(); }
+  catch (e) { $("status").textContent = "MIDI access denied: " + e.message; $("status").className = "status bad"; }
+};
+$("outSel").onchange = bind; $("inSel").onchange = bind;
+$("clearLog").onclick = () => { logEl.textContent = ""; };
+log("Click Connect MIDI and allow access (SysEx). Messages from the unit appear here in green.");
+window.addEventListener("load", () => setTimeout(() => { if (!navigator.requestMIDIAccess) $("noMidi").hidden = false; }, 1000));
+</script>
+</body>
+</html>

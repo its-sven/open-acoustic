@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Play Acoustic Checklist</title>
+<style>
+:root {
+  --bg: #f3f5f7; --surface: #fff; --ink: #16202b; --muted: #5a6773; --rule: #d9dfe5;
+  --accent: #1f6f8b; --accent-soft: #e2eef3;
+  --works: #2e7d4f; --works-bg: #e3f3e9; --partly: #9a5b00; --partly-bg: #fbefd9; --broken: #b3261e; --broken-bg: #fbe4e2;
+  --na: #6b7280; --na-bg: #eceef1; --mono: ui-monospace, "SF Mono", Menlo, monospace; --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0f151b; --surface: #161e26; --ink: #e3e9ee; --muted: #94a3ae; --rule: #26313b; --accent: #6cb6cf; --accent-soft: #1a2c36;
+    --works: #6fcf97; --works-bg: #15301f; --partly: #e5a54a; --partly-bg: #34270f; --broken: #f28b82; --broken-bg: #3a1a18; --na: #9aa3ad; --na-bg: #222a33; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); padding: 24px max(16px, 3vw, env(safe-area-inset-left)) 64px; }
+.wrap { max-width: 920px; margin: 0 auto; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+h1 { margin: 0; font-size: 1.6rem; font-weight: 600; }
+h2 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+.sub { color: var(--muted); margin: 2px 0 0; }
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+button, select { font: inherit; color: var(--accent); background: var(--accent-soft); border: 1px solid transparent; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-weight: 500; touch-action: manipulation; }
+select { color: var(--ink); background: var(--surface); border-color: var(--rule); font-weight: 400; max-width: 100%; }
+button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--mono); font-size: 13px; }
+.muted { color: var(--muted); }
+.bar { height: 8px; border-radius: 4px; background: var(--rule); overflow: hidden; display: flex; flex: 1 1 200px; min-width: 120px; }
+.bar i { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
+.legend b { font-weight: 600; }
+.sec { display: grid; gap: 10px; }
+.sechead { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; justify-content: space-between; }
+.item { border: 1px solid var(--rule); border-left: 4px solid var(--rule); border-radius: 6px; padding: 10px 12px; display: grid; gap: 6px; background: var(--surface); }
+.item[data-s="works"] { border-left-color: var(--works); } .item[data-s="partly"] { border-left-color: var(--partly); }
+.item[data-s="broken"] { border-left-color: var(--broken); } .item[data-s="na"] { border-left-color: var(--na); opacity: .8; }
+.item .t { font-weight: 600; }
+.item .how { color: var(--muted); font-size: 14px; }
+.item .how ol, .item .how ul { margin: 2px 0; padding-left: 20px; }
+.st { display: flex; flex-wrap: wrap; gap: 4px; }
+.st button { padding: 4px 10px; font-size: 13px; background: transparent; border-color: var(--rule); color: var(--muted); }
+.st button[aria-pressed="true"][data-v="works"] { background: var(--works-bg); color: var(--works); border-color: var(--works); }
+.st button[aria-pressed="true"][data-v="partly"] { background: var(--partly-bg); color: var(--partly); border-color: var(--partly); }
+.st button[aria-pressed="true"][data-v="broken"] { background: var(--broken-bg); color: var(--broken); border-color: var(--broken); }
+.st button[aria-pressed="true"][data-v="na"] { background: var(--na-bg); color: var(--na); border-color: var(--na); }
+.st button[aria-pressed="true"][data-v="todo"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.acts button { padding: 4px 10px; font-size: 13px; }
+.res { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+textarea { width: 100%; min-height: 34px; resize: vertical; font: 14px/1.4 var(--sans); color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 8px; }
+.since { font-size: 12px; color: var(--muted); }
+.tag { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--rule); border-radius: 999px; padding: 0 7px; }
+details > summary { cursor: pointer; color: var(--muted); }
+@media (pointer: coarse) { button, select { min-height: 44px; } .st button, .acts button { min-height: 40px; padding: 6px 12px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Play Acoustic Checklist</h1>
+    <p class="sub">What has been tested on the unit, what still needs checking, and what's left to build. Set a status and add notes as you go; everything is saved in this browser. Export the results to share them.</p>
+  </header>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="legend" id="legend"></div>
+      <div class="row">
+        <label class="muted" for="filter">Show</label>
+        <select id="filter"><option value="all">All items</option><option value="open">Open (untested, partly, broken)</option><option value="untested">Untested only</option><option value="broken">Broken only</option></select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px"><div class="bar" id="bar" aria-hidden="true"></div><span class="mono" id="pct"></span></div>
+    <div class="row" style="margin-top:12px">
+      <button id="exportJson">Export JSON</button>
+      <button id="exportMd">Export Markdown</button>
+      <button id="importBtn">Import JSON</button><input type="file" id="importFile" accept="application/json,.json" hidden>
+      <button id="resetBtn" title="Forget all statuses and notes in this browser">Reset</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <h2>Pedal connection (optional)</h2>
+      <span class="mono" id="midiStatus">Not connected</span>
+    </div>
+    <p class="sub" style="margin:4px 0 10px">Items with <b>Read</b>/<b>Set</b> buttons can talk to the pedal directly (Chrome/Edge, USB, VoiceSupport closed). The full panel is <a href="pa-remote.html">pa-remote.html</a>.</p>
+    <div class="row"><button id="connectBtn">Connect MIDI</button><select id="outSel" aria-label="MIDI output"></select><select id="inSel" aria-label="MIDI input"></select></div>
+  </div>
+
+  <main id="list" class="wrap" style="gap:18px"></main>
+</div>
+
+<script>
+// ── Checklist content. Edit freely: id must stay unique (it keys the saved status). ──
+// kind "verify" uses statuses untested/works/partly/broken/na; kind "todo" uses todo/done(works)/na.
+// act: [label, "read", paramId] or [label, "set", paramId, value]
+const SECTIONS = [
+ { id: "conn", title: "Connection", kind: "verify", items: [
+  { id: "conn-identity", t: "Connect and get an identity reply", how: "Open the remote, click Connect MIDI. The monitor shows \"← identity reply\".", init: "works", note: "Works (stock 1.4.00)." },
+  { id: "conn-voicesupport", t: "VoiceSupport must be closed", how: "With VoiceSupport running, SysEx gets corrupted (\"PACKAGES LOST OR OUT OF SYNC\").", init: "works", note: "Confirmed: close it first." },
+  { id: "conn-replug", t: "Reconnect after power cycle without reloading", how: "Power-cycle the pedal while the remote is open. Does it resume, or does it need a reload + Connect?", init: "untested" },
+  { id: "conn-fallback", t: "Wildcard fallback when there's no identity reply", how: "Only relevant if identity fails again: the remote then uses channel byte 7F. Do reads still work?", init: "untested" },
+ ]},
+ { id: "live", title: "Live parameter control (SysEx 22 / 47)", kind: "verify", items: [
+  { id: "live-guitar", t: "Mix GUITAR LEVEL (0x0BB) set and read", how: "Turn it on the panel; the pedal follows. Turn it on the pedal; the panel follows within a second.", init: "works", act: [["Read", "read", 0x0BB]] },
+  { id: "live-hit", t: "HIT (0x2A8) on/off", how: "Press HIT on the panel; the pedal's HIT LED and sound follow.", init: "works", act: [["Read", "read", 0x2A8], ["HIT on", "set", 0x2A8, 1], ["HIT off", "set", 0x2A8, 0]] },
+  { id: "live-loop", t: "LOOP LEVEL (0x2AC)", how: "Change it from the panel and from the pedal.", init: "works", act: [["Read", "read", 0x2AC]] },
+  { id: "live-popup", t: "No pop-up on the pedal per change", how: "Changing values from the remote must not show a SysEx message on the pedal.", init: "works" },
+  { id: "live-sweep", t: "Fast sweeps don't drop or lag", how: "In Live parameter control, use Sweep on a level. Does the pedal keep up? Any audio artefacts?", init: "untested" },
+ ]},
+ { id: "preset", title: "Preset screen", kind: "verify", items: [
+  { id: "preset-name", t: "Preset name shows and updates", how: "Switch presets with the footswitches. The panel's name follows.", init: "works", note: "Works; trailing junk characters fixed (name ends at the first 00)." },
+  { id: "preset-name-fix", t: "No junk characters after the name fix", how: "Go from a long name to a short one (e.g. to \"TWO LOW\") in both directions.", init: "untested" },
+  { id: "preset-number", t: "Preset number matches the pedal (no off-by-one)", how: "Compare the big number on the panel with the pedal's screen.", init: "untested", act: [["Read 0x2A4", "read", 0x2A4]] },
+ ]},
+ { id: "mix", title: "Mix menu", kind: "verify", items: [
+  { id: "mix-p1", t: "Mix 1/2 layout and bars", how: "GUITAR LEVEL | HEADPHONE LEVEL / LOOP LEVEL / ROOMSENSE | OUT LEVEL.", init: "works" },
+  { id: "mix-p2", t: "Mix 2/2 layout", how: "USB IN LEVEL | HARMONY / USB OUT LEVEL | DELAY/REVERB.", init: "works" },
+  { id: "mix-aux", t: "AUX replaces ROOMSENSE with a cable in AUX IN", how: "Plug something into AUX IN. Pedal and panel should both show AUX on row 3 left.", init: "untested", act: [["Read aux sense 0x295", "read", 0x295]] },
+  { id: "mix-levels-other", t: "Other Mix levels set correctly", how: "HEADPHONE (0x0BE), OUT (0x0BC), USB IN/OUT, HARMONY, DELAY/REVERB: change each from the panel.", init: "untested" },
+ ]},
+ { id: "setup", title: "Setup menu", kind: "verify", items: [
+  { id: "setup-layout", t: "All 10 Setup pages match", how: "INPUT, OUTPUT, SYSTEM ×2, GUITAR ANTI-FEEDBACK, SYSTEM, SWITCH-6, MIC CONTROL, LOOP, PRODUCT INFO.", init: "works" },
+  { id: "setup-roomsense", t: "ROOMSENSE values AMBIENT / AMBIENT/AUTO", how: "", init: "works" },
+  { id: "setup-newids", t: "New Setup IDs read and set (0x2C0–0x3B3)", how: "Read each and compare with the pedal; then change one from the panel.", init: "untested",
+    act: [["HEADPHONE LIM 0x312", "read", 0x312], ["VOCAL CANCEL 0x317", "read", 0x317], ["MIC BOOST 0x352", "read", 0x352], ["GUITAR GATE 0x329", "read", 0x329]] },
+  { id: "setup-footswitch", t: "SWITCH-3 / SWITCH-6 pages follow FOOTSWITCH", how: "Change FOOTSWITCH (Setup page 6). Page 6 and 7 on the panel should switch too.", init: "untested", act: [["Read FOOTSWITCH 0x39F", "read", 0x39F]] },
+  { id: "setup-formats", t: "Raw numbers vs the pedal's text", how: "Note what the pedal shows for these raw values so the formats can be decoded: LOW CUT, ROOMSENSE LOCUT, NOTCH FREQ, DECAY, SPEED, SHIFT, MP75 CONTROL.", init: "untested",
+    act: [["LOW CUT 0x348", "read", 0x348], ["ROOMSENSE LOCUT 0x35A", "read", 0x35A], ["NOTCH FREQ 0x05A", "read", 0x05A], ["MP75 CONTROL 0x29E", "read", 0x29E]] },
+  { id: "setup-productinfo", t: "Product Info page", how: "Panel shows placeholders; the firmware version could come from the identity reply.", init: "partly" },
+ ]},
+ { id: "vfx", title: "Vocal FX pages", kind: "verify", items: [
+  { id: "vfx-harmony", t: "HARMONY: picture, STYLE line, LEVEL bar, KEY, CONTROL", how: "", init: "works", note: "Matches the photo." },
+  { id: "vfx-double", t: "DOUBLE page", how: "Picture per style, right column (LEVEL), CONTROL.", init: "untested" },
+  { id: "vfx-delay", t: "DELAY page", how: "Note-value pictures, LEVEL, FEEDBACK, CONTROL.", init: "untested" },
+  { id: "vfx-reverb", t: "REVERB page", how: "Room pictures, LEVEL, DECAY (raw number), CONTROL.", init: "untested" },
+  { id: "vfx-hardtune", t: "HARDTUNE page", how: "Pictures, SHIFT, GENDER, CONTROL.", init: "untested" },
+  { id: "vfx-transducer", t: "TRANSDUCER page", how: "Device pictures (megaphone, radio, …), DRIVE, FILTER, CONTROL.", init: "untested" },
+  { id: "vfx-umod", t: "uMOD page", how: "Pictures, LEVEL, SPEED, CONTROL.", init: "untested" },
+  { id: "vfx-control", t: "CONTROL OFF / ON / HIT from the panel", how: "Set Harmony CONTROL and watch the pedal's page and sound.", init: "untested",
+    act: [["Read 0x2CE", "read", 0x2CE], ["OFF", "set", 0x2CE, 0], ["ON", "set", 0x2CE, 1], ["HIT", "set", 0x2CE, 2]] },
+  { id: "vfx-pictures", t: "Picture changes with every STYLE value", how: "Turn STYLE through its range on two pages; pictures should match the pedal.", init: "untested" },
+ ]},
+ { id: "gfx", title: "Guitar FX pages", kind: "verify", items: [
+  { id: "gfx-basic", t: "4 pages with BODYREZ EDITING = BASIC", how: "GUITAR REVERB, GUITAR DELAY, GUITAR uMOD, BODYREZ EQ.", init: "untested" },
+  { id: "gfx-advanced", t: "7 pages with BODYREZ EDITING = ADVANCED", how: "Adds BODYREZ SHELF EQ, PARAMETRIC EQ, COMPRESSOR (grid pages).", init: "untested", act: [["Read 0x362", "read", 0x362]] },
+  { id: "gfx-bodyrez-box", t: "BodyRez EQ: what is in the third right box?", how: "The firmware has no CONTROL for BodyRez. Photo or description of the pedal's screen.", init: "untested" },
+  { id: "gfx-control", t: "Guitar CONTROL OFF/ON (Reverb 0x353)", how: "", init: "untested", act: [["Read 0x353", "read", 0x353], ["OFF", "set", 0x353, 0], ["ON", "set", 0x353, 1]] },
+  { id: "gfx-pictures", t: "Guitar pictures (reverb rooms, pedals, guitar bodies)", how: "", init: "untested" },
+ ]},
+ { id: "adv", title: "Advanced pages", kind: "verify", items: [
+  { id: "adv-open", t: "How does the pedal open the advanced pages?", how: "Harmony/Delay/Transducer ADV, Guitar Reverb/Delay/uMOD ADV. Hold a button? A setting?", init: "untested" },
+  { id: "adv-content", t: "Advanced page contents match", how: "e.g. Harmony ADV: SCALE, HUMANIZE, PORTAMENTO.", init: "untested" },
+ ]},
+ { id: "panel", title: "Panel behaviour", kind: "verify", items: [
+  { id: "panel-knob", t: "Knob: drag, scroll, arrow keys, Shift ×10", how: "", init: "untested" },
+  { id: "panel-softbuttons", t: "Soft-button lighting matches the pedal", how: "Lit beside a filled cell, dim otherwise; white on the preset screen.", init: "works" },
+  { id: "panel-flicker", t: "No picture flicker on page change", how: "", init: "untested", note: "Fix: picture waits for the STYLE read." },
+  { id: "panel-bars", t: "Level bars visible on FX pages, value under the selected level", how: "", init: "untested" },
+  { id: "panel-not-mapped", t: "Not mapped: preset ▼▲, STORE, FAVORITE, GENRE", how: "Known gap. The SysEx 55 tunnel attempt failed.", init: "broken" },
+ ]},
+ { id: "platform", title: "Platforms", kind: "verify", items: [
+  { id: "plat-chrome", t: "Chrome on Mac", how: "", init: "works" },
+  { id: "plat-ipad-app", t: "iPad: which MIDI browser app works (with SysEx)?", how: "Note the app name. The page must be opened from a URL.", init: "untested" },
+  { id: "plat-ipad-layout", t: "iPad layout and touch", how: "Portrait and landscape; the whole panel visible in landscape; knob drag doesn't scroll.", init: "untested" },
+ ]},
+ { id: "safety", title: "Safety", kind: "verify", items: [
+  { id: "safe-refuse", t: "MIDI CTRL (0x278) and FILTER (0x27B) are refused", how: "They are hidden from the parameter list; the send function logs \"refused\".", init: "untested" },
+  { id: "safe-reset", t: "Factory reset: STORE + BACK at power-on", how: "Erases settings and user presets.", init: "works", note: "Restored USB control after the lock-out." },
+ ]},
+ { id: "todo", title: "To do: features", kind: "todo", items: [
+  { id: "todo-backup", t: "Setup backup/restore to a file before write sessions", how: "Read the 7 setup packets (15) and restore with 13." },
+  { id: "todo-bridge", t: "MIDI controller bridge", how: "Map any controller or expression pedal to SysEx 22 in the browser (learn mode, ranges, curves)." },
+  { id: "todo-bridge-standalone", t: "Stand-alone bridge (Python/Node) for live use", how: "" },
+  { id: "todo-librarian", t: "Preset librarian", how: "List presets with names (45), back up and restore (20/21), rename." },
+  { id: "todo-preset-change", t: "Preset up/down and STORE from the panel", how: "Find the preset-load path reachable from SysEx, or test writing 0x2A4." },
+  { id: "todo-formats", t: "Decode the remaining value formats", how: "Frequency tables (0x5F, 0x60), DECAY, SPEED, SHIFT, MP75 CONTROL." },
+  { id: "todo-pixel", t: "Pixel-exact LCD with the firmware fonts", how: "" },
+  { id: "todo-screens", t: "Tuner, looper and pop-up screens", how: "" },
+  { id: "todo-allowlist", t: "Write allow-list instead of block-list", how: "Only menu parameters plus an explicit expert list." },
+  { id: "todo-reconnect", t: "Auto-recover after power cycle / reconnect", how: "" },
+  { id: "todo-snapshots", t: "Snapshots and morphing", how: "" },
+  { id: "todo-tempo", t: "Tempo sync (MIDI clock / tap → TEMPO 0x158)", how: "" },
+  { id: "todo-demo", t: "Demo mode with a simulated pedal", how: "" },
+ ]},
+ { id: "docs", title: "To do: documentation", kind: "todo", items: [
+  { id: "doc-index", t: "Update and republish docs/index.html", how: "", init: "todo" },
+  { id: "doc-analysis", t: "Restructure ANALYSIS.md by topic", how: "", init: "works" },
+  { id: "doc-sysex", t: "SYSEX.md: ID ranges, dangerous params, confirmed commands", how: "", init: "works" },
+  { id: "doc-params", t: "params-1.4.00.csv extended to 0x3B3 with value names", how: "", init: "works" },
+  { id: "doc-legacy", t: "CC approach moved to legacy/cc-approach/", how: "", init: "works" },
+  { id: "doc-remote-readme", t: "tools/README.md for the remote", how: "", init: "works" },
+  { id: "doc-menus-fx", t: "MENUS.md: Vocal/Guitar FX tables", how: "Mark verified once checked.", init: "works" },
+ ]},
+];
+
+// ── state ──
+const KEY = "pa-checklist-v1";
+let state = {};
+try { state = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (_) { state = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (_) {} };
+const $ = id => document.getElementById(id);
+const VERIFY = [["untested", "Untested"], ["works", "Works"], ["partly", "Partly"], ["broken", "Broken"], ["na", "N/A"]];
+const TODO = [["todo", "To do"], ["works", "Done"], ["na", "Dropped"]];
+const statusOf = (sec, it) => state[it.id]?.s ?? it.init ?? (sec.kind === "todo" ? "todo" : "untested");
+const noteOf = it => state[it.id]?.n ?? it.note ?? "";
+function setState(id, patch) { state[id] = { ...(state[id] || {}), ...patch, at: new Date().toISOString().slice(0, 16).replace("T", " ") }; save(); }
+
+function render() {
+  const filter = $("filter").value, list = $("list"); list.innerHTML = "";
+  for (const sec of SECTIONS) {
+    const items = sec.items.filter(it => { const s = statusOf(sec, it);
+      return filter === "all" || (filter === "open" && ["untested", "partly", "broken", "todo"].includes(s)) || (filter === "untested" && (s === "untested" || s === "todo")) || (filter === "broken" && s === "broken"); });
+    if (!items.length) continue;
+    const card = document.createElement("section"); card.className = "card sec";
+    const done = sec.items.filter(it => ["works", "na"].includes(statusOf(sec, it))).length;
+    card.innerHTML = `<div class="sechead"><h2></h2><span class="mono muted">${done}/${sec.items.length} ${sec.kind === "todo" ? "done" : "settled"}</span></div>`;
+    card.querySelector("h2").textContent = sec.title;
+    for (const it of items) card.appendChild(renderItem(sec, it));
+    list.appendChild(card);
+  }
+  summary();
+}
+function renderItem(sec, it) {
+  const s = statusOf(sec, it), d = document.createElement("div"); d.className = "item"; d.dataset.s = s === "todo" ? "untested" : s;
+  const t = document.createElement("div"); t.className = "t"; t.textContent = it.t; d.appendChild(t);
+  if (it.how) { const h = document.createElement("div"); h.className = "how"; h.textContent = it.how; d.appendChild(h); }
+  const st = document.createElement("div"); st.className = "st"; st.setAttribute("role", "group"); st.setAttribute("aria-label", "Status");
+  for (const [v, label] of (sec.kind === "todo" ? TODO : VERIFY)) {
+    const b = document.createElement("button"); b.type = "button"; b.dataset.v = v === "todo" ? "todo" : v; b.textContent = label; b.setAttribute("aria-pressed", String(v === s));
+    b.onclick = () => { setState(it.id, { s: v }); render(); }; st.appendChild(b);
+  }
+  d.appendChild(st);
+  if (it.act) {
+    const a = document.createElement("div"); a.className = "acts"; const res = document.createElement("span"); res.className = "res";
+    for (const [label, kind, id, v] of it.act) {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = label;
+      b.onclick = async () => { res.textContent = "…"; try {
+        if (kind === "set") { await setParam(id, v); await delay(150); }
+        const r = await getParam(id); res.textContent = `0x${id.toString(16).toUpperCase()} = ${r}`;
+        appendNote(it, `${kind === "set" ? `set ${v}, read back` : "read"} 0x${id.toString(16).toUpperCase()} = ${r}`);
+      } catch (e) { res.textContent = e.message; } };
+      a.appendChild(b);
+    }
+    a.appendChild(res); d.appendChild(a);
+  }
+  const ta = document.createElement("textarea"); ta.placeholder = "Notes"; ta.value = noteOf(it); ta.setAttribute("aria-label", `Notes for ${it.t}`);
+  ta.oninput = () => setState(it.id, { n: ta.value }); d.appendChild(ta);
+  if (state[it.id]?.at) { const w = document.createElement("div"); w.className = "since"; w.textContent = `Last changed ${state[it.id].at}`; d.appendChild(w); }
+  return d;
+}
+function appendNote(it, line) { const n = noteOf(it); setState(it.id, { n: (n ? n + "\n" : "") + line }); render(); }
+function summary() {
+  const c = { works: 0, partly: 0, broken: 0, na: 0, untested: 0 }; let n = 0;
+  for (const sec of SECTIONS) if (sec.kind === "verify") for (const it of sec.items) { c[statusOf(sec, it)]++; n++; }
+  const col = { works: "var(--works)", partly: "var(--partly)", broken: "var(--broken)", na: "var(--na)", untested: "var(--rule)" };
+  $("bar").innerHTML = Object.entries(c).map(([k, v]) => `<i style="width:${100 * v / n}%;background:${col[k]}"></i>`).join("");
+  $("legend").innerHTML = `<span><b>${c.works}</b> works</span><span><b>${c.partly}</b> partly</span><span><b>${c.broken}</b> broken</span><span><b>${c.untested}</b> untested</span><span><b>${c.na}</b> n/a</span>`;
+  $("pct").textContent = `${Math.round(100 * (c.works + c.na + c.partly + c.broken) / n)}% checked`;
+}
+$("filter").onchange = render;
+
+// ── export / import ──
+function download(name, text, type) { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
+function snapshot() { return SECTIONS.map(sec => ({ section: sec.title, kind: sec.kind, items: sec.items.map(it => ({ id: it.id, title: it.t, status: statusOf(sec, it), notes: noteOf(it), changed: state[it.id]?.at || null })) })); }
+$("exportJson").onclick = () => download(`pa-checklist-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ exported: new Date().toISOString(), state, results: snapshot() }, null, 1), "application/json");
+$("exportMd").onclick = () => {
+  const L = ["# Play Acoustic checklist results", "", `Exported ${new Date().toISOString().slice(0, 16).replace("T", " ")}`, ""];
+  for (const s of snapshot()) { L.push(`## ${s.section}`, "", "| Status | Item | Notes |", "|---|---|---|");
+    for (const i of s.items) L.push(`| ${i.status} | ${i.title} | ${(i.notes || "").replace(/\n/g, "<br>").replace(/\|/g, "\\|")} |`); L.push(""); }
+  download(`pa-checklist-${new Date().toISOString().slice(0, 10)}.md`, L.join("\n"), "text/markdown");
+};
+$("importBtn").onclick = () => $("importFile").click();
+$("importFile").onchange = async e => { const f = e.target.files[0]; if (!f) return;
+  try { const j = JSON.parse(await f.text()); if (!j.state) throw new Error("no state in file"); state = j.state; save(); render(); }
+  catch (err) { alert("Import failed: " + err.message); } e.target.value = ""; };
+$("resetBtn").onclick = () => { if (confirm("Forget all statuses and notes saved in this browser?")) { state = {}; save(); render(); } };
+
+// ── minimal SysEx client (same protocol as pa-remote.html) ──
+let access = null, out = null, inp = null, devCh = 0x7F, identified = false;
+const waiters = new Set();
+const delay = ms => new Promise(r => setTimeout(r, ms));
+const enc28 = v => { if (v < 0) v += (1 << 28); return [(v >> 21) & 0x7f, (v >> 14) & 0x7f, (v >> 7) & 0x7f, v & 0x7f]; };
+const dec28 = (p, o) => { let v = (p[o] << 21) | (p[o + 1] << 14) | (p[o + 2] << 7) | p[o + 3]; if (v >= (1 << 27)) v -= (1 << 28); return v; };
+const collect = (ms, pred) => new Promise(res => { const h = m => { if (pred(m)) { waiters.delete(h); clearTimeout(t); res(m); } }; const t = setTimeout(() => { waiters.delete(h); res(null); }, ms); waiters.add(h); });
+const hdr = () => [0xF0, 0x00, 0x01, 0x38, devCh, 0x70];
+async function ensureId() {
+  if (!out || !inp) throw new Error("Connect MIDI first");
+  if (identified) return;
+  const p = collect(1200, m => m[0] === 0xF0 && m[1] === 0x7E && m[3] === 0x06 && m[4] === 0x02);
+  out.send([0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7]); const r = await p;
+  devCh = r ? r[2] : 0x7F; identified = true;
+  $("midiStatus").textContent = r ? `Connected (channel byte ${devCh})` : "Connected (no identity reply, using 7F)";
+}
+async function getParam(id) {
+  await ensureId();
+  const p = collect(800, m => m[0] === 0xF0 && m[3] === 0x38 && m[6] === 0x22 && ((m[7] << 7) | m[8]) === id);
+  out.send([...hdr(), 0x47, (id >> 7) & 0x7F, id & 0x7F, 0xF7]);
+  const r = await p; if (!r) throw new Error("no reply"); return dec28(r, 9);
+}
+async function setParam(id, v) {
+  if (id === 0x278 || id === 0x27B) throw new Error("refused: locks out USB SysEx");
+  await ensureId(); out.send([...hdr(), 0x22, (id >> 7) & 0x7F, id & 0x7F, ...enc28(v), 0xF7]);
+}
+function bind() {
+  identified = false;
+  out = access.outputs.get($("outSel").value) || null;
+  if (inp) inp.onmidimessage = null;
+  inp = access.inputs.get($("inSel").value) || null;
+  if (inp) inp.onmidimessage = e => { if (e.data[0] === 0xF0) for (const h of [...waiters]) h(e.data); };
+  $("midiStatus").textContent = out ? `Port: ${out.name}` : "No MIDI output";
+}
+function fill() {
+  for (const [sel, ports] of [[$("outSel"), access.outputs], [$("inSel"), access.inputs]]) {
+    const prev = sel.value; sel.innerHTML = "";
+    for (const p of ports.values()) sel.add(new Option(p.name, p.id));
+    const pa = [...sel.options].find(o => /play|helicon|tc/i.test(o.text));
+    if ([...sel.options].some(o => o.value === prev)) sel.value = prev; else if (pa) sel.value = pa.value;
+  }
+  bind();
+}
+$("connectBtn").onclick = async () => {
+  if (!navigator.requestMIDIAccess) { $("midiStatus").textContent = "No Web MIDI in this browser"; return; }
+  try { access = await navigator.requestMIDIAccess({ sysex: true }); access.onstatechange = fill; fill(); }
+  catch (e) { $("midiStatus").textContent = "MIDI access denied: " + e.message; }
+};
+$("outSel").onchange = bind; $("inSel").onchange = bind;
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,366 @@
+<title>Inside the Play Acoustic</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Silkscreen&display=swap">
+<style>
+/* Layout: one reading column with a sticky contents rail on wide screens; LCD-pixel display face for section marks only. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --ink: #16202b;
+  --muted: #5a6773;
+  --rule: #d9dfe5;
+  --accent: #1f6f8b;
+  --accent-soft: #e2eef3;
+  --lcd: #dfe9ec;
+  --lcd-ink: #10303b;
+  --warn: #9a5b00;
+  --warn-soft: #fbf1e1;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-pixel: "Silkscreen", "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151b; --surface: #161e26; --ink: #e3e9ee; --muted: #94a3ae; --rule: #26313b;
+    --accent: #6cb6cf; --accent-soft: #1a2c36; --lcd: #1b2a31; --lcd-ink: #bfe3ee;
+    --warn: #e5a54a; --warn-soft: #2d2416; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151b; --surface: #161e26; --ink: #e3e9ee; --muted: #94a3ae; --rule: #26313b;
+  --accent: #6cb6cf; --accent-soft: #1a2c36; --lcd: #1b2a31; --lcd-ink: #bfe3ee;
+  --warn: #e5a54a; --warn-soft: #2d2416; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.62;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 64px;
+}
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+code { background: var(--accent-soft); padding: 0.05em 0.35em; border-radius: 3px; overflow-wrap: anywhere; }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 56px; }
+@media (max-width: 900px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 0; } nav.toc { display: none; } }
+
+header.hero { max-width: 1120px; margin: 0 auto; padding-block: 56px 36px; border-bottom: 1px solid var(--rule); margin-bottom: 40px; }
+.eyebrow { font-family: var(--font-pixel); font-size: 12px; letter-spacing: 0.08em; color: var(--accent); text-transform: uppercase; }
+h1 { font-size: clamp(2rem, 4.6vw, 3.1rem); line-height: 1.1; margin: 10px 0 14px; font-weight: 600; letter-spacing: -0.015em; text-wrap: balance; }
+.lede { font-size: 1.15rem; color: var(--muted); max-width: 64ch; margin: 0; }
+.lcd {
+  margin-top: 28px; background: var(--lcd); color: var(--lcd-ink); border-radius: 6px; padding: 16px 18px;
+  font-family: var(--font-pixel); font-size: 13px; line-height: 1.9; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); gap: 4px 24px; overflow-wrap: anywhere;
+  border: 1px solid var(--rule);
+}
+.lcd span b { font-weight: 400; opacity: 0.6; margin-right: 8px; }
+
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; font-size: 14px; }
+nav.toc p { font-family: var(--font-pixel); font-size: 11px; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 10px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; counter-reset: toc; }
+nav.toc li { counter-increment: toc; }
+nav.toc a { color: var(--muted); text-decoration: none; display: grid; grid-template-columns: 26px 1fr; }
+nav.toc a::before { content: counter(toc, decimal-leading-zero); font-family: var(--font-mono); font-size: 12px; color: var(--accent); padding-top: 1px; }
+nav.toc a:hover { color: var(--ink); }
+
+main { min-width: 0; }
+section { padding-block: 8px 28px; border-bottom: 1px solid var(--rule); margin-bottom: 28px; counter-increment: sec; }
+main { counter-reset: sec; }
+section:last-of-type { border-bottom: 0; }
+h2 { font-size: 1.55rem; line-height: 1.25; margin: 0 0 14px; font-weight: 600; text-wrap: balance; display: flex; gap: 14px; align-items: baseline; }
+h2::before { content: counter(sec, decimal-leading-zero); font-family: var(--font-pixel); font-size: 0.8rem; color: var(--accent); font-weight: 400; }
+h3 { font-size: 1.08rem; margin: 26px 0 8px; font-weight: 600; }
+p, li { max-width: 68ch; }
+ul, ol { padding-left: 1.25em; }
+li + li { margin-top: 4px; }
+
+.table-wrap { overflow-x: auto; margin: 14px 0 18px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; font-size: 12.5px; letter-spacing: 0.03em; color: var(--muted); background: var(--accent-soft); }
+tr:last-child td { border-bottom: 0; }
+td.mono, th.mono { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+
+pre { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px; line-height: 1.55; margin: 14px 0 18px; }
+pre .c { color: var(--muted); }
+
+.flow { display: grid; gap: 10px; margin: 16px 0 20px; padding: 0; list-style: none; }
+.flow li { max-width: none; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; align-items: start; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; margin: 0; }
+.flow .n { font-family: var(--font-pixel); font-size: 12px; color: var(--accent); padding-top: 3px; }
+.flow strong { display: block; }
+
+.note { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 16px 0; max-width: 68ch; }
+.note p { margin: 0; }
+.note p + p { margin-top: 8px; }
+
+figure { margin: 18px 0 22px; }
+figure img { display: block; width: 100%; max-width: 100%; height: auto; image-rendering: pixelated; border: 1px solid var(--rule); border-radius: 6px; background: #fff; }
+figcaption { font-size: 13.5px; color: var(--muted); margin-top: 8px; max-width: 68ch; }
+
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 14px; margin: 14px 0; }
+.cols > div { min-width: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px; }
+.cols h4 { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
+.cols p { margin: 0; font-size: 14.5px; color: var(--muted); }
+.pill { display: inline-block; font-size: 12px; font-weight: 500; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+footer { max-width: 1120px; margin: 0 auto; color: var(--muted); font-size: 13.5px; padding-top: 20px; border-top: 1px solid var(--rule); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+
+<header class="hero">
+  <div class="eyebrow">Firmware notes · Play Acoustic 1.4.00 build 51</div>
+  <h1>Inside the TC-Helicon Play Acoustic</h1>
+  <p class="lede">How the vocal and guitar processor's firmware is packed and boots, where its menus, parameters and display pictures live, and how a stock unit can be controlled live from a browser through SysEx commands the firmware already has.</p>
+  <div class="lcd" aria-label="Key facts">
+    <span><b>CPU</b>DSP56300 family</span>
+    <span><b>Host</b>Atmel AVR (USB)</span>
+    <span><b>Word</b>24-bit, big-endian</span>
+    <span><b>Image</b>12 load records</span>
+    <span><b>Flash</b>Parallel NOR @ X:C00000</span>
+    <span><b>Params</b>948 IDs, 869 settable</span>
+    <span><b>Live control</b>SysEx 22 / 47</span>
+    <span><b>Pictures</b>146 images</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Contents">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#update-file">The update file</a></li>
+      <li><a href="#hardware">Two processors</a></li>
+      <li><a href="#memory-map">Image layout</a></li>
+      <li><a href="#boot-update">Boot and update</a></li>
+      <li><a href="#tooling">Disassembly and emulation</a></li>
+      <li><a href="#midi">Live control over SysEx</a></li>
+      <li><a href="#parameters">Parameters</a></li>
+      <li><a href="#menus">Menus and the remote</a></li>
+      <li><a href="#graphics">Display graphics</a></li>
+      <li><a href="#versions">Version history</a></li>
+      <li><a href="#cc">The CC experiment</a></li>
+      <li><a href="#lockout">Lock-out and factory reset</a></li>
+      <li><a href="#safety">Flash safety and recovery</a></li>
+      <li><a href="#open">Open questions</a></li>
+      <li><a href="#repo">Files and tools</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <section id="update-file">
+      <h2>The update file</h2>
+      <p>Firmware ships as a MIDI SysEx file (<code>.syx</code>), about 1.1&nbsp;MB, which an editor sends to the unit over USB-MIDI. Every message carries the TC-Helicon manufacturer ID and a fixed header:</p>
+<pre>F0 00 01 38 00 60 <span class="c">&lt;type&gt;</span> … F7
+<span class="c">type 0x51  enter / leave update mode</span>
+<span class="c">type 0x52  &lt;sub&gt; &lt;packed payload&gt;   sub 00 = data, 02 = section separator, 01 = end</span></pre>
+      <p>MIDI data bytes can't have the top bit set, so 8-bit data is packed 7 bytes at a time behind a flag byte. Two details matter, and getting either wrong produces plausible-looking garbage:</p>
+      <ul>
+        <li>The first payload byte is the subcommand. Packing starts <em>after</em> it.</li>
+        <li>The flag byte is <strong>MSB-first</strong>: flag bit <code>6&nbsp;−&nbsp;k</code> is bit 7 of data byte <code>k</code>.</li>
+      </ul>
+      <p>The correct decode is easy to check. Pairs like <code>ff&nbsp;7f</code> and <code>80&nbsp;80</code>, which betray a misplaced top bit, disappear. Preset names such as <code>ROCKABILLY SLAP</code> read cleanly, and entropy drops from 5.88 to 5.51 bits per byte. Each file decodes into two sections: a 981-byte <strong>loader</strong> (<code>sec0</code>) and a 914–980&nbsp;KB <strong>main image</strong> (<code>sec1</code>).</p>
+      <p>There is no encryption and no signature. The only integrity check is a 7-bit sum per block, which the sending editor computes from the file during transfer.</p>
+    </section>
+
+    <section id="hardware">
+      <h2>Two processors</h2>
+      <div class="cols">
+        <div><h4>Freescale DSP56300 family</h4><p>Runs everything you interact with: audio effects, menus, display, MIDI and SysEx handling, presets. Identified by its 24-bit opcodes (<code>0AF080</code> jump, <code>0BF080</code> call, <code>00000C</code> return), then confirmed with a full disassembler. Strings such as <code>InterCoreWrite</code> and a block-transfer handshake point to a dual-core part.</p></div>
+        <div><h4>Atmel AVR co-processor</h4><p>Handles USB and boots the DSP through its host port. The DSP only asks for its version (<code>AVR Version: %d.%d</code>). The AVR's own firmware is never part of an update file, so it is factory-programmed.</p></div>
+      </div>
+      <p>The DSP source tree leaks through assertion strings, for example <code>C:\Projects\PlayAcoustic\DSP\Appl\Srcs\Midi/MIDIhand.c</code> and <code>MIDIEXCL.C</code>. Text is stored <strong>one character per 24-bit word</strong> (<code>00&nbsp;00&nbsp;'A'</code>), which is why a plain string search finds almost nothing. Searching per word turns up about 1,360 strings: menus, fonts, printf formats and DSP module names.</p>
+    </section>
+
+    <section id="memory-map">
+      <h2>Image layout</h2>
+      <p>The loader reads the main image as a chain of records, each <code>[count][address][type]</code> followed by <code>count</code> words. Type 0 writes program memory below <code>0x10000</code> and data memory above it. Type 4 means "start here". Version 1.4.00 has twelve records and starts at <code>P:00CB</code>.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Record</th><th class="mono">Load address</th><th>Words</th><th>Contents</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td class="mono">P:000000</td><td>30,449</td><td>Internal program: vectors, audio interrupts, DSP kernels, flash loader</td></tr>
+          <tr><td>1</td><td class="mono">X:031600</td><td>14,277</td><td>Internal data</td></tr>
+          <tr><td>2</td><td class="mono">X:400000</td><td>8,565</td><td>External code</td></tr>
+          <tr><td>3</td><td class="mono">X:40C000</td><td>130,742</td><td>Main application, C runtime, second-core transfer</td></tr>
+          <tr><td>4–8</td><td class="mono">X:42BEB9…</td><td>small</td><td>Data</td></tr>
+          <tr><td>9</td><td class="mono">X:42C560</td><td>55,959</td><td>Initialised data and strings, copied to their run addresses at start-up</td></tr>
+          <tr><td>10</td><td class="mono">X:43A000</td><td>257</td><td>Data</td></tr>
+          <tr><td>11</td><td class="mono">X:43A180</td><td>80,980</td><td>Fonts and bitmaps, then UI, MIDI and SysEx code</td></tr>
+        </tbody>
+      </table></div>
+      <p>External RAM is shared between program and data space, so code loaded as data at <code>0x40xxxx</code> runs from there. Initialised data is relocated at start-up. Strings in record 9, for instance, are used at their load address plus <code>0x2A8CC</code>. That offset was found statistically: it is the one offset that makes 197 code constants land exactly on string starts.</p>
+    </section>
+
+    <section id="boot-update">
+      <h2>Boot and update</h2>
+      <h3>Normal power-up</h3>
+      <ol class="flow">
+        <li><span class="n">01</span><div><strong>DSP boot ROM</strong>The DSP's mask ROM reads the first record from a byte-wide NOR flash at <code>X:C00000</code>.</div></li>
+        <li><span class="n">02</span><div><strong>Flash loader</strong>A small routine at <code>P:007D</code> copies the remaining records into RAM. It checks no checksum.</div></li>
+        <li><span class="n">03</span><div><strong>Application</strong>The jump at <code>P:01AD</code> enters the application at <code>P:01AF</code>, which brings up audio and runs <code>main</code>.</div></li>
+      </ol>
+      <h3>Firmware update</h3>
+      <ol class="flow">
+        <li><span class="n">01</span><div><strong>Enter update mode</strong>The editor sends one raw <code>…60 51</code> message. From then on the device answers as device ID <code>0x60</code>.</div></li>
+        <li><span class="n">02</span><div><strong>Block transfer</strong>Each block is sent as a header with a 7-bit sum, the block, then a ready check. The device replies <code>7F 01</code> (accepted) or <code>7F 00</code> (retry).</div></li>
+        <li><span class="n">03</span><div><strong>Host boot</strong>The DSP is booted over its host port: first the 325-word loader from <code>sec0</code>, then the image records into RAM.</div></li>
+        <li><span class="n">04</span><div><strong>Flash writer</strong>Code inside the new image (<code>P:4161DB</code>) checks the flash chip ID (<code>01/F6</code>) and erases each 64&nbsp;KB sector as it reaches it. It programs every byte with the standard AMD command sequence and confirms it by data polling. It also patches the start jump so the flashed copy boots the application.</div></li>
+        <li><span class="n">05</span><div><strong>Report and reboot</strong>The DSP reports "start" and "done" to the host, halts, and the unit reboots.</div></li>
+      </ol>
+      <p>Starting the image at its normal entry point in an emulator therefore runs the <em>flash writer</em>, not the application. Emulating a normal power-up means applying the same one-word patch the writer makes.</p>
+    </section>
+
+    <section id="tooling">
+      <h2>Disassembly and emulation</h2>
+      <p>Neither Rizin nor Ghidra supports the DSP56300 out of the box. The open-source <strong>dsp56300</strong> core from the gearmulator project (GPLv3), built for emulating Access Virus synths, includes both a disassembler and an emulator. Both were built locally and used read-only against the firmware.</p>
+      <p>The disassembly covers all twelve records and the loader. Many tables (parameter descriptors, menus, value names) are only built when the unit runs, so the image was booted in the emulator. Four adjustments got it through start-up:</p>
+      <ul>
+        <li>apply the flash writer's one-word patch, so the normal application runs;</li>
+        <li>report the external "ready" bit (<code>Y:FFFFE5</code> bit 23) as set;</li>
+        <li>answer the second-core block-transfer handshake (<code>0x5A0</code> per block, <code>0xA5A5A</code> at the end) without emulating the second core;</li>
+        <li>switch off the audio-port clock, whose interrupts would otherwise starve the main code.</li>
+      </ul>
+      <p>With the interpreter, 60 million instructions take under 100 seconds. RAM was then dumped for analysis.</p>
+    </section>
+
+    <section id="midi">
+      <h2>Live control over SysEx</h2>
+      <p>The USB co-processor forwards SysEx to the DSP but drops incoming channel messages, so MIDI CC and Program Change never arrive (see <a href="#cc">the CC experiment</a>). The DSP already has a compact pair of SysEx commands that reach any parameter through the same central setter the Control knob uses:</p>
+<pre>set  F0 00 01 38 <span class="c">&lt;ch&gt;</span> 70 22 <span class="c">p1 p0 v3 v2 v1 v0</span> F7    <span class="c">14 bytes; param = p1&lt;&lt;7 | p0, value = 28-bit</span>
+get  F0 00 01 38 <span class="c">&lt;ch&gt;</span> 70 47 <span class="c">p1 p0</span> F7                <span class="c">reply: a 22 message with the value</span></pre>
+      <ul>
+        <li><code>&lt;ch&gt;</code> comes from the universal identity reply; <code>7F</code> also works as a wildcard. <code>70</code> is the Play Acoustic, <code>71</code> the Play Electric.</li>
+        <li>A change shows on the pedal's screen at once, like a knob turn, with no "SysEx received" pop-up.</li>
+        <li>Confirmed on a stock 1.4.00 unit for HIT, LOOP LEVEL and the Mix guitar level, in both directions.</li>
+        <li><code>45 00 00</code> asks for the current preset; the reply header carries its 15-character name. The preset number is parameter <code>0x2A4</code>.</li>
+      </ul>
+      <p>The firmware has 18 SysEx commands in all (setup and preset transfer, sync, a front-panel tunnel and a few unknown ones). The full reference, with byte counts and timing, is <code>docs/SYSEX.md</code>.</p>
+      <div class="note"><p><strong>Two settings lock out USB control.</strong> MIDI CTRL <code>0x278</code> = MIDI (5-pin only, which this unit doesn't have) or FILTER <code>0x27B</code> = SYSEX make the pedal ignore SysEx after the next power-up. See <a href="#lockout">Lock-out and factory reset</a>.</p></div>
+    </section>
+
+    <section id="parameters">
+      <h2>Parameters</h2>
+      <p>Every parameter has a 16-word descriptor: minimum, maximum, default, a pointer to the on-screen name, a "settable over SysEx" flag, a value-format code and an instance-label list. The lookup is <code>X:7E91F3 + 16 × (X:7E85F1[id] &amp; 0xFFFF)</code>. There are 948 IDs (<code>0x000</code>–<code>0x3B3</code>); 869 are settable over SysEx. Many IDs share one descriptor and differ by instance, so the display adds an instance label: descriptor <code>LEVEL</code> becomes GUITAR LEVEL, HEADPHONE LEVEL and so on.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th class="mono">ID</th><th>Name</th><th>Range / values</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">0x0BB</td><td>GUITAR LEVEL (Mix)</td><td>−36 … 0 dB</td></tr>
+          <tr><td class="mono">0x06B</td><td>HARMONY STYLE</td><td>HIGH, HIGHER, LOW, … (28 styles)</td></tr>
+          <tr><td class="mono">0x158</td><td>TEMPO</td><td>45 … 300 BPM</td></tr>
+          <tr><td class="mono">0x272</td><td>INPUT</td><td>DYNAMIC MIC, CONDENSER MIC, MP-75 MIC, …</td></tr>
+          <tr><td class="mono">0x2A8</td><td>HIT</td><td>OFF / ON</td></tr>
+          <tr><td class="mono">0x2CE</td><td>HARMONY CONTROL</td><td>OFF / ON / HIT</td></tr>
+          <tr><td class="mono">0x312</td><td>HEADPHONE LIM</td><td>−61 … 0 dB</td></tr>
+        </tbody>
+      </table></div>
+      <p>Value names (DYNAMIC MIC, LOOPING, 1 BTN LOOPER …) come from a pointer table at <code>X:457795</code> indexed by the format code. The full list is <code>data/params-1.4.00.csv</code>.</p>
+    </section>
+
+    <section id="menus">
+      <h2>Menus and the remote</h2>
+      <p>Every screen is a table: a page lists its sub-pages, each with a title and three rows of left and right cells, one parameter per soft button. Some menus have alternative versions the firmware picks at run time:</p>
+      <ul>
+        <li>Mix shows AUX only while a cable is plugged into AUX IN, otherwise ROOMSENSE.</li>
+        <li>Setup shows the SWITCH-3 or SWITCH-6 pages depending on the FOOTSWITCH setting.</li>
+        <li>Guitar FX shows 4 pages, or 7 when BODYREZ EDITING is ADVANCED.</li>
+      </ul>
+      <p>The Vocal FX and Guitar FX pages use their own layout: a 92×48 picture on the left chosen by the STYLE value, the style name along the bottom, and a narrow right column with the level, one more setting and the effect's CONTROL (OFF / ON / HIT).</p>
+      <p><strong>Play Acoustic Remote</strong> (<code>tools/pa-remote.html</code>) builds a virtual front panel from these tables: the blue LCD, the six soft buttons, ◀ ▶, BACK, the Control knob and HIT. It reads the pedal's values a few times a second and sets them as the knob turns, with no firmware change. It runs in Chrome or Edge with Web MIDI; on an iPad it needs a browser app with Web MIDI. The menu layout is an editable file (<code>tools/pa-menus.js</code>), and <code>tools/verify.html</code> tracks what has been checked on the unit.</p>
+      <p>Checked against the unit so far: the preset screen, both Mix pages, all ten Setup pages and the Harmony page. Not mapped yet: preset up/down, STORE, FAVORITE, GENRE, the tuner and the looper screens.</p>
+    </section>
+
+    <section id="graphics">
+      <h2>Display graphics</h2>
+      <p>All fonts and pictures are inside the update file, at the start of record 11. Fonts carry a 32-character name (<code>Font_ArialBlack7</code>, <code>Font_Haettenschweiler13/15/17</code>, <code>Font_Impact19</code>, <code>Font_VoicePrism5/10</code>, <code>Font_Notes28x17</code>), the character range, the height, a width table and a pointer to the glyph data.</p>
+      <p>Pictures are listed in an image table of 150 entries (width, height, pointer), which start-up copies to <code>X:3111</code>; code refers to picture <em>i</em> as <code>X:3111 + 3i</code>. Pixels are 1 bit each, stored in 24-row bands, one 24-bit word per column per band, least significant bit at the top. A second table holds 13 picture lists, one per effect page, with one picture per style value.</p>
+      <figure>
+        <img src="img/images-1.4.00-contact-sheet.png" alt="All 146 display pictures from the firmware, numbered: acoustic guitar bodies, note values, singers and voice groups, reverb rooms, transducer devices such as megaphone, radio and telephone, effect pedals and amps" width="1056" height="1406" loading="lazy">
+        <figcaption>All 146 pictures, numbered as in the image table: guitar bodies (BodyRez), note values (delay), singers and voice groups (harmony and double), rooms (reverb), devices (transducer), pedals and amps.</figcaption>
+      </figure>
+      <figure>
+        <img src="img/fonts-and-bitmaps-1.4.00-part2.png" alt="Raw render of firmware memory showing the bitmap fonts" width="512" height="416" loading="lazy">
+        <figcaption>The fonts, rendered straight from the 1.4.00 file.</figcaption>
+      </figure>
+    </section>
+
+    <section id="versions">
+      <h2>Version history</h2>
+      <p>Comparing builds word by word, once the records are aligned, shows mostly relinking. Consecutive builds share 97–99% of the internal program, and most differences are single shifted jump targets.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Step</th><th>Program words kept</th><th>External image kept</th><th>Release notes</th></tr></thead>
+        <tbody>
+          <tr><td>1.0.04 → 1.1.00</td><td>98.3%</td><td>66.9%</td><td>MP-76 support</td></tr>
+          <tr><td>1.1.00 → 1.2.00</td><td>98.9%</td><td>49.0%</td><td>Guitar delay, per-preset guitar FX (largest change)</td></tr>
+          <tr><td>1.2.00 → 1.3.00</td><td>97.3%</td><td>68.4%</td><td>Longer looper</td></tr>
+          <tr><td>1.3.00 → 1.4.00</td><td>98.9%</td><td>68.5%</td><td>Switch-3/6 send CC 102–107</td></tr>
+        </tbody>
+      </table></div>
+      <p>TC-Helicon's own server hosts PA 1.2.00, PA 1.3.00 and PE 1.2.00. Those copies are byte-identical to the community mirror. Version 1.4.00 and PE 1.3.00 appear only on the mirror. They look like genuine builds: same loader, about 99% shared code, nine new strings matching the release note. They were compiled from a different path (<code>C:\Projects\…</code> instead of <code>D:\Project\…</code>), and nothing in the file can prove where they came from.</p>
+    </section>
+
+    <section id="cc">
+      <h2>The CC experiment</h2>
+      <p>The DSP has a generic CC engine: a static table pairs parameters with CC numbers (stock: CC 28 HIT, 30 KEY, 31 SCALE, 114 BYPASS), and an incoming CC sets its parameter through the central setter. A test build, <code>CCtest1</code>, remapped three CCs and changed the info-screen label to <code>CC-MOD1  VERSION:</code>. It changed 18 bytes in three SysEx messages, booted in the emulator, and flashed fine on the unit; the new label showed.</p>
+      <p>Incoming CCs still did nothing, on the patched build and on stock alike: the USB co-processor drops channel messages before the DSP sees them. The approach was abandoned in favour of the SysEx commands above. Its files and notes are in <code>legacy/cc-approach/</code>.</p>
+    </section>
+
+    <section id="lockout">
+      <h2>Lock-out and factory reset</h2>
+      <p>After a power cycle, the test unit stopped answering any SysEx over USB, while still sending its own MIDI. No editor could control it. The likely cause was a MIDI setting written earlier by a test tool: MIDI CTRL set to MIDI, which listens only to a 5-pin socket the Play Acoustic doesn't have. Such settings take effect at the next start-up.</p>
+      <p>The fix was a factory reset. At power-on the firmware reads the held front-panel buttons; <strong>STORE + BACK</strong> erases the stored settings and user presets and restores factory defaults, and USB control worked again. The remote now refuses to change MIDI CTRL and FILTER.</p>
+      <div class="note"><p><strong>A factory reset also erases your own presets and favorites.</strong> There is no way to back them up while USB control is locked out.</p></div>
+    </section>
+
+    <section id="safety">
+      <h2>Flash safety and recovery</h2>
+      <p>Nothing checks image integrity: the unit flashes and boots any well-formed image. A patched build (<code>CCtest1</code>) and then stock 1.4.00 were both flashed with TC VoiceSupport without trouble.</p>
+      <p>Any update can still be interrupted. Unplugging USB or losing power mid-write leaves the flash half-erased.</p>
+      <h3>Why recovery should work</h3>
+      <p>Update mode depends on three things: the AVR's firmware, which no update touches; the DSP's built-in boot ROM; and the loader inside the update file. None of them lives in the flash being rewritten, so sending a stock file again should restore a broken unit.</p>
+      <div class="note">
+        <p><strong>The unproven part:</strong> this assumes the AVR enters update mode on its own, without help from the DSP application.</p>
+        <p>The evidence supports it. Only the host can boot the DSP over its host port. The DSP application has no handler for the update message, and its SysEx filter accepts only its own product ID. The update mode answers under a separate device ID shared across products. Nobody has yet recovered a unit from a dead DSP image.</p>
+      </div>
+      <p>Holding STORE and BACK at power-on is a factory reset of presets and settings, run by the DSP application (see <a href="#lockout">above</a>). It does not restore firmware. The last resort is hardware: reprogramming the NOR flash directly, or loading code through the DSP's debug port.</p>
+      <h3>Before flashing</h3>
+      <ol>
+        <li>Back up presets and setup.</li>
+        <li>Keep stock 1.4.00 and official 1.3.00 at hand, verified against their checksums.</li>
+        <li>Use a direct USB port, mains power, and no sleep. Leave the unit alone during the update.</li>
+      </ol>
+    </section>
+
+    <section id="open">
+      <h2>Open questions</h2>
+      <ul>
+        <li>Whether the AVR enters update mode when the DSP image is broken (the key recovery assumption).</li>
+        <li>How the pedal opens its "advanced" effect pages.</li>
+        <li>A SysEx route to preset up/down, STORE, FAVORITE and GENRE (the front-panel tunnel didn't work).</li>
+        <li>The remaining value formats: frequency tables, note names, decay and speed scales.</li>
+        <li>The exact DSP part number and the AVR model, which a board photo would settle.</li>
+      </ul>
+    </section>
+
+    <section id="repo">
+      <h2>Files and tools</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Path</th><th>Contents</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">tools/pa-remote.html</td><td>Play Acoustic Remote: virtual front panel and live control (with <code>pa-menus.js</code>, <code>pa-images.js</code>)</td></tr>
+          <tr><td class="mono">tools/verify.html</td><td>Checklist of what has been tested on the unit</td></tr>
+          <tr><td class="mono">tools/</td><td>Unpacker, record walker, parameter and menu dumpers, image extractor, emulator harness</td></tr>
+          <tr><td class="mono">stock/</td><td>Original update files with checksums, community mirror and official server</td></tr>
+          <tr><td class="mono">data/</td><td>Decoded sections, 1.4.00 load records, all 948 parameters (CSV), menu tables (JSON), strings</td></tr>
+          <tr><td class="mono">disasm/1.4.00/</td><td>Full DSP56300 disassembly with string address map</td></tr>
+          <tr><td class="mono">emulation/1.4.00/</td><td>RAM dumps and run log</td></tr>
+          <tr><td class="mono">graphics/</td><td>All 146 pictures as PNG, contact sheet, raw font renders</td></tr>
+          <tr><td class="mono">docs/</td><td>This page, <code>ANALYSIS.md</code> (detailed notes), <code>SYSEX.md</code>, <code>MENUS.md</code></td></tr>
+          <tr><td class="mono">legacy/</td><td>The CC experiment, and the first-pass analysis with the wrong decode</td></tr>
+        </tbody>
+      </table></div>
+      <p>Credits: the dsp56300 disassembler and emulator are from the gearmulator project (GPLv3). Update-protocol details were checked against the community Play Acoustic editor at oddeyez.se. The Play Acoustic, its firmware and its artwork belong to their owners.</p>
+    </section>
+  </main>
+</div>
+
+<footer>Research notes on TC-Helicon Play Acoustic firmware 1.4.00 build 51. Statements about the unit are from the firmware code unless they say they were confirmed on hardware.</footer>
