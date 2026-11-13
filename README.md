@@ -36,7 +36,7 @@ Everything here talks to **unmodified, factory firmware**. Nothing needs to be f
    cd tools && python3 -m http.server 8099
    # then open http://localhost:8099/pa-remote.html
    ```
-3. Click **Connect MIDI** and allow MIDI + SysEx. The status line should read **"In sync with the pedal."**
+3. Click **Connect** in the top bar and allow MIDI + SysEx. The status should read **"Connected: Play Acoustic"**.
 4. Drive it like the hardware: soft buttons open menus, ◀ ▶ change pages, **BACK** returns to the preset screen, the knob takes drag / scroll / arrow keys (Shift = ×10), **HIT** toggles HIT.
 
 Below the panel there's a **live parameter control** (any parameter by name or ID) and a **MIDI monitor**.

@@ -5,7 +5,7 @@
 ## Use
 1. Connect the pedal by USB. **Quit VoiceSupport** (it corrupts incoming SysEx while connected).
 2. Open `pa-remote.html` in **Chrome or Edge** (Mac/PC). Keep `pa-menus.js` and `pa-images.js` next to it.
-3. Choose the pedal's ports in the top bar if they aren't picked already, click **Connect** and allow MIDI with SysEx. The status line should read "In sync with the pedal".
+3. Choose the pedal's ports in the top bar if they aren't picked already, click **Connect** and allow MIDI with SysEx. The status shows "Connected: Play Acoustic".
 4. Use the panel like the pedal:
    - soft buttons beside the screen open the menus (preset screen) or select a cell (inside a menu);
    - ◀ ▶ change pages; BACK returns to the preset screen;
