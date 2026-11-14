@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Studio editor mockup</title>
-<link rel="stylesheet" href="mock.css">
+<link rel="stylesheet" href="views.css">
 <style>
 .tb { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--rule); background: var(--surface); flex-wrap: wrap; position: sticky; top: var(--barh); z-index: 40; }
 .tb .pn { font-weight: 700; } .tb .pn span { font-family: var(--mono); color: var(--accent); margin-right: 6px; }
@@ -88,7 +88,9 @@ input[type=range] { width: 100%; accent-color: var(--fc); }
 </div>
 <script src="../pa-menus.js"></script>
 <script src="../pa-images.js"></script>
-<script src="mock.js"></script>
+<script>if (/[?&]sim\b/.test(location.search)) document.write('<script src="sim-pedal.js"><\/script>');</script>
+<script src="../pa-link.js"></script>
+<script src="views.js"></script>
 <script>
 PA.nav();
 const hex = p => p ? p.replace("0x", "0x").toUpperCase().replace("0X", "0x") : "";

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Stage mode mockup</title>
-<link rel="stylesheet" href="mock.css">
+<link rel="stylesheet" href="views.css">
 <style>
 /* Stage mode: an iPad on the mic stand. Readable from 1.5 m, every target at least thumb-sized, no small text needed while playing. */
 body { background: #07090b; user-select: none; -webkit-user-select: none; }
@@ -67,7 +67,9 @@ body { background: #07090b; user-select: none; -webkit-user-select: none; }
 </div>
 <script src="../pa-menus.js"></script>
 <script src="../pa-images.js"></script>
-<script src="mock.js"></script>
+<script>if (/[?&]sim\b/.test(location.search)) document.write('<script src="sim-pedal.js"><\/script>');</script>
+<script src="../pa-link.js"></script>
+<script src="views.js"></script>
 <script>
 PA.nav({ big: true });
 // one "swipe" parameter per tile: drag across the tile to change it

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pedalboard mockup</title>
-<link rel="stylesheet" href="mock.css">
+<link rel="stylesheet" href="views.css">
 <style>
 .top { display: flex; align-items: center; gap: 16px; padding: 14px 20px 6px; flex-wrap: wrap; }
 .preset { display: flex; align-items: baseline; gap: 10px; }
@@ -63,33 +63,13 @@
 .dual .nm2 { grid-column: 1 / 3; font: 900 12px var(--sans); letter-spacing: .1em; }
 .legend { padding: 10px 20px 24px; display: flex; gap: 18px; flex-wrap: wrap; }
 
-/* detail sheet */
-.sheet-bg { position: fixed; inset: 0; background: #000a; display: none; z-index: 80; }
-.sheet { position: fixed; left: 0; right: 0; bottom: 0; max-height: 78vh; overflow: auto; z-index: 90; background: var(--surface); border-top: 3px solid var(--pc); border-radius: 18px 18px 0 0; padding: 18px 20px 28px; transform: translateY(105%); transition: transform .25s ease; }
-.sheet.open { transform: none; } .sheet.open + .sheet-bg, .sheet-bg.open { display: block; }
-.sh-head { display: flex; align-items: center; gap: 16px; }
-.sh-head .art { width: 120px; color: var(--pc); }
-.sh-head h3 { margin: 0; font-size: 22px; }
-.sh-head .x { margin-left: auto; background: var(--surface-3); border: 0; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 18px; }
-.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
-.seg button { background: none; border: 0; padding: 8px 14px; cursor: pointer; font: 700 12px var(--mono); color: var(--muted); }
-.seg button.sel { background: var(--surface-3); color: var(--ink); }
-.seg button.sel[data-s="on"] { color: var(--on); } .seg button.sel[data-s="hit"] { color: var(--hit); }
-.sh-sec { margin-top: 18px; } .sh-sec h4 { margin: 0 0 8px; font-size: 11px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
-.styles { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
-.styles button { background: var(--surface-2); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 6px 6px; cursor: pointer; display: grid; gap: 4px; color: var(--muted); font: 600 10px var(--mono); }
-.styles button .art { color: #cfd6dd; width: 72px; justify-self: center; }
-.styles button.sel { border-color: var(--pc); color: var(--ink); background: color-mix(in srgb, var(--pc) 18%, var(--surface-2)); }
-.styles button.sel .art { color: var(--pc); }
-.bigknobs { display: flex; gap: 22px; flex-wrap: wrap; }
 @media (max-width: 700px) { .top { padding: 10px 16px; } .preset .name { font-size: 17px; } .board { margin: 0 8px; } }
 </style>
 </head>
 <body>
 <div class="top">
-  <div class="meta"><span>KEY <b>AUTO → G</b></span><span>TEMPO <b>96</b></span></div>
+  <div class="meta"><span id="keyinfo"></span></div>
   <span class="sp"></span>
-  <div class="toast" id="toast"></div>
   <button class="hitbtn" id="hit">HIT</button>
 </div>
 
@@ -98,14 +78,15 @@
 <div class="board-h"><h2>Guitar</h2><span class="note">Guitar effects have ON/OFF only (no HIT)</span></div>
 <div class="board"><div class="row" id="grow"></div></div>
 <div class="legend note">
-  <span><b>Tap switch</b> on / off</span><span><b>Hold switch</b> assign to HIT</span><span><b>Tap screen arrows</b> change style (the picture follows)</span><span><b>Drag knob</b> up / down</span><span><b>Tap pedal</b> open everything</span>
+  <span><b>Tap switch</b> on / off</span><span><b>Hold switch</b> put on HIT</span><span><b>Swipe the screen</b> change style</span><span><b>Drag a knob</b> · hold first = fine · double-tap = reset</span><span><b>Double-tap a pedal</b> every setting</span><span><b>HIT</b> tap = latch · hold = momentary</span>
 </div>
 
-<div class="sheet" id="sheet"></div><div class="sheet-bg" id="sheetbg"></div>
 
 <script src="../pa-menus.js"></script>
 <script src="../pa-images.js"></script>
-<script src="mock.js"></script>
+<script>if (/[?&]sim\b/.test(location.search)) document.write('<script src="sim-pedal.js"><\/script>');</script>
+<script src="../pa-link.js"></script>
+<script src="views.js"></script>
 <script>
 PA.nav();
 const DARK = new Set(["harmony", "umod", "g-umod", "g-comp"]);
@@ -141,59 +122,47 @@ document.getElementById("grow").innerHTML = `<div class="jack"><i></i>GTR</div>$
   PA.guitar.map(pedal).join(cable()) + `${cable()}<div class="jack"><i></i>DI</div>`;
 PA.initKnobs();
 
-let hitDown = false;
 function paint() {
   for (const fx of PA.FX) {
-    const live = fx.state === "on" || (fx.state === "hit" && hitDown);
-    const p = document.querySelector(`.pedal[data-id="${fx.id}"]`);
-    if (p) { p.classList.toggle("off", !live && fx.state !== "hit"); p.classList.toggle("on", live); p.classList.toggle("hit", fx.state === "hit"); }
+    const live = PA.live(fx), p = document.querySelector(`.pedal[data-id="${fx.id}"]`);
+    if (p) { p.classList.toggle("off", fx.state === "off"); p.classList.toggle("on", live); p.classList.toggle("hit", fx.state === "hit" && !live); }
     const d = document.querySelector(".dual"), k = fx.id === "double" ? "a" : fx.id === "harmony" ? "b" : null;
     if (k) { d.classList.toggle("on-" + k, live); d.classList.toggle("hit-" + k, fx.state === "hit" && !live);
       d.querySelectorAll(`[data-half="${fx.id}"]`).forEach(h => h.classList.toggle("half-off", fx.state === "off")); }
     const s = document.querySelector(`[data-scr="${fx.id}"]`);
-    if (s) s.outerHTML = screen(fx);
+    if (s) { s.querySelector(".art").outerHTML = PA.artHTML(PA.img(fx)); s.querySelector(".sn").textContent = PA.styleName(fx); }
   }
+  hit.classList.toggle("on", PA.hitOn());
+  document.getElementById("keyinfo").textContent = PA.keyInfo();
 }
+const hit = document.getElementById("hit");
 paint();
 
-// footswitches: tap = on/off, hold = HIT (vocal only)
-document.querySelectorAll(".fsw").forEach(b => {
+// Footswitch: tap = on/off, hold = put on HIT (vocal effects)
+PA.gestureAll(document.body, ".fsw", b => {
   const id = b.dataset.id || b.closest(".pedal").dataset.id, fx = PA.byId[id];
-  PA.press(b, { tap: () => { PA.setState(id, PA.nextState(fx)); }, hold: () => { if (PA.hasHit(fx)) PA.setState(id, "hit"); else toast(`${fx.name}: no HIT on guitar FX`); } });
+  return { tap: () => PA.setState(id, PA.nextState(fx)),
+    hold: () => { if (PA.hasHit(fx)) { PA.setState(id, fx.state === "hit" ? "on" : "hit"); } else PA.toast(`${fx.name}: guitar effects can't follow HIT`); } };
 });
-document.addEventListener("click", e => {
-  const ar = e.target.closest(".ar"); if (ar) { const id = ar.closest("[data-scr]").dataset.scr; PA.setStyle(id, PA.byId[id].style + +ar.dataset.step); return; }
-  if (e.target.closest(".fsw,.knob")) return;
-  const p = e.target.closest("[data-id]"); if (p && p.closest(".board")) openSheet(PA.byId[p.dataset.id]);
+// Screen: swipe left/right = next/previous style, tap an arrow = step, hold = all styles in the sheet
+PA.gestureAll(document.body, ".screen", s => {
+  const id = s.dataset.scr, fx = PA.byId[id]; let base, w;
+  return { threshold: 10,
+    tap: e => { const ar = e.target.closest(".ar"); if (ar && fx.styleCell) PA.setStyle(id, fx.style + +ar.dataset.step); },
+    hold: () => PA.openSheet(fx),
+    dragStart: () => { base = fx.style; w = s.offsetWidth; },
+    drag: dx => { if (fx.styleCell) PA.setStyle(id, base - Math.round(dx / (w / 3))); } };
 });
-const toastEl = document.getElementById("toast"); let tt;
-function toast(t) { toastEl.textContent = t; toastEl.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => toastEl.classList.remove("show"), 900); }
-document.addEventListener("pa:change", e => { const { fx, label, v, cell } = e.detail; toast(`${fx.name} ${label}  ${PA.fmt(cell, v)}`); });
-document.addEventListener("pa:preset", e => { closeSheet(); setTimeout(() => toast(`Preset ${e.detail.num} · ${e.detail.name}`)); });
-document.addEventListener("pa:state", e => { paint(); toast(`${e.detail.fx.name}: ${e.detail.fx.state.toUpperCase()}`); if (sheetFx === e.detail.fx) openSheet(sheetFx); });
-document.addEventListener("pa:style", e => { paint(); toast(PA.styleName(e.detail.fx)); if (sheetFx === e.detail.fx) openSheet(sheetFx); });
-const hit = document.getElementById("hit");
-hit.onclick = () => { hitDown = !hitDown; hit.classList.toggle("on", hitDown); paint(); };
+// Pedal body: double-tap = every setting
+PA.gestureAll(document.body, ".board [data-id]:not(.fsw)", el => ({ double: e => { if (!e.target.closest(".fsw,.knob,.screen")) PA.openSheet(PA.byId[el.dataset.id]); } }));
 
-// detail sheet: every parameter of one effect
-const sheet = document.getElementById("sheet"), bg = document.getElementById("sheetbg"); let sheetFx = null;
-function openSheet(fx) {
-  sheetFx = fx; sheet.style.setProperty("--pc", PA.color(fx));
-  const states = fx.always ? [] : PA.hasHit(fx) ? ["off", "on", "hit"] : ["off", "on"];
-  sheet.innerHTML = `<div class="sh-head">${PA.artHTML(PA.img(fx))}<div><h3>${fx.name}</h3><div class="note">${PA.styleName(fx)}</div></div>
-      ${states.length ? `<div class="seg">${states.map(s => `<button data-s="${s}" class="${fx.state === s ? "sel" : ""}">${s.toUpperCase()}</button>`).join("")}</div>` : ""}
-      <button class="x" aria-label="Close">✕</button></div>
-    ${fx.styleCell ? `<div class="sh-sec"><h4>Style · ${fx.styleCell.values.length}</h4><div class="styles">${fx.styleCell.values.map((v, i) =>
-      `<button data-i="${i}" class="${i === fx.style ? "sel" : ""}">${PA.artHTML(fx.images[i] ?? fx.images[0])}${v}</button>`).join("")}</div></div>` : ""}
-    <div class="sh-sec"><h4>Parameters</h4><div class="bigknobs">${fx.params.map(c => PA.knob(fx, c.label, { size: 64 })).join("")}</div></div>
-    ${fx.adv.length ? `<div class="sh-sec"><h4>Advanced (hidden behind a long-press on the pedal)</h4><div class="bigknobs">${fx.adv.map(c => PA.knob(fx, c.label, { size: 56 })).join("")}</div></div>` : ""}`;
-  PA.initKnobs(sheet); sheet.classList.add("open"); bg.classList.add("open");
-  sheet.querySelector(".x").onclick = closeSheet;
-  sheet.querySelectorAll(".seg button").forEach(b => b.onclick = () => PA.setState(fx.id, b.dataset.s));
-  sheet.querySelectorAll(".styles button").forEach(b => b.onclick = () => PA.setStyle(fx.id, +b.dataset.i));
-}
-function closeSheet() { sheet.classList.remove("open"); bg.classList.remove("open"); sheetFx = null; }
-bg.onclick = closeSheet;
+document.addEventListener("pa:change", e => { const { fx, label, v, cell } = e.detail; PA.toast(`${fx.name} ${label}  ${PA.fmt(cell, v)}`); });
+document.addEventListener("pa:preset", e => { paint(); if (e.detail.name) PA.toast(`Preset ${e.detail.num} · ${e.detail.name}`); });
+document.addEventListener("pa:state", e => { paint(); const fx = e.detail.fx; PA.toast(`${fx.name}: ${fx.state === "hit" ? "on HIT" : fx.state.toUpperCase()}`); });
+document.addEventListener("pa:style", e => { paint(); PA.toast(PA.styleName(e.detail.fx)); });
+document.addEventListener("pa:sync", paint); document.addEventListener("pa:hit", paint);
+// HIT: tap = latch, hold = momentary
+PA.gesture(hit, { tap: () => PA.setHit(!PA.hitOn()), hold: () => PA.setHit(true), holdEnd: () => PA.setHit(false) });
 </script>
 </body>
 </html>

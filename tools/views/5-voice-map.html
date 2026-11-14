@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Voice map mockup</title>
-<link rel="stylesheet" href="mock.css">
+<link rel="stylesheet" href="views.css">
 <style>
 /* Voice map: show what the audience hears instead of what the menu is called.
    Harmony voices sit on a pitch ladder, doubles are ghosts beside you, the reverb is the room you're in, the delay is the echo rings. */
@@ -62,7 +62,9 @@
 </div>
 <script src="../pa-menus.js"></script>
 <script src="../pa-images.js"></script>
-<script src="mock.js"></script>
+<script>if (/[?&]sim\b/.test(location.search)) document.write('<script src="sim-pedal.js"><\/script>');</script>
+<script src="../pa-link.js"></script>
+<script src="views.js"></script>
 <script>
 PA.nav();
 const H = PA.byId.harmony, D = PA.byId.double, R = PA.byId.reverb, E = PA.byId.delay;

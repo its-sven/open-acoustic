@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Remote UI mockups</title>
-<link rel="stylesheet" href="mock.css">
+<link rel="stylesheet" href="views.css">
 <style>
 main { max-width: 1040px; margin: 0 auto; padding: 28px 16px 60px; }
 h1 { margin: 0 0 6px; font-size: 28px; }
@@ -41,7 +41,9 @@ a.card:hover { transform: translateY(-2px); border-color: var(--cc); }
 </main>
 <script src="../pa-menus.js"></script>
 <script src="../pa-images.js"></script>
-<script src="mock.js"></script>
+<script>if (/[?&]sim\b/.test(location.search)) document.write('<script src="sim-pedal.js"><\/script>');</script>
+<script src="../pa-link.js"></script>
+<script src="views.js"></script>
 <script>
 PA.nav();
 const C = [
