@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pedalboard mockup</title>
+<link rel="stylesheet" href="mock.css">
+<style>
+.top { display: flex; align-items: center; gap: 16px; padding: 14px 20px 6px; flex-wrap: wrap; }
+.preset { display: flex; align-items: baseline; gap: 10px; }
+.preset .num { font: 700 28px var(--mono); color: var(--accent); }
+.preset .name { font-size: 22px; font-weight: 700; }
+.preset button { background: var(--surface-2); border: 1px solid var(--rule); border-radius: 8px; width: 36px; height: 36px; cursor: pointer; }
+.meta { display: flex; gap: 8px; }
+.meta span { background: var(--surface-2); border: 1px solid var(--rule); border-radius: 6px; padding: 4px 8px; font: 12px var(--mono); color: var(--muted); }
+.meta b { color: var(--ink); font-weight: 600; }
+.sp { flex: 1; }
+.hitbtn { min-width: 120px; height: 44px; border-radius: 10px; border: 2px solid var(--hit); background: transparent; color: var(--hit); font: 800 15px var(--sans); letter-spacing: .1em; cursor: pointer; }
+.hitbtn.on { background: var(--hit); color: #04121f; box-shadow: 0 0 24px #4aa3ff88; }
+.toast { font: 600 13px var(--mono); color: var(--ink); background: var(--surface-3); border-radius: 6px; padding: 6px 10px; opacity: 0; transition: opacity .3s; min-width: 160px; text-align: center; }
+.toast.show { opacity: 1; transition: none; }
+
+.board-h { display: flex; align-items: baseline; gap: 10px; padding: 14px 20px 6px; }
+.board-h h2 { margin: 0; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.board { margin: 0 12px; padding: 18px 8px; border-radius: 14px; overflow-x: auto;
+  background: repeating-linear-gradient(0deg, #0000 0 34px, #00000055 34px 38px), linear-gradient(#1b1f25, #121519); border: 1px solid var(--rule); box-shadow: inset 0 2px 12px #0008; }
+.row { display: flex; align-items: center; width: max-content; margin: 0 auto; }
+.jack { width: 44px; display: grid; justify-items: center; gap: 4px; font: 700 9px var(--mono); color: var(--muted); letter-spacing: .08em; }
+.jack i { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(#000 35%, #777 38%, #2b2f35 60%); box-shadow: 0 1px 2px #000; }
+.cable { width: 18px; height: 7px; border-radius: 4px; background: linear-gradient(#3a3f47, #15181c); box-shadow: 0 2px 3px #0008; position: relative; }
+.cable.live { background: linear-gradient(#6cb6cf, #2d6375); }
+
+.pedal { --ink: #0d0f12; position: relative; width: 120px; height: 214px; border-radius: 10px; padding: 8px 8px 10px; display: grid; grid-template-rows: auto auto 1fr auto auto; justify-items: center; gap: 4px; cursor: pointer;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--pc) 92%, #fff) 0%, var(--pc) 45%, color-mix(in srgb, var(--pc) 70%, #000) 100%);
+  box-shadow: 0 8px 14px #000a, inset 0 1px 0 #ffffff55, inset 0 -2px 0 #0004; color: var(--ink); transition: filter .2s; }
+.pedal.dark { --ink: #f4f6f8; }
+.pedal.off { filter: saturate(.35) brightness(.62); }
+.pedal .led { width: 8px; height: 8px; border-radius: 50%; background: #300; box-shadow: inset 0 1px 1px #000; }
+.pedal.on .led { background: #ff4d3a; box-shadow: 0 0 8px #ff4d3a, 0 0 2px #fff inset; }
+.pedal.hit .led { background: var(--hit); box-shadow: 0 0 8px var(--hit); animation: blink 1.2s infinite; }
+@keyframes blink { 50% { opacity: .35; } }
+.pedal .knobs { display: flex; gap: 6px; justify-content: center; }
+.pedal .knob .kl { color: var(--ink); opacity: .75; font-size: 8px; max-width: 52px; overflow: hidden; text-overflow: ellipsis; }
+.pedal .knob { --kc: var(--ink); }
+.screen { width: 100%; background: var(--lcd); color: var(--lcd-ink); border-radius: 4px; padding: 4px 4px 2px; box-shadow: inset 0 0 0 2px #0006, inset 0 2px 6px #0005; display: grid; gap: 2px; position: relative; }
+.screen .sn { font: 700 8px var(--mono); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.screen .ar { position: absolute; top: 14px; font: 700 12px var(--mono); opacity: .5; padding: 2px; }
+.screen .ar.l { left: 0; } .screen .ar.r { right: 0; }
+.pedal .nm { font: 900 13px var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+.fsw { width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer; background: radial-gradient(circle at 40% 35%, #f2f4f6, #9aa3ad 55%, #5b636c); box-shadow: 0 3px 4px #0009, inset 0 -2px 3px #0005; }
+.fsw:active { transform: translateY(1px) scale(.97); }
+.fsw[disabled] { opacity: .35; cursor: default; }
+.pedal .hitlab { position: absolute; top: 6px; right: 8px; font: 800 8px var(--mono); color: var(--hit); background: #04121fcc; border-radius: 3px; padding: 1px 3px; display: none; }
+.pedal.hit .hitlab { display: block; }
+.pedal .always { font: 700 8px var(--mono); opacity: .7; height: 40px; display: grid; place-items: center; }
+/* dual "voices" pedal: Double + Harmony share one enclosure, run in parallel */
+.dual { width: 236px; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto 1fr auto auto; column-gap: 10px; }
+.dual > * { grid-column: span 1; }
+.dual .led.a { grid-column: 1; } .dual .led.b { grid-column: 2; }
+.dual.on-a .led.a, .dual.on-b .led.b { background: #ff4d3a; box-shadow: 0 0 8px #ff4d3a; }
+.dual.hit-a .led.a, .dual.hit-b .led.b { background: var(--hit); box-shadow: 0 0 8px var(--hit); }
+.dual .half-off { filter: saturate(.3) brightness(.65); }
+.dual .nm2 { grid-column: 1 / 3; font: 900 12px var(--sans); letter-spacing: .1em; }
+.legend { padding: 10px 20px 24px; display: flex; gap: 18px; flex-wrap: wrap; }
+
+/* detail sheet */
+.sheet-bg { position: fixed; inset: 0; background: #000a; display: none; z-index: 80; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; max-height: 78vh; overflow: auto; z-index: 90; background: var(--surface); border-top: 3px solid var(--pc); border-radius: 18px 18px 0 0; padding: 18px 20px 28px; transform: translateY(105%); transition: transform .25s ease; }
+.sheet.open { transform: none; } .sheet.open + .sheet-bg, .sheet-bg.open { display: block; }
+.sh-head { display: flex; align-items: center; gap: 16px; }
+.sh-head .art { width: 120px; color: var(--pc); }
+.sh-head h3 { margin: 0; font-size: 22px; }
+.sh-head .x { margin-left: auto; background: var(--surface-3); border: 0; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 18px; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.seg button { background: none; border: 0; padding: 8px 14px; cursor: pointer; font: 700 12px var(--mono); color: var(--muted); }
+.seg button.sel { background: var(--surface-3); color: var(--ink); }
+.seg button.sel[data-s="on"] { color: var(--on); } .seg button.sel[data-s="hit"] { color: var(--hit); }
+.sh-sec { margin-top: 18px; } .sh-sec h4 { margin: 0 0 8px; font-size: 11px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+.styles { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+.styles button { background: var(--surface-2); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 6px 6px; cursor: pointer; display: grid; gap: 4px; color: var(--muted); font: 600 10px var(--mono); }
+.styles button .art { color: #cfd6dd; width: 72px; justify-self: center; }
+.styles button.sel { border-color: var(--pc); color: var(--ink); background: color-mix(in srgb, var(--pc) 18%, var(--surface-2)); }
+.styles button.sel .art { color: var(--pc); }
+.bigknobs { display: flex; gap: 22px; flex-wrap: wrap; }
+@media (max-width: 700px) { .top { padding: 10px 16px; } .preset .name { font-size: 17px; } .board { margin: 0 8px; } }
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="meta"><span>KEY <b>AUTO → G</b></span><span>TEMPO <b>96</b></span></div>
+  <span class="sp"></span>
+  <div class="toast" id="toast"></div>
+  <button class="hitbtn" id="hit">HIT</button>
+</div>
+
+<div class="board-h"><h2>Vocal</h2><span class="note">Mic → pitch → tone → voices (parallel) → modulation → delay → reverb</span></div>
+<div class="board"><div class="row" id="vrow"></div></div>
+<div class="board-h"><h2>Guitar</h2><span class="note">Guitar effects have ON/OFF only (no HIT)</span></div>
+<div class="board"><div class="row" id="grow"></div></div>
+<div class="legend note">
+  <span><b>Tap switch</b> on / off</span><span><b>Hold switch</b> assign to HIT</span><span><b>Tap screen arrows</b> change style (the picture follows)</span><span><b>Drag knob</b> up / down</span><span><b>Tap pedal</b> open everything</span>
+</div>
+
+<div class="sheet" id="sheet"></div><div class="sheet-bg" id="sheetbg"></div>
+
+<script src="../pa-menus.js"></script>
+<script src="../pa-images.js"></script>
+<script src="mock.js"></script>
+<script>
+PA.nav();
+const DARK = new Set(["harmony", "umod", "g-umod", "g-comp"]);
+const MAIN = { hardtune: ["SHIFT", "GENDER"], transducer: ["DRIVE", "FILTER"], double: ["LEVEL"], harmony: ["LEVEL", "KEY"], umod: ["LEVEL", "SPEED"],
+  delay: ["LEVEL", "FEEDBACK"], reverb: ["LEVEL", "DECAY"], "g-bodyrez": ["AMOUNT", "HI GAIN"], "g-comp": ["THRESHOLD", "MAKEUP GAIN"],
+  "g-umod": ["UMOD LEVEL", "SPEED"], "g-delay": ["DELAY LEVEL", "FEEDBACK"], "g-reverb": ["REVERB LEVEL", "REVERB DECAY"] };
+const short = l => l.replace(/^(UMOD|DELAY|REVERB) /, "");
+
+function screen(fx) {
+  return `<div class="screen" data-scr="${fx.id}">${PA.artHTML(PA.img(fx))}<div class="sn">${PA.styleName(fx)}</div>
+    ${fx.styleCell ? `<span class="ar l" data-step="-1">‹</span><span class="ar r" data-step="1">›</span>` : ""}</div>`;
+}
+function pedal(fx) {
+  const sw = fx.always ? `<div class="always">ALWAYS ON</div>` : `<button class="fsw" aria-label="${fx.name} on/off"></button>`;
+  return `<div class="pedal ${DARK.has(fx.id) ? "dark" : ""}" data-id="${fx.id}" style="--pc:${PA.color(fx)}">
+    <span class="led"></span><span class="hitlab">HIT</span>
+    <div class="knobs">${MAIN[fx.id].map(l => PA.knob(fx, l, { size: 30, hideValue: true, label: short(l) })).join("")}</div>
+    ${screen(fx)}<div class="nm">${fx.name}</div>${sw}</div>`;
+}
+function dual(a, b) {
+  return `<div class="pedal dual dark" data-dual="1" style="--pc:var(--c-harmony);background:linear-gradient(90deg, var(--c-double) 0 50%, var(--c-harmony) 50%)">
+    <span class="led a"></span><span class="led b"></span>
+    ${[a, b].map(fx => `<div class="knobs" data-half="${fx.id}">${MAIN[fx.id].map(l => PA.knob(fx, l, { size: 30, hideValue: true })).join("")}</div>`).join("")}
+    ${[a, b].map(fx => `<div data-half="${fx.id}" data-id="${fx.id}" style="width:100%">${screen(fx)}</div>`).join("")}
+    <div class="nm2" style="text-align:center">DOUBLE · VOICES · HARMONY</div>
+    ${[a, b].map(fx => `<button class="fsw" data-id="${fx.id}" aria-label="${fx.name} on/off"></button>`).join("")}</div>`;
+}
+const cable = () => `<span class="cable"></span>`;
+const V = PA.byId;
+document.getElementById("vrow").innerHTML = `<div class="jack"><i></i>MIC</div>${cable()}` +
+  [pedal(V.hardtune), pedal(V.transducer), dual(V.double, V.harmony), pedal(V.umod), pedal(V.delay), pedal(V.reverb)].join(cable()) + `${cable()}<div class="jack"><i></i>OUT</div>`;
+document.getElementById("grow").innerHTML = `<div class="jack"><i></i>GTR</div>${cable()}` +
+  PA.guitar.map(pedal).join(cable()) + `${cable()}<div class="jack"><i></i>DI</div>`;
+PA.initKnobs();
+
+let hitDown = false;
+function paint() {
+  for (const fx of PA.FX) {
+    const live = fx.state === "on" || (fx.state === "hit" && hitDown);
+    const p = document.querySelector(`.pedal[data-id="${fx.id}"]`);
+    if (p) { p.classList.toggle("off", !live && fx.state !== "hit"); p.classList.toggle("on", live); p.classList.toggle("hit", fx.state === "hit"); }
+    const d = document.querySelector(".dual"), k = fx.id === "double" ? "a" : fx.id === "harmony" ? "b" : null;
+    if (k) { d.classList.toggle("on-" + k, live); d.classList.toggle("hit-" + k, fx.state === "hit" && !live);
+      d.querySelectorAll(`[data-half="${fx.id}"]`).forEach(h => h.classList.toggle("half-off", fx.state === "off")); }
+    const s = document.querySelector(`[data-scr="${fx.id}"]`);
+    if (s) s.outerHTML = screen(fx);
+  }
+}
+paint();
+
+// footswitches: tap = on/off, hold = HIT (vocal only)
+document.querySelectorAll(".fsw").forEach(b => {
+  const id = b.dataset.id || b.closest(".pedal").dataset.id, fx = PA.byId[id];
+  PA.press(b, { tap: () => { PA.setState(id, PA.nextState(fx)); }, hold: () => { if (PA.hasHit(fx)) PA.setState(id, "hit"); else toast(`${fx.name}: no HIT on guitar FX`); } });
+});
+document.addEventListener("click", e => {
+  const ar = e.target.closest(".ar"); if (ar) { const id = ar.closest("[data-scr]").dataset.scr; PA.setStyle(id, PA.byId[id].style + +ar.dataset.step); return; }
+  if (e.target.closest(".fsw,.knob")) return;
+  const p = e.target.closest("[data-id]"); if (p && p.closest(".board")) openSheet(PA.byId[p.dataset.id]);
+});
+const toastEl = document.getElementById("toast"); let tt;
+function toast(t) { toastEl.textContent = t; toastEl.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => toastEl.classList.remove("show"), 900); }
+document.addEventListener("pa:change", e => { const { fx, label, v, cell } = e.detail; toast(`${fx.name} ${label}  ${PA.fmt(cell, v)}`); });
+document.addEventListener("pa:preset", e => { closeSheet(); setTimeout(() => toast(`Preset ${e.detail.num} · ${e.detail.name}`)); });
+document.addEventListener("pa:state", e => { paint(); toast(`${e.detail.fx.name}: ${e.detail.fx.state.toUpperCase()}`); if (sheetFx === e.detail.fx) openSheet(sheetFx); });
+document.addEventListener("pa:style", e => { paint(); toast(PA.styleName(e.detail.fx)); if (sheetFx === e.detail.fx) openSheet(sheetFx); });
+const hit = document.getElementById("hit");
+hit.onclick = () => { hitDown = !hitDown; hit.classList.toggle("on", hitDown); paint(); };
+
+// detail sheet: every parameter of one effect
+const sheet = document.getElementById("sheet"), bg = document.getElementById("sheetbg"); let sheetFx = null;
+function openSheet(fx) {
+  sheetFx = fx; sheet.style.setProperty("--pc", PA.color(fx));
+  const states = fx.always ? [] : PA.hasHit(fx) ? ["off", "on", "hit"] : ["off", "on"];
+  sheet.innerHTML = `<div class="sh-head">${PA.artHTML(PA.img(fx))}<div><h3>${fx.name}</h3><div class="note">${PA.styleName(fx)}</div></div>
+      ${states.length ? `<div class="seg">${states.map(s => `<button data-s="${s}" class="${fx.state === s ? "sel" : ""}">${s.toUpperCase()}</button>`).join("")}</div>` : ""}
+      <button class="x" aria-label="Close">✕</button></div>
+    ${fx.styleCell ? `<div class="sh-sec"><h4>Style · ${fx.styleCell.values.length}</h4><div class="styles">${fx.styleCell.values.map((v, i) =>
+      `<button data-i="${i}" class="${i === fx.style ? "sel" : ""}">${PA.artHTML(fx.images[i] ?? fx.images[0])}${v}</button>`).join("")}</div></div>` : ""}
+    <div class="sh-sec"><h4>Parameters</h4><div class="bigknobs">${fx.params.map(c => PA.knob(fx, c.label, { size: 64 })).join("")}</div></div>
+    ${fx.adv.length ? `<div class="sh-sec"><h4>Advanced (hidden behind a long-press on the pedal)</h4><div class="bigknobs">${fx.adv.map(c => PA.knob(fx, c.label, { size: 56 })).join("")}</div></div>` : ""}`;
+  PA.initKnobs(sheet); sheet.classList.add("open"); bg.classList.add("open");
+  sheet.querySelector(".x").onclick = closeSheet;
+  sheet.querySelectorAll(".seg button").forEach(b => b.onclick = () => PA.setState(fx.id, b.dataset.s));
+  sheet.querySelectorAll(".styles button").forEach(b => b.onclick = () => PA.setStyle(fx.id, +b.dataset.i));
+}
+function closeSheet() { sheet.classList.remove("open"); bg.classList.remove("open"); sheetFx = null; }
+bg.onclick = closeSheet;
+</script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Signal grid mockup</title>
+<link rel="stylesheet" href="mock.css">
+<style>
+/* Modelled on the "signal flow + block inspector" layout of modern multi-effects editors (Line 6 HX Edit, Neural DSP Quad Cortex, Fractal Axe-Edit). */
+body { display: grid; grid-template-rows: auto auto 1fr auto; min-height: 100vh; }
+.hdr { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--rule); }
+.hdr .pn { font: 700 18px var(--sans); } .hdr .pn span { font-family: var(--mono); color: var(--accent); margin-right: 8px; }
+.hdr .sp { flex: 1; }
+.snap { display: inline-flex; gap: 4px; } .snap button { background: var(--surface-2); border: 1px solid var(--rule); color: var(--muted); border-radius: 6px; padding: 6px 10px; font: 600 12px var(--mono); cursor: pointer; }
+.snap button.sel { color: var(--ink); border-color: var(--accent); }
+.flowwrap { display: grid; align-content: center; background: radial-gradient(circle, #ffffff0d 1px, transparent 1.4px) 0 0 / 22px 22px, var(--bg); }
+.flow { position: relative; padding: 18px 16px 10px; overflow-x: auto; }
+.lane { position: relative; display: flex; align-items: center; height: 100px; width: max-content; margin: 0 auto; }
+.lane + .lane { margin-top: 10px; }
+.lane .lbl { position: absolute; left: 0; top: -2px; font: 700 10px var(--mono); letter-spacing: .12em; color: var(--faint); }
+.wire { height: 3px; width: 26px; background: #56606c; flex: none; }
+.wire.live { background: var(--accent); box-shadow: 0 0 6px #6cb6cf88; }
+.io { flex: none; width: 54px; height: 54px; border-radius: 50%; border: 2px solid #56606c; display: grid; place-items: center; font: 700 10px var(--mono); color: var(--muted); background: var(--surface); }
+.blk { flex: none; width: 92px; height: 80px; border-radius: 10px; background: var(--surface-2); border: 2px solid #ffffff12; display: grid; grid-template-rows: 1fr auto; place-items: center; padding: 6px 4px 4px; cursor: pointer; position: relative; color: var(--fc); transition: transform .1s; }
+.blk .art { width: 74px; }
+.blk .bn { font: 700 9px var(--mono); color: var(--muted); letter-spacing: .06em; }
+.blk.off { color: #4a525c; background: var(--surface); border-style: dashed; }
+.blk.off .bn { color: var(--faint); }
+.blk.sel { border-color: var(--fc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fc) 30%, transparent), 0 6px 18px #000a; transform: translateY(-2px); }
+.blk .hb { position: absolute; top: -7px; right: -7px; font: 800 8px var(--mono); background: var(--hit); color: #04121f; border-radius: 4px; padding: 1px 4px; }
+.blk .ft { position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); font: 700 8px var(--mono); color: var(--muted); background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+/* parallel split for the two voice blocks */
+.split { display: grid; grid-template-rows: 1fr 1fr; gap: 6px; position: relative; padding: 0 16px; flex: none; height: 180px; margin: -40px 0; }
+.split::before, .split::after { content: ""; position: absolute; top: 45px; bottom: 45px; width: 16px; border: 3px solid #56606c; }
+.split::before { left: 0; border-right: 0; border-radius: 10px 0 0 10px; } .split::after { right: 0; border-left: 0; border-radius: 0 10px 10px 0; }
+.split .blk { align-self: center; }
+.merge { position: absolute; }
+.mixbus { margin-left: 0; }
+.legend { padding: 0 16px 6px; display: flex; gap: 16px; flex-wrap: wrap; }
+
+/* inspector */
+.insp { border-top: 1px solid var(--rule); background: var(--surface); display: grid; grid-template-columns: 250px 1fr 220px; min-height: 260px; }
+.insp > div { padding: 14px 16px; }
+.insp .who { border-right: 1px solid var(--rule); display: grid; align-content: start; gap: 10px; }
+.insp .who .art { width: 160px; color: var(--fc); }
+.insp h2 { margin: 0; font-size: 20px; }
+.insp select { background: var(--bg); color: var(--ink); border: 1px solid var(--rule); border-radius: 8px; padding: 8px; font: 13px var(--mono); width: 100%; }
+.byp { display: flex; gap: 6px; }
+.byp button { flex: 1; background: var(--surface-2); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 0; font: 700 11px var(--mono); color: var(--muted); cursor: pointer; }
+.byp button.sel { color: var(--ink); border-color: var(--fc); background: color-mix(in srgb, var(--fc) 18%, var(--surface-2)); }
+.knobs { display: flex; flex-wrap: wrap; gap: 18px 26px; align-content: start; }
+.knobs .grp { font: 600 10px var(--mono); color: var(--faint); letter-spacing: .1em; width: 100%; margin-top: 4px; }
+.knob .kv { font-size: 13px; }
+.side { border-left: 1px solid var(--rule); display: grid; gap: 10px; align-content: start; }
+.side h4 { margin: 0; font-size: 11px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+.fsrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.fs { aspect-ratio: 1; border-radius: 50%; border: 2px solid var(--rule); display: grid; place-items: center; font: 700 9px var(--mono); color: var(--muted); text-align: center; }
+.fs.as { border-color: var(--hit); color: var(--hit); }
+@media (max-width: 900px) { .insp { grid-template-columns: 1fr; } .insp .who, .side { border: 0; } }
+</style>
+</head>
+<body>
+<div class="hdr">
+  <span class="note">KEY AUTO → G · 96 BPM</span>
+  <span class="sp"></span>
+  <span class="note">View</span><div class="snap"><button class="sel">Preset</button><button>HIT on</button></div>
+</div>
+<div class="flowwrap">
+  <div class="flow" id="flow"></div>
+  <div class="legend note"><span><b>Tap</b> a block to edit it below</span><span><b>Double-tap</b> bypass</span><span><b>Dashed</b> = off</span><span><b>HIT</b> tag = turns on with the HIT switch</span><span>Blocks sit where the firmware routes them; the order can't be changed on this pedal</span></div>
+</div>
+<div class="insp" id="insp"></div>
+<script src="../pa-menus.js"></script>
+<script src="../pa-images.js"></script>
+<script src="mock.js"></script>
+<script>
+PA.nav();
+const V = PA.byId;
+let sel = V.harmony;
+const blk = fx => `<div class="blk ${fx.state === "off" ? "off" : ""} ${fx === sel ? "sel" : ""}" data-id="${fx.id}" style="--fc:${PA.color(fx)}">
+  ${PA.artHTML(PA.img(fx))}<span class="bn">${fx.name.toUpperCase()}</span>${fx.state === "hit" ? `<span class="hb">HIT</span>` : ""}</div>`;
+const w = live => `<span class="wire ${live ? "live" : ""}"></span>`;
+const io = t => `<div class="io">${t}</div>`;
+function render() {
+  document.getElementById("flow").innerHTML =
+    `<div class="lane" style="margin-top:40px"><span class="lbl" style="top:-40px">VOCAL PATH</span>${io("MIC")}${w(1)}<div class="blk" style="--fc:var(--accent)"><span class="bn" style="font-size:10px;color:var(--ink)">TONE</span><span class="bn">auto EQ/comp</span></div>${w(1)}
+      ${blk(V.hardtune)}${w(1)}${blk(V.transducer)}${w(1)}<div class="split">${blk(V.double)}${blk(V.harmony)}</div>${w(1)}
+      ${blk(V.umod)}${w(1)}${blk(V.delay)}${w(1)}${blk(V.reverb)}${w(1)}${io("OUT L/R")}</div>
+     <div class="lane" style="margin-top:80px"><span class="lbl" style="top:-24px">GUITAR PATH</span>${io("GTR")}${w(1)}${PA.guitar.map(blk).join(w(1))}${w(1)}${io("DI / MIX")}</div>`;
+  const fx = sel, states = fx.always ? [] : PA.hasHit(fx) ? ["off", "on", "hit"] : ["off", "on"];
+  const insp = document.getElementById("insp"); insp.style.setProperty("--fc", PA.color(fx));
+  insp.innerHTML = `<div class="who">${PA.artHTML(PA.img(fx))}<h2>${fx.name} <span class="note">${fx.side}</span></h2>
+      ${fx.styleCell ? `<select id="sty">${fx.styleCell.values.map((s, i) => `<option value="${i}" ${i === fx.style ? "selected" : ""}>${s}</option>`).join("")}</select>` : ""}
+      ${states.length ? `<div class="byp">${states.map(s => `<button data-s="${s}" class="${fx.state === s ? "sel" : ""}">${s.toUpperCase()}</button>`).join("")}</div>` : `<div class="note">Always on</div>`}</div>
+    <div class="knobs">${fx.params.map(c => PA.knob(fx, c.label, { size: 62 })).join("")}
+      ${fx.adv.length ? `<div class="grp">ADVANCED</div>${fx.adv.map(c => PA.knob(fx, c.label, { size: 52 })).join("")}` : ""}</div>
+    <div class="side"><h4>Footswitch</h4><div class="fsrow"><div class="fs">◀</div><div class="fs">▶</div><div class="fs ${fx.state === "hit" ? "as" : ""}">HIT</div></div>
+      <div class="note">${fx.state === "hit" ? `<b>${fx.name}</b> follows the HIT switch.` : PA.hasHit(fx) ? `Set CONTROL to HIT to put ${fx.name} on the HIT switch.` : "Guitar effects can't follow HIT."}</div>
+      <h4>Send</h4><div class="note">${fx.id === "harmony" ? "Harmony → Delay −14 dB · → Reverb −6 dB" : fx.side === "guitar" ? "Guitar → Reverb −9 dB" : "Lead → Delay −12 dB · → Reverb −8 dB"}</div></div>`;
+  PA.initKnobs(insp);
+  const s = insp.querySelector("#sty"); if (s) s.onchange = () => PA.setStyle(fx.id, +s.value);
+  insp.querySelectorAll(".byp button").forEach(b => b.onclick = () => PA.setState(fx.id, b.dataset.s));
+}
+render();
+document.getElementById("flow").addEventListener("click", e => { const b = e.target.closest("[data-id]"); if (b) { sel = V[b.dataset.id]; render(); } });
+document.getElementById("flow").addEventListener("dblclick", e => { const b = e.target.closest("[data-id]"); if (b) PA.setState(b.dataset.id, PA.nextState(V[b.dataset.id])); });
+document.addEventListener("pa:state", render); document.addEventListener("pa:style", render);
+</script>
+</body>
+</html>

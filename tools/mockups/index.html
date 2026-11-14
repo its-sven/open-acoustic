@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Remote UI mockups</title>
+<link rel="stylesheet" href="mock.css">
+<style>
+main { max-width: 1040px; margin: 0 auto; padding: 28px 16px 60px; }
+h1 { margin: 0 0 6px; font-size: 28px; }
+.lead { color: var(--muted); max-width: 70ch; margin: 0 0 24px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+a.card { display: grid; gap: 10px; text-decoration: none; color: inherit; background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; padding: 16px; border-top: 3px solid var(--cc); transition: transform .12s, border-color .12s; }
+a.card:hover { transform: translateY(-2px); border-color: var(--cc); }
+.card .k { font: 700 11px var(--mono); letter-spacing: .12em; color: var(--cc); }
+.card h2 { margin: 0; font-size: 19px; }
+.card p { margin: 0; color: var(--muted); font-size: 14px; }
+.card .arts { display: flex; gap: 10px; color: var(--cc); }
+.card .arts .art { width: 64px; }
+.card ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+.facts { margin-top: 28px; background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; padding: 16px 18px; }
+.facts h3 { margin: 0 0 8px; font-size: 14px; }
+.facts li { color: var(--muted); font-size: 13px; margin: 3px 0; }
+.facts b { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Beyond the front panel</h1>
+  <p class="lead">Five takes on a touch-screen Remote that doesn't copy the pedal's 3-button, 128×64 screen. All five use the real menu tables, style lists and firmware pictures from <code>pa-menus.js</code> / <code>pa-images.js</code>. They're clickable but not connected to the pedal.</p>
+  <div class="cards" id="cards"></div>
+  <div class="facts">
+    <h3>Real vs. assumed</h3>
+    <ul>
+      <li><b>Real:</b> every effect, parameter name, range, style list, and the picture each style shows on the pedal.</li>
+      <li><b>Real, never shown on the pedal:</b> the effect send levels (LEAD TO DELAY, UMOD TO REV, GTR TO REV…, params 0x0AB–0x0B7). They also give the signal order the chain views use.</li>
+      <li><b>Assumed:</b> value formats for DECAY / SPEED / frequency (the firmware formatter isn't decoded yet, TODO §2), and the EQ curve shape, which is drawn from the parameters rather than measured.</li>
+      <li><b>Not possible yet:</b> preset ◀ ▶, tuner, TALK. They appear in the mockups but aren't mapped over SysEx (TODO §2).</li>
+    </ul>
+  </div>
+</main>
+<script src="../pa-menus.js"></script>
+<script src="../pa-images.js"></script>
+<script src="mock.js"></script>
+<script>
+PA.nav();
+const C = [
+  ["1-pedalboard.html", "FX CHAIN", "Pedalboard", "--c-harmony", [11, 77, 123],
+    "Each effect is a stomp box on a board. Vocal and guitar each get their own board, and Double + Harmony share a two-switch enclosure because they run in parallel.",
+    ["Tap the footswitch for on/off, hold it to assign to HIT", "Screen arrows step through styles, and the picture changes with them", "Tap a pedal to open a sheet with every parameter and a style grid"]],
+  ["2-studio.html", "MAXIMUM CONTROL", "Studio editor", "--c-delay", [6, 24, 117],
+    "Every parameter of every effect on one scrolling page, advanced pages included, with search, IDs and a \"changed only\" filter.",
+    ["Draggable BodyRez EQ curve, compressor transfer curve, delay tap timeline, reverb decay", "Effect-send matrix (hidden on the pedal)", "Mix pages as one fader bank, plus A/B compare"]],
+  ["3-signal-grid.html", "KNOWN PATTERN", "Signal grid", "--c-umod", [92, 133, 118],
+    "The signal-flow-plus-inspector layout from HX Edit, Quad Cortex and Axe-Edit: blocks on a routed path, with the selected block's knobs underneath.",
+    ["Vocal and guitar as two lanes, voices as a parallel split", "Dashed = bypassed, HIT tag = follows the HIT switch", "Inspector shows the block's basic and advanced knobs together"]],
+  ["4-stage.html", "OWN IDEA", "Stage mode", "--c-hardtune", [133, 34, 24],
+    "For an iPad on the mic stand mid-gig: a huge preset name, thumb-sized tiles and no menus.",
+    ["Tap a tile for on/off, hold it for momentary, swipe across it for its main level", "Huge HIT: tap to latch, hold for momentary", "SPACE pad: one finger mixes delay against reverb"]],
+  ["5-voice-map.html", "OWN IDEA", "Voice map", "--c-double", [93, 102, 117],
+    "Shows what the audience hears. Harmony voices sit on a pitch ladder, doubles are ghosts beside you, the reverb is the room around you and the delay is echo rings.",
+    ["Tap rungs to build a harmony: the 28-style list becomes 2 taps", "Drag the room's corner to change decay; reverbs are grouped by space", "Key wheel with AUTO in the middle"]],
+];
+document.getElementById("cards").innerHTML = C.map(([h, k, t, c, arts, p, ul]) => `<a class="card" href="${h}" style="--cc:var(${c})">
+  <span class="k">${k}</span><h2>${t}</h2><div class="arts">${arts.map(n => PA.artHTML(n)).join("")}</div><p>${p}</p><ul>${ul.map(x => `<li>${x}</li>`).join("")}</ul></a>`).join("");
+</script>
+</body>
+</html>

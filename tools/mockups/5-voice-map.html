@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Voice map mockup</title>
+<link rel="stylesheet" href="mock.css">
+<style>
+/* Voice map: show what the audience hears instead of what the menu is called.
+   Harmony voices sit on a pitch ladder, doubles are ghosts beside you, the reverb is the room you're in, the delay is the echo rings. */
+.wrap { display: grid; grid-template-columns: 1fr 340px; min-height: calc(100vh - var(--barh)); }
+.stage { position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 120%, #1c2430, #0b0e12 70%); user-select: none; touch-action: none; }
+.room { position: absolute; left: 50%; top: 50%; border: 2px solid #b9c2cc55; background: #b9c2cc08; transform: translate(-50%, -50%); transition: width .25s, height .25s, border-radius .25s; cursor: pointer; }
+.room.off { border-style: dashed; border-color: #ffffff18; background: none; }
+.room .rl { position: absolute; left: 14px; top: 10px; display: flex; gap: 8px; align-items: center; font: 700 11px var(--mono); color: #b9c2cc; letter-spacing: .08em; }
+.room .rl .art { width: 56px; color: #b9c2cc; }
+.room .grip { position: absolute; right: -12px; bottom: -12px; width: 24px; height: 24px; border-radius: 50%; background: #b9c2cc; box-shadow: 0 0 0 5px #b9c2cc33; cursor: nwse-resize; }
+.ladder { position: absolute; left: 32px; top: 6%; bottom: 6%; width: 150px; }
+.rung { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 10px; transform: translateY(-50%); cursor: pointer; font: 700 11px var(--mono); color: var(--faint); letter-spacing: .06em; }
+.rung::after { content: ""; flex: 1; height: 1px; background: #ffffff14; }
+.rung .pip { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #ffffff30; flex: none; }
+.rung.sel { color: var(--c-harmony); } .rung.sel .pip { background: var(--c-harmony); border-color: var(--c-harmony); box-shadow: 0 0 10px var(--c-harmony); }
+.rung.lead { color: var(--ink); cursor: default; } .rung.lead .pip { background: var(--ink); border-color: var(--ink); }
+.guide { position: absolute; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, #3f7fe255, transparent 80%); pointer-events: none; }
+.who { position: absolute; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 4px; transition: top .3s, left .3s, opacity .3s; cursor: pointer; }
+.who .art { width: var(--w, 110px); color: var(--c); filter: drop-shadow(0 0 10px color-mix(in srgb, var(--c) 50%, transparent)); }
+.who .tag { font: 700 10px var(--mono); color: var(--c); letter-spacing: .08em; white-space: nowrap; background: #0b0e12cc; padding: 1px 5px; border-radius: 4px; }
+.who.off { opacity: .2; }
+.ghost .art { filter: blur(.4px); opacity: .5; }
+.ring { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px; border-radius: 50%; border: 2px solid var(--c-delay); opacity: 0; pointer-events: none; animation: ring var(--d) linear infinite; animation-delay: var(--dl); }
+@keyframes ring { 0% { transform: scale(.6); opacity: var(--o); } 100% { transform: scale(var(--s)); opacity: 0; } }
+.hint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font-size: 12px; color: var(--muted); background: #0b0e12cc; border-radius: 8px; padding: 6px 12px; white-space: nowrap; }
+.modes { position: absolute; left: 32px; top: 12px; display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; z-index: 3; }
+.modes button { background: #0b0e12cc; border: 0; padding: 6px 10px; font: 700 10px var(--mono); color: var(--muted); cursor: pointer; }
+.modes button.sel { background: var(--c-harmony); color: #fff; }
+.pnl { border-left: 1px solid var(--rule); background: var(--surface); padding: 14px 16px 24px; overflow: auto; max-height: calc(100vh - var(--barh)); }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.tabs button { background: var(--surface-2); border: 1px solid var(--rule); border-radius: 10px; padding: 8px 4px; cursor: pointer; display: grid; gap: 2px; justify-items: center; font: 700 11px var(--sans); color: var(--muted); }
+.tabs button .st { font-size: 8px; }
+.tabs button.sel { border-color: var(--tc); color: var(--ink); background: color-mix(in srgb, var(--tc) 16%, var(--surface-2)); }
+.pnl h2 { margin: 16px 0 2px; font-size: 22px; } .pnl .sub { font: 12px var(--mono); color: var(--muted); }
+.pnl h4 { margin: 18px 0 8px; font-size: 11px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+.row { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; }
+.tog { margin-left: auto; background: var(--surface-3); border: 0; border-radius: 999px; padding: 6px 12px; font: 700 11px var(--mono); cursor: pointer; color: var(--muted); }
+.tog.on { background: var(--on); color: #06210f; } .tog.hit { background: var(--hit); color: #04121f; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { background: var(--surface-2); border: 1px solid var(--rule); border-radius: 999px; padding: 5px 10px; font: 600 11px var(--mono); color: var(--muted); cursor: pointer; }
+.chips button.sel { border-color: var(--tc); color: var(--ink); background: color-mix(in srgb, var(--tc) 20%, var(--surface-2)); }
+.fam { display: grid; grid-template-columns: 52px 1fr; gap: 8px; align-items: start; margin-bottom: 8px; }
+.fam .art { color: #b9c2cc; width: 52px; margin-top: 2px; }
+.wheel { position: relative; width: 220px; height: 220px; margin: 4px auto 0; border-radius: 50%; background: var(--surface-2); }
+.wheel button { position: absolute; width: 36px; height: 36px; margin: -18px; border-radius: 50%; border: 1px solid var(--rule); background: var(--bg); font: 700 12px var(--mono); color: var(--muted); cursor: pointer; }
+.wheel button.sel { background: var(--c-harmony); color: #fff; border-color: var(--c-harmony); }
+.wheel .auto { width: 64px; height: 64px; margin: -32px; left: 50%; top: 50%; font-size: 13px; }
+@media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } .stage { height: 70vh; } .pnl { max-height: none; border-left: 0; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stage" id="stage"></div>
+  <div class="pnl" id="pnl"></div>
+</div>
+<script src="../pa-menus.js"></script>
+<script src="../pa-images.js"></script>
+<script src="mock.js"></script>
+<script>
+PA.nav();
+const H = PA.byId.harmony, D = PA.byId.double, R = PA.byId.reverb, E = PA.byId.delay;
+// Harmony styles as sets of rungs (same order as the firmware list)
+const SETS = [["HIGH"], ["HIGHER"], ["LOW"], ["LOWER"], ["OCTUP"], ["OCTDN"], ["HIGH", "LOW"], ["HIGH", "HIGHER"], ["HIGH", "LOWER"], ["HIGHER", "LOWER"], ["HIGHER", "LOW"], ["LOWER", "LOW"],
+  ["OCTDN", "OCTUP"], ["OCTDN", "HIGHER"], ["OCTDN", "HIGH"], ["OCTDN", "LOW"], ["OCTDN", "LOWER"], ["OCTUP", "HIGHER"], ["OCTUP", "HIGH"], ["OCTUP", "LOW"], ["OCTUP", "LOWER"],
+  ["+7"], ["-5"], ["+7", "-5"], ["+12", "+7"], ["+12", "-5"], ["-12", "+7"], ["-12", "-5"]];
+const RUNGS = { smart: [["OCTUP", "OCT UP", 6], ["HIGHER", "HIGHER", 24], ["HIGH", "HIGH", 37], ["LEAD", "YOU", 50], ["LOW", "LOW", 63], ["LOWER", "LOWER", 76], ["OCTDN", "OCT DOWN", 94]],
+  fixed: [["+12", "+12 ST", 6], ["+7", "+7 ST", 28], ["LEAD", "YOU", 50], ["-5", "−5 ST", 72], ["-12", "−12 ST", 94]] };
+let mode = SETS[H.style].some(r => /\d/.test(r)) ? "fixed" : "smart", voices = [...SETS[H.style]], tab = "harmony", note = "", resizing = false;
+const FAM = [[118, "Plates", [0, 8]], [117, "Halls", [8, 11]], [119, "Rooms", [11, 18]], [116, "Chambers & churches", [18, 22]], [115, "Big spaces", [22, 26]], [120, "Springs", [26, 28]]];
+const famOf = i => FAM.find(f => i >= f[2][0] && i < f[2][1]);
+const live = fx => fx.state !== "off";
+const DIV = { QUARTER: 1, EIGHTH: .5, TRIPLET: 1 / 3, "DOTTED 1/8": .75, "DOTTED 1/4": 1.5, "1/4 TRIPLET": 2 / 3, SIXTEENTH: .25 };
+
+function yOf(id) { const r = RUNGS[mode].find(r => r[0] === id); return r ? r[2] : 50; }
+function stage() {
+  const st = document.getElementById("stage"), fam = famOf(R.style), dec = R.vals.DECAY / 290;
+  const size = { 118: [.5, .55, 8], 117: [.86, .8, 40], 119: [.6, .6, 14], 116: [.72, .72, 120], 115: [.94, .9, 60], 120: [.42, .46, 30] }[fam[0]];
+  const w = (size[0] * .6 + dec * .4) * 100, h = (size[1] * .6 + dec * .4) * 100;
+  const dname = PA.styleName(D), dn = /2 VOICES|OCT UP & OCT DN|SHOUT/.test(dname) ? 2 : 1, loose = /LOOSE|SHOUT/.test(dname) ? 14 : 8;
+  const dy = i => (/OCT UP & OCT DN/.test(dname) ? (i ? 94 : 6) : /OCT UP/.test(dname) ? 6 : /OCT D/.test(dname) ? 94 : 50);
+  const beat = 60 / (E.vals.TEMPO || 96), step = (DIV[PA.styleName(E)] ?? .5) * beat, rings = 1 + Math.round(E.vals.FEEDBACK / 20);
+  const hv = (H.vals.LEVEL + 36) / 36;
+  st.innerHTML = `
+    <div class="room ${live(R) ? "" : "off"}" data-tab="reverb" style="width:${w}%;height:${h}%;border-radius:${size[2]}px ${size[2]}px 18px 18px">
+      <div class="rl">${PA.artHTML(fam[0])}<span>${PA.styleName(R)} · ${PA.fmt(PA.cellOf(R, "DECAY"), R.vals.DECAY)}</span></div><span class="grip" id="grip"></span></div>
+    <div class="modes"><button data-mode="smart" class="${mode === "smart" ? "sel" : ""}">IN KEY</button><button data-mode="fixed" class="${mode === "fixed" ? "sel" : ""}">FIXED</button></div>
+    <div class="ladder">${RUNGS[mode].map(([id, t, y]) => `<div class="rung ${id === "LEAD" ? "lead" : voices.includes(id) ? "sel" : ""}" data-rung="${id}" style="top:${y}%"><span class="pip"></span>${t}</div>`).join("")}</div>
+    ${live(E) ? Array.from({ length: rings }, (_, i) => `<span class="ring" style="--d:${(step * rings).toFixed(2)}s;--dl:${(i * step).toFixed(2)}s;--s:${3 + i * .6};--o:${Math.pow(10, E.vals.LEVEL / 20) * Math.pow(E.vals.FEEDBACK / 100, i) + .15}"></span>`).join("") : ""}
+    ${Array.from({ length: dn }, (_, i) => `<div class="who ghost ${live(D) ? "" : "off"}" data-tab="double" style="--c:var(--c-double);--w:96px;left:${50 + (i ? loose : -loose)}%;top:${dy(i) + (dy(i) === 50 ? 2 : 0)}%">${PA.artHTML(102)}</div>`).join("")}
+    <div class="who" data-tab="harmony" style="--c:var(--ink);--w:130px;left:50%;top:50%">${PA.artHTML(102)}<span class="tag">YOU</span></div>
+    ${voices.map((v, i) => `<span class="guide" style="top:${yOf(v)}%"></span><div class="who ${live(H) ? "" : "off"}" data-tab="harmony" style="--c:var(--c-harmony);--w:${70 + hv * 40}px;left:${i ? 70 : 30}%;top:${yOf(v)}%">${PA.artHTML(i ? 93 : 92)}<span class="tag">${RUNGS[mode].find(r => r[0] === v)?.[1] ?? v}</span></div>`).join("")}
+    <div class="hint">${note || "Tap the ladder to place harmony voices · drag the room's corner for decay · tap anything to edit it"}</div>`;
+  const grip = document.getElementById("grip");
+  grip.addEventListener("pointerdown", e => {
+    e.stopPropagation(); grip.setPointerCapture(e.pointerId); const r = st.getBoundingClientRect();
+    const room = st.querySelector(".room"); resizing = true;
+    const mv = ev => { const dx = Math.abs(ev.clientX - (r.left + r.width / 2)) * 2 / r.width; PA.set("reverb", "DECAY", ((dx - size[0] * .6) / .4) * 290);
+      const d = R.vals.DECAY / 290; room.style.width = (size[0] * .6 + d * .4) * 100 + "%"; room.style.height = (size[1] * .6 + d * .4) * 100 + "%";
+      room.querySelector(".rl span").textContent = `${PA.styleName(R)} · ${PA.fmt(PA.cellOf(R, "DECAY"), R.vals.DECAY)}`; };
+    grip.addEventListener("pointermove", mv); grip.addEventListener("pointerup", () => { resizing = false; grip.removeEventListener("pointermove", mv); render(); }, { once: true });
+  });
+}
+function chooseRung(id) {
+  if (id === "LEAD") return;
+  voices = voices.includes(id) ? voices.filter(v => v !== id) : [...voices, id].slice(-2);
+  const i = SETS.findIndex(s => s.length === voices.length && s.every(v => voices.includes(v)));
+  if (i >= 0) { note = ""; PA.setStyle("harmony", i); } else note = voices.length ? `No preset style has ${voices.join(" + ")}: add or move a voice` : "Pick at least one voice";
+  render();
+}
+function knobs(fx, labels, size = 58) { return `<div class="row">${labels.map(l => PA.knob(fx, l, { size })).join("")}</div>`; }
+function tog(fx) { return `<button class="tog ${fx.state}" data-tog="${fx.id}">${fx.state.toUpperCase()}</button>`; }
+function panel() {
+  const p = document.getElementById("pnl"), T = { harmony: H, double: D, reverb: R, delay: E }, fx = T[tab];
+  p.style.setProperty("--tc", PA.color(fx));
+  let body = "";
+  if (tab === "harmony") body = `<div class="sub">style ${H.style + 1} of 28 · picked on the ladder</div>
+      ${knobs(H, ["LEVEL", "HUMANIZE", "PORTAMENTO"])}
+      <h4>Key</h4><div class="wheel">${["C", "G", "D", "A", "E", "B", "F#", "C#", "G#", "D#", "A#", "F"].map((k, i) => {
+        const a = (i / 12) * 2 * Math.PI - Math.PI / 2, idx = H.pageObj.rows.flat().find(c => c && c.label === "KEY").values.indexOf(k);
+        return `<button data-key="${idx}" class="${H.vals.KEY === idx ? "sel" : ""}" style="left:${50 + Math.cos(a) * 40}%;top:${50 + Math.sin(a) * 40}%">${k}</button>`; }).join("")}
+        <button class="auto ${H.vals.KEY === 0 ? "sel" : ""}" data-key="0">AUTO<br><small style="font-size:9px;opacity:.7">hears G</small></button></div>
+      <h4>Scale</h4><div class="chips">${PA.cellOf(H, "SCALE").values.map((s, i) => `<button data-p="SCALE" data-v="${i}" class="${H.vals.SCALE === i ? "sel" : ""}">${s}</button>`).join("")}</div>`;
+  if (tab === "double") body = `<div class="sub">ghosts beside you on the stage</div>${knobs(D, ["LEVEL"])}
+      <h4>Style</h4><div class="chips">${D.styleCell.values.map((s, i) => `<button data-sty="${i}" class="${D.style === i ? "sel" : ""}">${s}</button>`).join("")}</div>`;
+  if (tab === "reverb") body = `<div class="sub">the room you're standing in</div>${knobs(R, ["LEVEL", "DECAY"])}
+      <h4>Space</h4>${FAM.map(([img, name, [a, b]]) => `<div class="fam">${PA.artHTML(img)}<div><div class="note" style="margin-bottom:4px">${name}</div><div class="chips">${R.styleCell.values.slice(a, b).map((s, j) => `<button data-sty="${a + j}" class="${R.style === a + j ? "sel" : ""}">${s}</button>`).join("")}</div></div></div>`).join("")}`;
+  if (tab === "delay") body = `<div class="sub">echo rings follow tempo and feedback</div>${knobs(E, ["LEVEL", "FEEDBACK", "TEMPO"])}
+      <h4>Rhythm</h4><div class="chips">${E.styleCell.values.map((s, i) => `<button data-sty="${i}" class="${E.style === i ? "sel" : ""}">${s}</button>`).join("")}</div>
+      <h4>Colour</h4><div class="chips">${PA.cellOf(E, "FILTER").values.map((s, i) => `<button data-p="FILTER" data-v="${i}" class="${E.vals.FILTER === i ? "sel" : ""}">${s}</button>`).join("")}</div>`;
+  p.innerHTML = `<div class="tabs">${Object.entries(T).map(([k, f]) => `<button data-tabb="${k}" class="${k === tab ? "sel" : ""}" style="--tc:${PA.color(f)}">${f.name === "Reverb" ? "Room" : f.name === "Delay" ? "Echo" : f.name}<span class="st ${f.state}">${f.state.toUpperCase()}</span></button>`).join("")}</div>
+    <div class="row" style="margin-top:6px"><h2>${tab === "reverb" ? "Room" : tab === "delay" ? "Echo" : fx.name}</h2>${tog(fx)}</div>
+    <div style="font:700 15px var(--mono);color:var(${fx.color})">${PA.styleName(fx)}</div>${body}`;
+  PA.initKnobs(p);
+}
+function render() { stage(); panel(); }
+render();
+
+document.getElementById("stage").addEventListener("click", e => {
+  const m = e.target.closest("[data-mode]"); if (m) { mode = m.dataset.mode; voices = mode === "fixed" ? ["+7", "-5"] : ["HIGH", "LOW"]; chooseRung(null); return; }
+  const r = e.target.closest("[data-rung]"); if (r) { tab = "harmony"; chooseRung(r.dataset.rung); return; }
+  const t = e.target.closest("[data-tab]"); if (t) { tab = t.dataset.tab; panel(); }
+});
+document.getElementById("pnl").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const fx = { harmony: H, double: D, reverb: R, delay: E }[tab];
+  if (b.dataset.tabb) { tab = b.dataset.tabb; panel(); }
+  else if (b.dataset.tog) PA.setState(b.dataset.tog, fx.state === "off" ? "on" : fx.state === "on" && PA.hasHit(fx) ? "hit" : "off");
+  else if (b.dataset.key) PA.set("harmony", "KEY", +b.dataset.key);
+  else if (b.dataset.sty) PA.setStyle(fx.id, +b.dataset.sty);
+  else if (b.dataset.p) PA.set(fx.id, b.dataset.p, +b.dataset.v);
+  else return;
+  render();
+});
+document.addEventListener("pa:preset", render);
+document.addEventListener("pa:change", () => { if (!resizing) stage(); });
+document.addEventListener("pa:style", e => { if (e.detail.fx === H) voices = [...SETS[H.style]]; });
+</script>
+</body>
+</html>

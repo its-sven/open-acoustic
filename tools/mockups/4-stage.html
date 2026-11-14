@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stage mode mockup</title>
+<link rel="stylesheet" href="mock.css">
+<style>
+/* Stage mode: an iPad on the mic stand. Readable from 1.5 m, every target at least thumb-sized, no small text needed while playing. */
+body { background: #07090b; user-select: none; -webkit-user-select: none; }
+.wrap { display: grid; grid-template-columns: 1fr 300px; gap: 14px; padding: 14px 16px 16px; min-height: calc(100vh - var(--barh)); }
+.tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tools button { height: 72px; border-radius: 18px; border: 1px solid var(--rule); background: var(--surface); color: var(--muted); font: 700 12px var(--mono); cursor: pointer; display: grid; place-items: center; gap: 2px; }
+.tools button b { font-size: 22px; color: var(--ink); }
+.tools button.on { border-color: var(--warn); color: var(--warn); }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: minmax(140px, 1fr); gap: 12px; }
+.tiles.g { grid-template-columns: repeat(5, 1fr); grid-auto-rows: 104px; margin-top: 12px; }
+.left { display: grid; grid-template-rows: 1fr auto auto; }
+.sub { font: 700 11px var(--mono); letter-spacing: .14em; color: var(--faint); margin: 14px 2px 0; }
+.tile { position: relative; border-radius: 18px; background: var(--surface); border: 2px solid #ffffff10; overflow: hidden; cursor: pointer; touch-action: none; color: var(--faint);
+  display: grid; grid-template-rows: 1fr auto auto; padding: 12px 14px; transition: border-color .15s, background .15s; }
+.tile .fill { position: absolute; inset: auto auto 0 0; height: 6px; width: var(--lv); background: var(--fc); opacity: .5; }
+.tile .art { width: min(70%, 150px); justify-self: center; align-self: center; }
+.tile .nm { font: 800 20px var(--sans); color: var(--muted); }
+.tile .sn { font: 600 12px var(--mono); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile.on { border-color: var(--fc); background: color-mix(in srgb, var(--fc) 14%, var(--surface)); color: var(--fc); }
+.tile.on .nm { color: var(--ink); } .tile.on .sn { color: var(--muted); } .tile.on .fill { opacity: 1; }
+.tile.hitas { border-color: var(--hit); border-style: dashed; }
+.tile.hitas::after { content: "HIT"; position: absolute; top: 10px; right: 12px; font: 800 12px var(--mono); color: var(--hit); }
+.tile.mom { box-shadow: 0 0 0 4px var(--fc), 0 0 30px var(--fc); }
+.tile .readout { position: absolute; inset: 0; display: none; place-items: center; background: #000c; font: 800 36px var(--mono); color: var(--ink); }
+.tile .readout small { display: block; font: 700 12px var(--mono); color: var(--muted); text-align: center; letter-spacing: .1em; }
+.tile.dragging .readout { display: grid; }
+.g .tile { grid-template-columns: 56px minmax(0,1fr); grid-template-rows: 1fr 1fr; column-gap: 10px; padding: 10px 12px; align-items: center; }
+.g .tile .art { grid-row: 1 / 3; width: 56px; }
+.talk { border-radius: 18px; border: 2px solid #ffffff10; background: var(--surface); color: var(--muted); font: 800 20px var(--sans); cursor: pointer; display: grid; place-items: center; align-content: center; gap: 4px; }
+.talk small { font: 600 11px var(--mono); color: var(--faint); }
+.talk.on { border-color: var(--warn); color: var(--warn); background: #2a1f0b; }
+.g .tile .nm { font-size: 16px; align-self: end; } .g .tile .sn { align-self: start; font-size: 10px; }
+.right { display: grid; grid-template-rows: auto 1fr auto; gap: 14px; }
+.hit { border-radius: 24px; border: 3px solid var(--hit); background: #0b1a2a; color: var(--hit); font: 900 54px var(--sans); letter-spacing: .1em; cursor: pointer; display: grid; place-items: center; align-content: center; gap: 6px; touch-action: none; }
+.hit small { font: 700 12px var(--mono); letter-spacing: .12em; color: var(--muted); }
+.hit.on { background: var(--hit); color: #04121f; box-shadow: 0 0 50px #4aa3ff66; } .hit.on small { color: #04121f; }
+.xy { position: relative; aspect-ratio: 1; border-radius: 20px; background: radial-gradient(circle at 100% 0%, #2aa8bb33, transparent 60%), radial-gradient(circle at 0% 0%, #b9c2cc22, transparent 60%), var(--surface); border: 1px solid var(--rule); touch-action: none; cursor: crosshair; overflow: hidden; }
+.xy::before { content: ""; position: absolute; inset: 0; background: linear-gradient(#ffffff08 1px, transparent 1px) 0 0 / 25% 25%, linear-gradient(90deg, #ffffff08 1px, transparent 1px) 0 0 / 25% 25%; }
+.xy .dot { position: absolute; width: 44px; height: 44px; margin: -22px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 6px #ffffff22, 0 0 24px #fff8; }
+.xy .ax { position: absolute; font: 700 11px var(--mono); color: var(--muted); letter-spacing: .1em; }
+.xy .ax.x { bottom: 10px; right: 12px; } .xy .ax.y { top: 10px; left: 12px; }
+.xy .val { position: absolute; bottom: 10px; left: 12px; font: 600 12px var(--mono); color: var(--ink); }
+.xy .ttl { position: absolute; top: 10px; right: 12px; font: 800 13px var(--sans); color: var(--ink); }
+.locked .tiles, .locked .xy { pointer-events: none; opacity: .55; }
+@media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } .tiles { grid-template-columns: repeat(2, 1fr); } .tiles.g { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <div class="left">
+    <div class="tiles" id="tv"></div>
+    <div class="sub">GUITAR</div>
+    <div class="tiles g" id="tg"></div>
+  </div>
+  <div class="right">
+    <div class="tools"><button><b>♪</b>TUNER</button><button><b>♩</b>TAP</button><button id="lock"><b>🔒</b>LOCK</button></div>
+    <button class="hit" id="hit">HIT<small>TAP TO LATCH · HOLD = MOMENTARY</small></button>
+    <div class="xy" id="xy"><span class="ttl">SPACE</span><span class="ax y">↑ REVERB</span><span class="ax x">DELAY →</span><span class="val" id="xyv"></span><span class="dot" id="dot"></span></div>
+  </div>
+</div>
+<script src="../pa-menus.js"></script>
+<script src="../pa-images.js"></script>
+<script src="mock.js"></script>
+<script>
+PA.nav({ big: true });
+// one "swipe" parameter per tile: drag across the tile to change it
+const SWIPE = { hardtune: "SHIFT", transducer: "DRIVE", double: "LEVEL", harmony: "LEVEL", umod: "LEVEL", delay: "LEVEL", reverb: "LEVEL",
+  "g-bodyrez": "AMOUNT", "g-comp": "MAKEUP GAIN", "g-umod": "UMOD LEVEL", "g-delay": "DELAY LEVEL", "g-reverb": "REVERB LEVEL" };
+let hitOn = false, talk = false;
+const lv = fx => { const c = PA.cellOf(fx, SWIPE[fx.id]); return ((fx.vals[c.label] - c.min) / (c.max - c.min) * 100).toFixed(0) + "%"; };
+function tile(fx) {
+  const live = fx.state === "on" || fx.always || (fx.state === "hit" && hitOn);
+  return `<div class="tile ${live ? "on" : ""} ${fx.state === "hit" ? "hitas" : ""}" data-id="${fx.id}" style="--fc:${PA.color(fx)};--lv:${lv(fx)}">
+    ${PA.artHTML(PA.img(fx))}<div class="nm">${fx.name}</div><div class="sn">${PA.styleName(fx)}</div><span class="fill"></span>
+    <div class="readout"><div><small>${SWIPE[fx.id]}</small>${PA.fmt(PA.cellOf(fx, SWIPE[fx.id]), fx.vals[SWIPE[fx.id]])}</div></div></div>`;
+}
+function render() {
+  document.getElementById("tv").innerHTML = PA.vocal.map(tile).join("") + `<button class="talk ${talk ? "on" : ""}" id="talk">TALK<small>${talk ? "FX MUTED · TAP TO SING" : "MUTE FX BETWEEN SONGS"}</small></button>`;
+  document.getElementById("talk").onclick = () => { talk = !talk; render(); };
+  document.getElementById("tg").innerHTML = PA.guitar.map(tile).join("");
+}
+render();
+
+// tile gestures: tap = on/off · hold still = momentary on · drag sideways = swipe parameter
+for (const id of ["tv", "tg"]) document.getElementById(id).addEventListener("pointerdown", e => {
+  const t = e.target.closest(".tile"); if (!t) return;
+  const fx = PA.byId[t.dataset.id], c = PA.cellOf(fx, SWIPE[fx.id]), x0 = e.clientX, v0 = fx.vals[c.label], w = t.offsetWidth;
+  let mode = "tap", prev = fx.state; t.setPointerCapture(e.pointerId);
+  const hold = setTimeout(() => { if (mode !== "tap" || fx.always) return; mode = "mom"; prev = fx.state; fx.state = "on"; t.classList.add("on", "mom"); }, 420);
+  const mv = ev => {
+    if (mode === "tap" && Math.abs(ev.clientX - x0) > 10) { mode = "drag"; clearTimeout(hold); t.classList.add("dragging"); }
+    if (mode !== "drag") return;
+    PA.set(fx.id, c.label, v0 + (ev.clientX - x0) / w * (c.max - c.min));
+    t.style.setProperty("--lv", lv(fx)); t.querySelector(".readout").innerHTML = `<div><small>${c.label}</small>${PA.fmt(c, fx.vals[c.label])}</div>`;
+  };
+  const up = () => {
+    clearTimeout(hold); t.removeEventListener("pointermove", mv);
+    if (mode === "tap") PA.setState(fx.id, PA.nextState(fx));
+    else if (mode === "mom") { fx.state = prev; render(); }
+    else t.classList.remove("dragging");
+  };
+  t.addEventListener("pointermove", mv); t.addEventListener("pointerup", up, { once: true });
+});
+document.addEventListener("pa:state", render);
+
+// HIT: tap latches, hold = momentary
+const hit = document.getElementById("hit");
+PA.press(hit, { tap: () => { hitOn = !hitOn; hit.classList.toggle("on", hitOn); render(); },
+  hold: () => { hitOn = true; hit.classList.add("on"); render(); }, holdEnd: () => { hitOn = false; hit.classList.remove("on"); render(); } });
+
+// SPACE pad: X = vocal delay level, Y = vocal reverb level (one finger mixes the ambience)
+const xy = document.getElementById("xy"), dot = document.getElementById("dot"), D = PA.byId.delay, R = PA.byId.reverb;
+function placeDot() {
+  const x = (D.vals.LEVEL + 51) / 51, y = (R.vals.LEVEL + 51) / 51;
+  dot.style.left = x * 100 + "%"; dot.style.top = (1 - y) * 100 + "%";
+  document.getElementById("xyv").textContent = `DLY ${D.vals.LEVEL} dB · REV ${R.vals.LEVEL} dB`;
+}
+placeDot();
+xy.addEventListener("pointerdown", e => {
+  xy.setPointerCapture(e.pointerId);
+  const mv = ev => { const r = xy.getBoundingClientRect(), x = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)), y = Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height));
+    PA.set("delay", "LEVEL", -51 + x * 51); PA.set("reverb", "LEVEL", -51 + (1 - y) * 51); placeDot(); };
+  mv(e); xy.addEventListener("pointermove", mv); xy.addEventListener("pointerup", () => xy.removeEventListener("pointermove", mv), { once: true });
+});
+document.getElementById("lock").onclick = e => { e.currentTarget.classList.toggle("on"); document.getElementById("wrap").classList.toggle("locked"); };
+</script>
+</body>
+</html>
