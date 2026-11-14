@@ -149,3 +149,7 @@ html.bigbar { --barh: 104px; }
 .npsim button { background: var(--surface-2); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; cursor: pointer; font-size: 14px; color: var(--ink); }
 /* hide a view's own markup until its script has drawn it (no half-built page on a view switch) */
 html:not(.pa-drawn) body > :not(.pbar):not(.nopedal):not(.offbar) { visibility: hidden; }
+/* Touch app, not a document: a long press shouldn't select text, show the iOS copy/lookup callout or flash a grey tap box.
+   Text fields keep normal selection so you can still edit what you type. */
+html { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+input, textarea, select, [contenteditable] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
