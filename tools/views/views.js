@@ -162,11 +162,13 @@
   let demoIdx = 2; try { const s = sessionStorage.getItem("pa-demo-preset"); if (s !== null && DEMO_NAMES[+s]) demoIdx = +s; } catch {}
   // Values are read from the pedal once per preset and kept in sessionStorage, so switching views (each view is
   // its own page) reuses them instead of reading everything again. Your edits update the saved copy as they're sent.
-  const cacheKey = n => (window.simPedal ? "sim-" : "") + (P.live ? "pa-vals-" : "pa-demo-vals-") + n;
+  const pfx = () => (window.simPedal ? "sim-" : "");
+  const cacheKey = (n, live = P.live) => pfx() + (live ? "pa-vals-" : "pa-demo-vals-") + n;
   // The copy is saved again when you leave a view, so a fresh one (< 30 s) means "just switched views". An older one
   // (the tab was closed or asleep and the pedal may have been used meanwhile) is read again from the pedal.
-  function saveCache() { if (P.num == null || (P.live && !complete)) return; try { sessionStorage.setItem(cacheKey(P.num), JSON.stringify({ t: Date.now(), v: [...V] })); } catch {} }
-  function loadCache(n, maxAge = Infinity) { try { const a = JSON.parse(sessionStorage.getItem(cacheKey(n)));
+  function saveCache() { if (P.num == null || (P.live && !complete)) return; try { sessionStorage.setItem(cacheKey(P.num), JSON.stringify({ t: Date.now(), v: [...V] }));
+    if (P.live) sessionStorage.setItem(pfx() + "pa-live", JSON.stringify({ num: P.num, name: P.name, t: Date.now() })); } catch {} }
+  function loadCache(n, maxAge = Infinity, live = P.live) { try { const a = JSON.parse(sessionStorage.getItem(cacheKey(n, live)));
     if (a && a.v && Date.now() - a.t < maxAge) { for (const [id, v] of a.v) V.set(id, v); return true; } } catch {} return false; }
   const dropCache = n => { try { sessionStorage.removeItem(cacheKey(n)); } catch {} };
   let complete = false;   // true once every value of the current preset has been read (or came from the saved copy)
@@ -183,6 +185,12 @@
   function libApply(e) { const g = new Set(lib.global); for (const [id, v] of e.vals) if (!g.has(id) && id !== HIT) V.set(id, v); }
   let fresh = false;      // the pedal just loaded a preset and nothing has been edited yet: what we read is the stored preset
   loadDemo(demoIdx); P.num = demoIdx + 10; P.name = DEMO_NAMES[demoIdx]; loadCache(P.num);
+  // Opened from another view that was connected a moment ago: show the pedal's values right away instead of the
+  // demo preset, so nothing flips on/off while this view reconnects (it re-checks the preset number once ready).
+  try { const b = JSON.parse(sessionStorage.getItem(pfx() + "pa-live"));
+    if (b && Date.now() - b.t < 30000 && loadCache(b.num, 30000, true)) { P.num = b.num; P.name = b.name; } } catch {}
+  // A view brought back by the browser's Back (or a swipe back) is an old snapshot: load it again
+  addEventListener("pageshow", e => { if (e.persisted) location.reload(); });
   const recent = id => touched.has(id) && performance.now() - touched.get(id) < 1500;   // don't overwrite what the user is dragging
   // Read order: what makes the views look right first (on/off, styles, HIT), then every value.
   const firstIds = () => [HIT, ...FX.flatMap(f => [f.control && f.control.id, f.styleCell && f.styleCell.id]).filter(x => x != null)];
