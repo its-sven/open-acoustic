@@ -390,6 +390,7 @@ selectParam(0x158);
 let lastUser = 0;
 $("pSlider").addEventListener("pointerdown", () => { lastUser = performance.now(); });
 setInterval(() => {
+  if (!$("liveCard") || !$("liveCard").open) return;   // only poll while the Live parameter control panel is open
   if (!$("pAuto").checked || !cur || !out || !inp) return;
   if (performance.now() - lastUser < 1500 || performance.now() - lastSend < 1000) return;  // don't fight the user
   getParam(cur[0], true);
