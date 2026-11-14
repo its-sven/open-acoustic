@@ -93,7 +93,7 @@
   // ── writes: model first (instant UI), then the pedal (coalesced per parameter) ──
   const touched = new Map(), pending = new Map(); let flushT = null;
   function send(id, v) {
-    touched.set(id, performance.now());
+    touched.set(id, performance.now()); fresh = false;
     if (!L.ready) { clearTimeout(flushT); flushT = setTimeout(saveCache, 30); return; }
     pending.set(id, v); if (!flushT) flushT = setTimeout(flush, 30);
   }
@@ -162,7 +162,7 @@
   let demoIdx = 2; try { const s = sessionStorage.getItem("pa-demo-preset"); if (s !== null && DEMO_NAMES[+s]) demoIdx = +s; } catch {}
   // Values are read from the pedal once per preset and kept in sessionStorage, so switching views (each view is
   // its own page) reuses them instead of reading everything again. Your edits update the saved copy as they're sent.
-  const cacheKey = n => (P.live ? "pa-vals-" : "pa-demo-vals-") + n;
+  const cacheKey = n => (window.simPedal ? "sim-" : "") + (P.live ? "pa-vals-" : "pa-demo-vals-") + n;
   // The copy is saved again when you leave a view, so a fresh one (< 30 s) means "just switched views". An older one
   // (the tab was closed or asleep and the pedal may have been used meanwhile) is read again from the pedal.
   function saveCache() { if (P.num == null || (P.live && !complete)) return; try { sessionStorage.setItem(cacheKey(P.num), JSON.stringify({ t: Date.now(), v: [...V] })); } catch {} }
@@ -170,6 +170,18 @@
     if (a && a.v && Date.now() - a.t < maxAge) { for (const [id, v] of a.v) V.set(id, v); return true; } } catch {} return false; }
   const dropCache = n => { try { sessionStorage.removeItem(cacheKey(n)); } catch {} };
   let complete = false;   // true once every value of the current preset has been read (or came from the saved copy)
+
+  // ── Preset library: every preset's stored values, read once ("Read all presets") and kept on this device ──
+  // A preset change then loads from here with no reads. Entries older than the last STORE seen are re-read on the
+  // next visit (a store may have changed that preset). Parameters that were the same in every preset (MIX levels,
+  // HIT …) are treated as global and are never taken from the library.
+  const LIB_KEY = "pa-library-v1";
+  const lib = Object.assign({ presets: {}, global: [], storeAt: 0, pcOffset: null, pcWorks: null }, L.store.get(LIB_KEY) || {});
+  const saveLib = () => L.store.set(LIB_KEY, lib);
+  const libEntry = n => { const e = lib.presets[n]; return e && e.t > lib.storeAt ? e : null; };
+  function libPut(n, name, vals) { lib.presets[n] = { name, t: Date.now(), vals: Object.entries(vals).map(([id, v]) => [+id, v]) }; if (name != null) { names[n] = name; L.store.set("pa-preset-names", names); } saveLib(); }
+  function libApply(e) { const g = new Set(lib.global); for (const [id, v] of e.vals) if (!g.has(id) && id !== HIT) V.set(id, v); }
+  let fresh = false;      // the pedal just loaded a preset and nothing has been edited yet: what we read is the stored preset
   loadDemo(demoIdx); P.num = demoIdx + 10; P.name = DEMO_NAMES[demoIdx]; loadCache(P.num);
   const recent = id => touched.has(id) && performance.now() - touched.get(id) < 1500;   // don't overwrite what the user is dragging
   // Read order: what makes the views look right first (on/off, styles, HIT), then every value.
@@ -184,19 +196,31 @@
     try {
       const n = await L.get(PRESET); if (!alive()) return;
       if (n != null && n !== P.num) { P.num = n; P.name = names[n] ?? null; complete = false; emit("preset", preset()); }
+      const lp = lastProg; lastProg = null;   // only a Program Change the pedal just sent tells us its numbering
+      if (n != null && lp != null && lib.pcOffset !== n - lp) { lib.pcOffset = n - lp; saveLib(); }   // PC number → shown number
       if (reuse && n != null && loadCache(n, 30000)) { complete = true; emit("sync", {}); return; }
+      const e = n != null && fresh && libEntry(n);
+      if (e) { libApply(e); P.name = e.name ?? names[n] ?? null; emit("preset", preset()); emit("sync", {});
+        // values that looked global (same in every preset) are still read: a few reads, and they stay right if you changed one
+        if (!(await L.getMany(lib.global, alive, (id, v) => { if (!recent(id)) V.set(id, v); }))) return;
+        complete = true; saveCache(); emit("sync", {}); return; }
       if (n != null && names[n] == null) { const nm = await L.presetName(); if (!alive()) return; if (nm != null) { names[n] = nm; L.store.set("pa-preset-names", names); } P.name = names[n] ?? null; emit("preset", preset()); }
       const apply = (id, v) => { if (!recent(id)) V.set(id, v); };
       if (!(await L.getMany(firstIds(), alive, apply))) return; emit("sync", {});
       if (!(await L.getMany(allIds().filter(id => !firstIds().includes(id)), alive, apply))) return;
       complete = true; saveCache(); emit("sync", {});
+      if (fresh && n != null) { const vals = {}; for (const id of allIds()) vals[id] = V.get(id); libPut(n, P.name, vals); }   // keep it for next time
     } finally { if (g === gen) { syncing = false; emit("syncing", { on: false }); } }
   }
   let syncT = null; const syncSoon = (ms = 400) => { clearTimeout(syncT); syncT = setTimeout(sync, ms); };
   L.on("ready", () => { P.live = true; P.num = null; P.name = "…"; complete = false; emit("preset", preset()); emit("link", linkState()); sync(true); });
   L.on("status", () => { if (!L.ready && P.live) { P.live = false; } emit("link", linkState()); paintBar(); });
-  L.on("program", () => { gen++; if (P.num != null) dropCache(P.num); complete = false; syncSoon(120); });
-  L.on("panel", e => { if (!e.self) syncSoon(e.e0 === 0xAE ? 500 : 250); });   // something was used on the unit itself
+  let lastProg = null, walking = false;
+  L.on("program", p => { lastProg = p; if (walking) return; gen++; if (P.num != null) dropCache(P.num); complete = false; fresh = true; syncSoon(120); });
+  L.on("panel", e => {
+    if (e.e0 === 0xDB && e.e1 === L.EVT.store && e.e2 === 0x00) { lib.storeAt = Date.now(); saveLib(); }   // a STORE (here or on the unit) may change any preset
+    if (!e.self && !walking) { fresh = false; syncSoon(e.e0 === 0xAE ? 500 : 250); }   // something was used on the unit itself
+  });
   const preset = () => ({ ...P, names });
   const linkState = () => ({ status: L.status, message: L.message, ready: L.ready });
 
@@ -210,26 +234,63 @@
   async function gotoPreset(n) {
     if (!P.live) { stepPreset(n - 10 - demoIdx); return; }
     let cur = P.num, guard = 0; if (cur == null || n === cur) return;
-    emit("busy", { text: `Going to preset ${n}…` });
-    while (cur !== n && guard++ < 400) {
-      const w = waitProgram(); await L.press(n > cur ? L.EVT.next : L.EVT.prev);
-      if ((await w) == null) break; cur = await L.get(PRESET); if (cur == null) break;
-    }
-    emit("busy", null); sync();
+    walking = true; history.length = 0;
+    try {
+      // 1) a Program Change jumps straight there, if the pedal accepts it (checked once, then remembered)
+      if (lib.pcOffset != null && lib.pcWorks !== false && n - lib.pcOffset >= 0 && n - lib.pcOffset < 128) {
+        L.programChange(n - lib.pcOffset); await L.delay(350); cur = await L.get(PRESET);
+        const ok = cur === n; if (lib.pcWorks !== ok) { lib.pcWorks = ok; saveLib(); }
+      }
+      // 2) otherwise step there with the front arrows
+      if (cur !== n) emit("busy", { text: `Going to preset ${n}…` });
+      while (cur != null && cur !== n && guard++ < 400) {
+        const w = waitProgram(); await L.press(n > cur ? L.EVT.next : L.EVT.prev);
+        if ((await w) == null) break; cur = await L.get(PRESET);
+      }
+    } finally { walking = false; lastProg = null; emit("busy", null); }
+    gen++; dropCache(P.num); complete = false; fresh = true; sync();
   }
-  // Walk every preset once to learn the names (the pedal only reports the current preset's name), then go back.
-  async function learnNames() {
-    if (!P.live) return; const start = await L.get(PRESET); if (start == null) return;
-    let cur = start; const seen = new Set([start]);
-    for (let i = 0; i < 400; i++) {
-      emit("busy", { text: `Learning preset names… ${seen.size}`, cancel: true }); if (cancelLearn) break;
-      const w = waitProgram(); await L.press(L.EVT.next); if ((await w) == null) break;
-      const n = await L.get(PRESET); if (n == null || seen.has(n)) break; seen.add(n); cur = n;
-      const nm = await L.presetName(); if (nm != null) { names[n] = nm; L.store.set("pa-preset-names", names); }
+  // "Read all presets": step through every preset once, reading its name and all values into the library, and end
+  // back on the starting preset. Unsaved edits on the current preset are lost (the pedal drops them on a preset change).
+  async function readAll() {
+    if (!P.live || walking) return; walking = true; cancelLearn = false;
+    const t0 = performance.now(), start = await L.get(PRESET), times = [], total = Object.keys(names).length || null;
+    const vals = {}, perVals = {}; let cur = start, count = 0;
+    const tell = (extra = "") => { const avg = times.length ? times.reduce((a, b) => a + b) / times.length : null;
+      const left = total && avg ? Math.max(0, total - count) * avg / 1000 : null;
+      emit("busy", { cancel: true, text: `Reading presets… ${count}${total ? " / " + total : ""}${avg ? ` · ${(avg / 1000).toFixed(1)} s each` : ""}${left != null ? ` · ~${fmtDur(left)} left` : ""}${extra}` }); };
+    async function readHere(n) {
+      const t = performance.now(), name = await L.presetName();
+      const got = await L.getMany(allIds(), () => !cancelLearn && L.ready); if (!got) return false;
+      perVals[n] = got; libPut(n, name, got); count++; times.push(performance.now() - t); if (times.length > 8) times.shift(); tell(); return true;
     }
-    cancelLearn = false; emit("busy", { text: "Going back…" }); await gotoPreset(start);
+    try {
+      if (start == null) return; tell();
+      const seen = new Set();
+      // step first and read the start preset last: arriving there again reloads it without any unsaved edits
+      for (let i = 0; i < 500 && !cancelLearn; i++) {
+        const w = waitProgram(1500); await L.press(L.EVT.next);
+        if ((await w) == null) break;
+        const n = await L.get(PRESET); if (n == null || seen.has(n)) break; seen.add(n);
+        if (!(await readHere(n))) break; cur = n;
+        if (n === start) break;
+      }
+      if (!cancelLearn && cur !== start) { emit("busy", { text: "Going back…" }); walking = false; await gotoPreset(start); walking = true; if (!seen.has(start)) await readHere(start); }
+      // parameters that never differ between presets are global, not part of a preset
+      const ids = allIds(), all = Object.values(perVals);
+      if (all.length > 3) { lib.global = ids.filter(id => all.every(v => v[id] === all[0][id])); }
+      lib.readAt = Date.now(); lib.storeAt = Math.min(lib.storeAt, lib.readAt - 1); saveLib();
+      toast(`Read ${count} presets in ${fmtDur((performance.now() - t0) / 1000)}`, 3000);
+    } finally { walking = false; cancelLearn = false; emit("busy", null); gen++; fresh = true; complete = false; sync(); }
+  }
+  const fmtDur = s => s < 90 ? Math.round(s) + " s" : Math.round(s / 60) + " min";
+  // Rough time for a full read, from the measured round trip (or a USB guess before any read was timed)
+  function readAllEstimate() {
+    const n = Object.keys(names).length || null, ms = L.readMs ?? 12, per = allIds().length * ms + 400;
+    return { perPreset: per / 1000, presets: n, total: n ? n * per / 1000 : null, measured: L.readMs != null };
   }
   let cancelLearn = false;
+  const learnNames = readAll;
 
   // ── gestures: tap / double-tap / hold / drag on one element ──────────────
   // o: {tap, double, hold, holdEnd, drag(dx, dy, e, start), dragEnd, threshold}. When `double` is set, `tap` waits 260 ms.
@@ -369,8 +430,8 @@
         <div class="cpop" hidden><div class="cmsg"></div>
           <label>To pedal (MIDI out)<select data-port="out"></select></label><label>From pedal (MIDI in)<select data-port="inp"></select></label>
           <label class="chk"><input type="checkbox" data-ble> Through a Bluetooth MIDI adapter</label>
-          <div class="crow"><button data-act="connect" class="pri">Connect</button><button data-act="names">Learn preset names</button></div>
-          <div class="note">Hold ◀ ▶ to jump 10 presets. Effects follow the pedal live; turning a knob on the unit updates every view.</div></div></div>
+          <div class="crow"><button data-act="connect" class="pri">Connect</button><button data-act="names">Read all presets</button></div><div class="libinfo note"></div>
+          <div class="note">Hold ◀ ▶ to jump 10 presets. Turning a knob on the unit updates every view.</div></div></div>
       <div class="psel">
         <button class="pstep" data-step="-1" aria-label="Previous preset">◀</button>
         <button class="pname" aria-haspopup="listbox"><span class="pnum"></span><span class="pnm"></span><span class="car">▾</span></button>
@@ -385,8 +446,8 @@
     const list = bar.querySelector(".plist"), q = list.querySelector("input"), items = list.querySelector(".pitems"), name = bar.querySelector(".pname");
     const entries = () => P.live ? Object.entries(names).map(([n, nm]) => ({ num: +n, name: nm })).sort((a, b) => a.num - b.num) : DEMO_NAMES.map((nm, i) => ({ num: i + 10, name: nm }));
     const fill = () => { const f = q.value.trim().toLowerCase(), all = entries();
-      items.innerHTML = all.filter(p => !f || (p.num + " " + p.name).toLowerCase().includes(f)).map(p => `<button role="option" data-n="${p.num}" class="${p.num === P.num ? "sel" : ""}"><span>${p.num}</span>${p.name || "—"}</button>`).join("") || `<div class="none">No match</div>`;
-      list.querySelector(".pfoot").innerHTML = P.live ? `<span class="note">${all.length} names known.</span> <button data-act="names">Learn all</button>` : `<span class="note">Demo presets: connect the pedal for yours.</span>`; };
+      items.innerHTML = all.filter(p => !f || (p.num + " " + p.name).toLowerCase().includes(f)).map(p => `<button role="option" data-n="${p.num}" class="${p.num === P.num ? "sel" : ""}"><span>${p.num}</span>${p.name || "—"}${P.live && libEntry(p.num) ? `<i class="inlib" title="In the library: loads instantly">●</i>` : ""}</button>`).join("") || `<div class="none">No match</div>`;
+      list.querySelector(".pfoot").innerHTML = P.live ? `<span class="note">${libSummary()}</span> <button data-act="names">${lib.readAt ? "Read again" : "Read all"}</button>` : `<span class="note">Demo presets: connect the pedal for yours.</span>`; };
     const open = v => { list.hidden = !v; name.setAttribute("aria-expanded", v); if (v) { q.value = ""; fill(); items.querySelector(".sel")?.scrollIntoView({ block: "center" }); } };
     gesture(name, { tap: () => open(list.hidden), drag: dx => { name.style.transform = `translateX(${Math.max(-60, Math.min(60, dx / 3))}px)`; },
       dragEnd: e => { name.style.transform = ""; } , threshold: 12 });
@@ -398,17 +459,17 @@
     q.oninput = fill;
     q.onkeydown = e => { if (e.key === "Enter") { const b = items.querySelector("button"); if (b) { gotoPreset(+b.dataset.n); open(false); } } if (e.key === "Escape") open(false); };
     items.onclick = e => { const b = e.target.closest("[data-n]"); if (b) { gotoPreset(+b.dataset.n); open(false); } };
-    list.querySelector(".pfoot").onclick = e => { if (e.target.closest("[data-act=names]")) { open(false); learnNames(); } };
+    list.querySelector(".pfoot").onclick = e => { if (e.target.closest("[data-act=names]")) { open(false); askReadAll(); } };
     // connection popover
     const cpop = bar.querySelector(".cpop"), conn = bar.querySelector(".conn");
     const fillPorts = () => { const ps = L.ports(), ch = L.choice();
       cpop.querySelector('[data-port="out"]').innerHTML = `<option value="">—</option>` + ps.outputs.map(p => `<option value="${p.id}" ${p.id === ch.out ? "selected" : ""}>${p.name}</option>`).join("");
       cpop.querySelector('[data-port="inp"]').innerHTML = `<option value="">—</option>` + ps.inputs.map(p => `<option value="${p.id}" ${p.id === ch.inp ? "selected" : ""}>${p.name}</option>`).join("");
-      cpop.querySelector("[data-ble]").checked = ch.ble; cpop.querySelector(".cmsg").textContent = L.message; };
+      cpop.querySelector("[data-ble]").checked = ch.ble; cpop.querySelector(".cmsg").textContent = L.message; cpop.querySelector(".libinfo").textContent = libSummary(); };
     conn.onclick = async () => { if (cpop.hidden && !L.access) await L.start(); fillPorts(); cpop.hidden = !cpop.hidden; };
     cpop.onclick = async e => { const a = e.target.closest("[data-act]"); if (!a) return;
       if (a.dataset.act === "connect") { if (!L.access && !(await L.start())) { fillPorts(); return; } L.use(cpop.querySelector('[data-port="out"]').value, cpop.querySelector('[data-port="inp"]').value, cpop.querySelector("[data-ble]").checked); }
-      if (a.dataset.act === "names") { cpop.hidden = true; learnNames(); } };
+      if (a.dataset.act === "names") { cpop.hidden = true; askReadAll(); } };
     L.on("ports", fillPorts); L.on("status", () => { if (!cpop.hidden) fillPorts(); });
     document.addEventListener("pointerdown", e => { if (!list.hidden && !e.target.closest(".psel")) open(false); if (!cpop.hidden && !e.target.closest(".cwrap")) cpop.hidden = true; });
     document.addEventListener("keydown", e => {
@@ -421,6 +482,16 @@
     document.addEventListener("pa:preset", paintBar); document.addEventListener("pa:syncing", paintBar);
     paintBar();
     L.start({ auto: true });   // connect on load if the browser allows it
+  }
+  function libSummary() {
+    const n = Object.keys(lib.presets).length, est = readAllEstimate();
+    const t = est.total != null ? `about ${fmtDur(est.total)}` : `about ${est.perPreset.toFixed(1)} s per preset`;
+    return n ? `Library: ${n} presets${lib.readAt ? ", read " + new Date(lib.readAt).toLocaleDateString() : ""}. A full read takes ${t}.`
+             : `No library yet. Reading every preset once takes ${t}${est.measured ? "" : " over USB (estimate)"}; after that, presets switch without reading.`;
+  }
+  function askReadAll() {
+    if (!P.live) { toast("Connect the pedal first"); return; }
+    if (confirm(`Read every preset into the library?\n\n${libSummary()}\n\nThe pedal steps through all presets and ends on this one again. Unsaved changes to the current preset are lost.`)) readAll();
   }
   function paintBar() {
     if (!bar) return;
@@ -469,7 +540,7 @@
 
   window.PA = { SENDS, sendsOf, MIX, editorHTML, wireEditor, refreshEditor, openSheet, closeSheet, statesOf, FX, byId, cellOf, fmt, seconds, styleName, img, artHTML, color, set, setParam, setStyle, setState, nextState, hasHit, live,
     setHit, hitOn, getV, addParam, knob, initKnobs, drawKnob, fader, initFaders, gesture, gestureAll, toast, nav, emit, undo, snapshot, restore,
-    stepPreset, gotoPreset, learnNames, keyInfo, link: L,
+    stepPreset, gotoPreset, learnNames, readAll, readAllEstimate, library: lib, keyInfo, link: L,
     vocal: FX.filter(f => f.side === "vocal"), guitar: FX.filter(f => f.side === "guitar"),
     get preset() { return preset(); }, get connected() { return L.ready; } };
 })();

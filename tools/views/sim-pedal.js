@@ -24,6 +24,7 @@
   let tunnel = false;
   const output = { id: "sim-out", name: "Play Acoustic (simulated)", state: "connected", send(d) {
     d = [...d];
+    if ((d[0] & 0xF0) === 0xC0) { if (d[1] < NAMES.length) cur = d[1]; return; }   // Program Change selects a preset
     if (d[1] === 0x7E && d[3] === 0x06 && d[4] === 0x01) return reply([0xF0, 0x7E, 0x00, 0x06, 0x02, 0x00, 0x01, 0x38, 0x70, 0x00, 0x01, 0x04, 0x00, 0xF7]);
     if (d[3] !== 0x38) return;
     const cmd = d[6], id = (d[7] << 7) | d[8];

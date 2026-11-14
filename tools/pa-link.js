@@ -13,7 +13,9 @@
   const delay = ms => new Promise(r => setTimeout(r, ms));
   const dec28 = (p, o) => { let v = (p[o] << 21) | (p[o + 1] << 14) | (p[o + 2] << 7) | p[o + 3]; if (v >= (1 << 27)) v -= (1 << 28); return v; };
   const enc28 = v => { if (v < 0) v += (1 << 28); return [(v >> 21) & 0x7f, (v >> 14) & 0x7f, (v >> 7) & 0x7f, v & 0x7f]; };
-  const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  // the simulated pedal (views/?sim) keeps its own saved data, so it never mixes with a real pedal's
+  const pre = () => (window.simPedal ? "sim-" : "");
+  const store = { get(k) { try { return JSON.parse(localStorage.getItem(pre() + k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(pre() + k, JSON.stringify(v)); } catch {} } };
 
   const L = { status: "off", message: "Not connected", ble: false, out: null, inp: null, access: null, ch: 0, pid: 0x70, ready: false };
   const subs = {};
@@ -37,7 +39,7 @@
       emit("panel", { e0: (v >> 16) & 0xFF, e1: (v >> 8) & 0xFF, e2: v & 0xFF, self: i >= 0 });
       return;
     }
-    if ((d[0] & 0xF0) === 0xC0) emit("program", d[1]);
+    if ((d[0] & 0xF0) === 0xC0) { L.pcChannel = d[0] & 0x0F; emit("program", d[1]); }
   }
 
   // ── ports + identity ────────────────────────────────────────────────────
@@ -104,7 +106,9 @@
     if (!L.ready) return null;
     const p = collect(L.ble ? 1200 : 600, 1, m => m[0] === 0xF0 && m[3] === 0x38 && m[6] === 0x22 && ((m[7] << 7) | m[8]) === id);
     L.out.send([...hdr(), 0x47, (id >> 7) & 0x7F, id & 0x7F, 0xF7]);
-    const r = await p; return r.length ? dec28(r[0], 9) : null;
+    const t0 = performance.now(), r = await p;
+    if (r.length) L.readMs = L.readMs == null ? performance.now() - t0 : L.readMs * .9 + (performance.now() - t0) * .1;   // average round trip
+    return r.length ? dec28(r[0], 9) : null;
   });
   // Read many; `alive()` returning false abandons the rest (e.g. the preset changed meanwhile).
   L.getMany = async (ids, alive = () => true, each) => {
@@ -126,6 +130,8 @@
     const k = (e0 << 16) | (e1 << 8) | e2; selfEchoes.push({ k, t: performance.now() }); while (selfEchoes.length > 40) selfEchoes.shift();
     L.out.send([...hdr(), 0x55, 0x02, ...enc28(k), 0xF7]); return true;
   };
+  // Program Change on the channel the pedal itself uses for them (learned from its own Program Change messages).
+  L.programChange = prog => { if (!L.ready) return false; L.out.send([0xC0 | (L.pcChannel ?? 0), prog & 0x7F]); return true; };
   L.press = async code => { if (L.inject(0xDB, code, 0x00)) { await delay(60); L.inject(0xDB, code, 0x01); } };
   // Held button: the firmware recognises a hold from a stream of 02 events, like the hardware sends.
   L.hold = (code) => {

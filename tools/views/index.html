@@ -40,8 +40,9 @@ a.card:hover { transform: translateY(-2px); border-color: var(--cc); }
     </ul>
     <h3>Good to know</h3>
     <ul>
-      <li>Preset stepping uses the pedal's own front arrows, so the pedal must be on its preset screen. Jumping to a preset steps there one by one.</li>
-      <li>The pedal only reports the current preset's name: the list fills as you visit presets, or tap <b>Learn all</b> once.</li>
+      <li><b>Read all presets</b> (in the preset list or the connection menu) walks every preset once and keeps their values on this device. After that a preset change needs no reading, and the list shows every preset by name. Reading takes about a second per preset over USB; the menu shows an estimate from your pedal's measured speed.</li>
+      <li>Picking a preset from the list jumps there with a Program Change if the pedal accepts one, otherwise it steps there with the front arrows (the pedal must be on its preset screen).</li>
+      <li>After a STORE (here or on the unit) the library re-reads each preset the next time you visit it. Use <b>Read again</b> if you edited presets elsewhere.</li>
       <li>The effect send levels (LEAD TO DELAY, UMOD TO REV …) are real per-preset parameters the pedal never shows. The signal order in the chain views comes from them.</li>
       <li>MIDI CTRL and FILTER are never written: they can lock USB out until a factory reset.</li>
     </ul>

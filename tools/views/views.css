@@ -134,3 +134,5 @@ html.bigbar { --barh: 104px; }
 .styles button.sel { border-color: var(--pc); color: var(--ink); background: color-mix(in srgb, var(--pc) 18%, var(--surface-2)); }
 .styles button.sel .art { color: var(--pc); }
 .bigknobs { display: flex; gap: 22px; flex-wrap: wrap; }
+.pitems .inlib { margin-left: auto; color: var(--on); font-style: normal; font-size: 9px; align-self: center; }
+.libinfo { line-height: 1.4; }

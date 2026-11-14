@@ -43,3 +43,4 @@ Five touch-screen views of the same pedal, each for a different job: **Pedalboar
 - Values stay in sync both ways: a change in a view goes to the pedal; a knob or switch used on the unit re-reads the values.
 - Without a pedal the views run on a demo preset. Add `?sim` to the address to use a simulated pedal (`views/sim-pedal.js`).
 - Preset stepping presses the pedal's front ◀ ▶, so the pedal should be on its preset screen.
+- **Read all presets** stores every preset's values on the device, so preset changes need no reading and the preset list can jump straight to any preset (Program Change when the pedal accepts it, front arrows otherwise).
