@@ -425,7 +425,7 @@
         <div class="cpop" hidden><div class="cmsg"></div>
           <label>To pedal (MIDI out)<select data-port="out"></select></label><label>From pedal (MIDI in)<select data-port="inp"></select></label>
           <label class="chk"><input type="checkbox" data-ble> Through a Bluetooth MIDI adapter</label>
-          <div class="crow"><button data-act="connect" class="pri">Connect</button><button data-act="names">Read all presets</button></div><div class="libinfo note"></div>
+          <div class="crow"><button data-act="connect" class="pri">Connect</button><button data-act="names">Read all presets</button></div>${window.simPedal ? `<div class="crow"><button data-act="real">Use the real pedal</button><span class="note">This is a simulated pedal.</span></div>` : ""}<div class="libinfo note"></div>
           <div class="note">Hold ◀ ▶ to jump 10 presets. Turning a knob on the unit updates every view.</div></div></div>
       <div class="psel">
         <button class="pstep" data-step="-1" aria-label="Previous preset">◀</button>
@@ -441,10 +441,12 @@
     if (!o.noCover) document.body.insertAdjacentHTML("beforeend", `<div class="nopedal" hidden><div class="npbox">
         <h2></h2><p class="npmsg"></p>
         <div class="crow"><button class="pri" data-np="connect">Connect</button><button data-np="ports">Choose ports…</button></div>
-        <p class="note">Connect the Play Acoustic by USB (Chrome or Edge on a Mac/PC), or on an iPad use a Web MIDI browser app with a USB adapter or a Bluetooth MIDI adapter.
-          No pedal at hand? <a href="${location.pathname}?sim">Try a simulated one</a>.</p></div></div>
+        <p class="note">Connect the Play Acoustic by USB (Chrome or Edge on a Mac/PC), or on an iPad use a Web MIDI browser app with a USB adapter or a Bluetooth MIDI adapter.</p>
+        <div class="npsim"><span class="note">No pedal at hand?</span><button data-np="sim">Use a simulated pedal</button></div></div></div>
       <div class="offbar" hidden><span></span><button data-np="connect">Reconnect</button></div>`);
     document.querySelectorAll("[data-np]").forEach(b => b.onclick = async () => {
+      // the simulated pedal (sim-pedal.js) loads with ?sim and stays on while you switch views
+      if (b.dataset.np === "sim") { const u = new URLSearchParams(location.search); u.set("sim", ""); location.search = u.toString().replace("sim=", "sim"); return; }
       if (b.dataset.np === "connect" && (await L.start()) && L.ready) return;
       const cp = bar.querySelector(".cpop"); if (cp.hidden) bar.querySelector(".conn").click(); });
     const list = bar.querySelector(".plist"), q = list.querySelector("input"), items = list.querySelector(".pitems"), name = bar.querySelector(".pname");
@@ -473,7 +475,8 @@
     conn.onclick = async () => { if (cpop.hidden && !L.access) await L.start(); fillPorts(); cpop.hidden = !cpop.hidden; };
     cpop.onclick = async e => { const a = e.target.closest("[data-act]"); if (!a) return;
       if (a.dataset.act === "connect") { if (!L.access && !(await L.start())) { fillPorts(); return; } L.use(cpop.querySelector('[data-port="out"]').value, cpop.querySelector('[data-port="inp"]').value, cpop.querySelector("[data-ble]").checked); }
-      if (a.dataset.act === "names") { cpop.hidden = true; askReadAll(); } };
+      if (a.dataset.act === "names") { cpop.hidden = true; askReadAll(); }
+      if (a.dataset.act === "real") { const u = new URLSearchParams(location.search); u.delete("sim"); u.delete("simslow"); location.search = u.toString(); } };
     L.on("ports", fillPorts); L.on("status", () => { if (!cpop.hidden) fillPorts(); });
     document.addEventListener("pointerdown", e => { if (!list.hidden && !e.target.closest(".psel")) open(false); if (!cpop.hidden && !e.target.closest(".cwrap")) cpop.hidden = true; });
     document.addEventListener("keydown", e => {
@@ -511,7 +514,7 @@
     if (!bar) return;
     bar.querySelector(".pnum").textContent = P.num ?? "—"; bar.querySelector(".pnm").textContent = P.name ?? (P.live || known ? "…" : "No pedal");
     const c = bar.querySelector(".conn"), st = L.ready ? "ready" : L.status === "connecting" ? "connecting" : "off";
-    c.dataset.s = st; c.querySelector("span").textContent = st === "ready" ? (syncing ? "Syncing" : "Pedal") : st === "connecting" ? "Connecting" : "No pedal";
+    c.dataset.s = st; c.querySelector("span").textContent = st === "ready" ? (syncing ? "Syncing" : window.simPedal ? "Sim" : "Pedal") : st === "connecting" ? "Connecting" : "No pedal";
     c.title = L.message; const pi = bar.querySelector(".pinfo"); if (pi) pi.textContent = keyInfo();
   }
   const keyInfo = () => { const h = byId.harmony, k = cellOf(h, "KEY"), d = byId.delay; return `KEY ${fmt(k, h.vals.KEY)} · ${d.vals.TEMPO} BPM`; };

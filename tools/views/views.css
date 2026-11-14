@@ -145,3 +145,5 @@ html.bigbar { --barh: 104px; }
 .npbox .crow[hidden] { display: none; } .npbox .crow button { padding: 12px 18px; font-size: 15px; }
 .offbar { position: fixed; top: var(--barh); left: 0; right: 0; z-index: 58; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 6px 12px; background: #3a2a0b; color: var(--warn); font: 600 13px var(--sans); }
 .offbar button { background: var(--warn); color: #241800; border: 0; border-radius: 6px; padding: 5px 10px; font: 700 12px var(--sans); cursor: pointer; }
+.npsim { display: flex; align-items: center; gap: 10px; margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.npsim button { background: var(--surface-2); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; cursor: pointer; font-size: 14px; color: var(--ink); }
