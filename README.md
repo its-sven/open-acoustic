@@ -11,6 +11,10 @@ Control a **stock** Play Acoustic live from your laptop (or an iPad) over USB‑
 
 Opens the live front panel. Needs **Chrome/Edge** (desktop) or a **Web MIDI browser app** (iPad), with a Play Acoustic connected by USB. No install, nothing to flash.
 
+### ▶ [Open the touch views »](https://michaelbeyhs.github.io/open-acoustic/tools/views/) · [try them with a simulated pedal](https://michaelbeyhs.github.io/open-acoustic/tools/views/1-pedalboard.html?sim)
+
+Five touch-screen ways to drive the same pedal, made for an iPad: **Pedalboard** (the effect chain as stomp boxes), **Studio editor** (every parameter, EQ/compressor graphs, effect sends, mix, A/B, undo), **Signal grid** (signal flow + inspector), **Stage** (big tiles, HIT, a delay/reverb pad) and **Voice map** (harmony voices on a pitch ladder, the reverb as a room). They share one connection, one preset bar and the same gestures, stay in sync with the pedal both ways, and can read all presets once so switching presets is instant.
+
 > _**Unofficial** community project. Not affiliated with, endorsed by, or supported by TC‑Helicon / Music Tribe. "Play Acoustic", "Play Electric" and "TC‑Helicon" are trademarks of their respective owner, used here only descriptively. **No proprietary firmware binaries or disassembly are distributed in this repository.** Use at your own risk._
 
 <p align="center">
@@ -21,10 +25,11 @@ Opens the live front panel. Needs **Chrome/Edge** (desktop) or a **Web MIDI brow
 
 ## What this is
 
-Two things, from the same reverse‑engineering effort:
+Three things, from the same reverse‑engineering effort:
 
 1. **Play Acoustic Remote** (`tools/pa-remote.html`) — a virtual front panel that reads and sets the pedal's parameters live, in real time, using the firmware's own built‑in SysEx commands. The real pedal has no screen you can see from the audience and tiny buttons; this gives you the whole UI on a laptop or tablet.
-2. **The research** — how the editor fetches firmware, the SysEx framing, the DSP identification, parameter/menu maps, and the MIDI CC map, written up in `docs/`.
+2. **Touch views** (`tools/views/`) — five touch-first views of the same live connection, beyond what the pedal's own screen can show (see `tools/README.md`).
+3. **The research** — how the editor fetches firmware, the SysEx framing, the DSP identification, parameter/menu maps, and the MIDI CC map, written up in `docs/`.
 
 Everything here talks to **unmodified, factory firmware**. Nothing needs to be flashed.
 
@@ -68,6 +73,7 @@ Full write‑ups: **`docs/index.html`** (rendered overview), **`docs/ANALYSIS.md
 | Path | Contents |
 |------|----------|
 | `tools/` | The Remote (`pa-remote.html`), the verification checklist (`verify.html`), and extraction/analysis scripts |
+| `tools/views/` | The touch views (`index.html`), their shared model/gestures (`views.js`) and a simulated pedal (`sim-pedal.js`); `tools/pa-link.js` is the MIDI/SysEx link they use |
 | `docs/` | Analysis write‑ups, SysEx/menu references, rendered overview, images |
 | `data/` | Parameter and menu tables, string lists, UI map (factual data) |
 | `graphics/` | Display assets extracted from the firmware (fonts, bitmaps, icons) |
