@@ -165,6 +165,13 @@ button, .soft, .hwbtn, .fsw, .cell, .fxcell, .fxstyle { touch-action: manipulati
 }
 .notice { background: #fff4e0; color: #6b4300; border: 1px solid #f0d3a0; border-radius: 6px; padding: 4px 10px; font-size: 12.5px; line-height: 1.4; }
 @media (prefers-color-scheme: dark) { .notice { background: #2e2310; color: #f3cf8f; border-color: #5a4320; } }
+/* Mirror / Independent mode toggle, sitting in the pedal's bottom-left corner */
+.chassis { position: relative; }
+.modeToggle { position: absolute; left: 16px; bottom: 14px; display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; background: #05070a; box-shadow: inset 0 0 0 1px #262d33; z-index: 6; }
+.modeToggle .seg { font: 700 10px/1 system-ui, sans-serif; letter-spacing: .05em; text-transform: uppercase; color: #8c97a0; background: transparent; border: 0; border-radius: 999px; padding: 6px 11px; cursor: pointer; }
+.modeToggle .seg.on { background: var(--accent); color: #fff; }
+.modeToggle .seg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 560px) { .modeToggle { left: 8px; bottom: 8px; } .modeToggle .seg { padding: 5px 8px; font-size: 9px; } }
 </style>
 </head>
 <body>
@@ -203,12 +210,15 @@ button, .soft, .hwbtn, .fsw, .cell, .fxcell, .fxstyle { touch-action: manipulati
         <button class="fsw" id="fswUp" title="▲ footswitch (sends the pedal's own footswitch event)"><span style="font-size:22px">▲</span><span class="led"></span><span class="cap"></span></button>
         <button class="fsw" id="hwHit" title="HIT: tap to toggle, hold for TALK (presses the real footswitch when mirroring is on)"><span>HIT<br><small>HOLD FOR TALK</small></span><span class="led" id="hitLed"></span><span class="cap"></span></button>
       </div>
+      <div class="modeToggle" id="modeToggle" role="group" aria-label="Sync mode" title="Mirror: the real pedal and this panel follow each other. Independent: the pedal stays on its preset screen and this panel edits values on its own.">
+        <button type="button" class="seg on" data-mode="mirror" aria-pressed="true">Mirror</button>
+        <button type="button" class="seg" data-mode="indep" aria-pressed="false">Independent</button>
+      </div>
     </div>
     <span id="panelStatus" class="status" role="status"></span>
   </main>
   <details class="card" id="optCard">
-    <summary class="cardsum"><strong>Options</strong><span class="muted">button mirroring, advanced pages, how it works</span></summary>
-    <div class="paneltools"><label style="display:flex;gap:6px;align-items:center" title="Mirror mode (default): the real pedal and this panel follow each other — on-screen buttons press the pedal, and pressing the pedal's own buttons updates this panel. Off = parameter-only: the pedal stays on its preset screen and this panel edits values independently."><input type="checkbox" id="mirrorChk" checked> Mirror the pedal (two-way)</label><label style="display:flex;gap:6px;align-items:center" title="When on, the Vocal FX and Guitar FX buttons open the extended 'ADV' menu pages (extra parameters) instead of the basic ones, matching the pedal's Advanced view."><input type="checkbox" id="advChk"> Advanced FX menus</label></div>
+    <summary class="cardsum"><strong>Options</strong><span class="muted">how the panel works</span></summary>
     <p class="panelhint">Use it like the pedal: the soft buttons open menus, ◀ ▶ change pages, BACK returns to the preset screen, and the knob edits values (drag / scroll / arrows, Shift = ×10). Values are read live and set over the firmware's SysEx.</p>
     <details class="panelmore"><summary>How the panel works</summary>
     <p class="panelhint">Pages and cell positions come from the firmware's own menu tables (still being checked against the real unit); labels are the firmware's display names. Values are read live (SysEx 0x47) and set with the knob (0x22). On the preset screen the six soft buttons open the menus (white); inside a menu they turn blue and select the cell beside them, as on the pedal. With "Press the pedal's buttons too" on, the soft buttons, BACK, STORE and ▼ ▲ also press the real buttons (SysEx 55 events), and ◀ ▶ / the knob on the preset screen change presets. ◀ ▶ inside menus press the pedal's arrow buttons too, and HIT works as tap (toggle) or hold (TALK). The bars and labels follow the pedal's layout; the pixels are an approximation.</p></details>
@@ -411,6 +421,12 @@ try {
   });
   if (!Object.keys(MENUS).length) throw new Error("pa-menus.js not loaded");
 } catch (e) { setTimeout(() => { $("panelStatus").textContent = "Menu file problem: " + e.message; $("panelStatus").className = "status bad"; }, 0); }
+// Fold the advanced FX pages onto the end of the basic menus: VOCAL FX / GUITAR FX always open the top level,
+// and the advanced pages are reached by paging ▶ (so "advanced" is deeper in, not a separate mode).
+for (const base of ["VOCAL", "GUITAR"]) {
+  if (MENUS[base] && MENUS[base + " ADV"]) MENUS[base] = MENUS[base].concat(MENUS[base + " ADV"]);
+  delete MENUS[base + " ADV"];
+}
 // ── virtual front panel logic ──
 const pnl = { page: "PRESET", sub: 0, sel: 0, vals: {}, touched: 0, sendT: null };
 const pDef = new Map(); for (const k in MENUS) for (const e of MENUS[k]) for (const c of e.s) if (c) pDef.set(c[0], c[5]);
@@ -511,7 +527,7 @@ function renderFx(g, sp) {
   g.append(pic, right, line);
 }
 // soft-button menu functions on the preset screen, by slot: left 0/2/4, right 1/3/5
-const MENU = { 0: () => $("advChk").checked ? "VOCAL ADV" : "VOCAL", 2: () => $("advChk").checked ? "GUITAR ADV" : "GUITAR", 4: () => "MIX", 5: () => "SETUP" };
+const MENU = { 0: () => "VOCAL", 2: () => "GUITAR", 4: () => "MIX", 5: () => "SETUP" };
 function selSlot(i) { const sp = curSub(); if (!isHome() && sp.s[i]) { pnl.sel = i; renderPanel(); } }
 function softPress(i) { if (isHome()) { const m = MENU[i]; if (m) gotoPage(m()); } else selSlot(i); }
 // NOTE / open issue: the pedal remembers the last sub-page per menu PER PRESET and reopens the menu there,
@@ -607,7 +623,17 @@ function applyPanelEvent(e0, e1, e2) {
   if (!isHome()) { if (e1 === BTN.next) gotoSub(1); else if (e1 === BTN.prev) gotoSub(-1); }
   // store / HIT / footswitches / preset-screen arrows: no page nav here (preset changes arrive as Program Change)
 }
-const mirror = () => !!out && $("mirrorChk").checked;
+let mirrorMode = true;   // true = Mirror (two-way), false = Independent (parameter-only); set by the pedal toggle
+const mirror = () => !!out && mirrorMode;
+(function wireModeToggle() {
+  const tg = $("modeToggle"); if (!tg) return;
+  tg.querySelectorAll(".seg").forEach(b => b.onclick = () => {
+    mirrorMode = b.dataset.mode === "mirror";
+    tg.querySelectorAll(".seg").forEach(s => { const on = s.dataset.mode === b.dataset.mode; s.classList.toggle("on", on); s.setAttribute("aria-pressed", on); });
+    $("panelStatus").textContent = mirrorMode ? "Mirror mode: the pedal follows this panel and vice versa" : "Independent: the pedal stays on its preset screen";
+    $("panelStatus").className = "status";
+  });
+})();
 const pressButton = code => press([[0xDB, code, 0x00], [0xDB, code, 0x01]]);
 let tunnelReady = false;
 async function injectEvent(e0, e1, e2) {
