@@ -1,4 +1,4 @@
-/* Shared look for the Remote UI mockups (tools/mockups). Mockups only: nothing here talks to the pedal. */
+/* Shared look for the touch views (tools/views). */
 :root {
   --bg: #0e1115; --surface: #161a20; --surface-2: #1d222a; --surface-3: #262c35;
   --ink: #e9edf1; --muted: #8b96a3; --faint: #5b6572; --rule: #2a313b;

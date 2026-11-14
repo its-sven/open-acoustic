@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Remote UI mockups</title>
+<title>Play Acoustic views</title>
 <link rel="stylesheet" href="views.css">
 <style>
 main { max-width: 1040px; margin: 0 auto; padding: 28px 16px 60px; }
@@ -26,16 +26,24 @@ a.card:hover { transform: translateY(-2px); border-color: var(--cc); }
 </head>
 <body>
 <main>
-  <h1>Beyond the front panel</h1>
-  <p class="lead">Five takes on a touch-screen Remote that doesn't copy the pedal's 3-button, 128×64 screen. All five use the real menu tables, style lists and firmware pictures from <code>pa-menus.js</code> / <code>pa-images.js</code>. They're clickable but not connected to the pedal.</p>
+  <h1>Play Acoustic views</h1>
+  <p class="lead">Five touch-screen ways to control a stock Play Acoustic, each for a different job. They share one connection, one preset bar and the same gestures, and they all stay in step with the pedal: change something here or on the unit and every view follows. Without a pedal they run on a demo preset; add <code>?sim</code> to the address to try them against a simulated pedal.</p>
   <div class="cards" id="cards"></div>
   <div class="facts">
-    <h3>Real vs. assumed</h3>
+    <h3>Gestures (the same everywhere)</h3>
     <ul>
-      <li><b>Real:</b> every effect, parameter name, range, style list, and the picture each style shows on the pedal.</li>
-      <li><b>Real, never shown on the pedal:</b> the effect send levels (LEAD TO DELAY, UMOD TO REV, GTR TO REV…, params 0x0AB–0x0B7). They also give the signal order the chain views use.</li>
-      <li><b>Assumed:</b> value formats for DECAY / SPEED / frequency (the firmware formatter isn't decoded yet, TODO §2), and the EQ curve shape, which is drawn from the parameters rather than measured.</li>
-      <li><b>Not possible yet:</b> preset ◀ ▶, tuner, TALK. They appear in the mockups but aren't mapped over SysEx (TODO §2).</li>
+      <li><b>Tap</b> a switch, tile or block: on / off. <b>Hold</b> it: put the effect on the HIT switch (Stage: on while you hold).</li>
+      <li><b>Double-tap</b> an effect: open all its settings (Board) or switch it (Grid, Voice map).</li>
+      <li><b>Drag</b> a knob up/right or a bar sideways. Hold still first for fine steps. <b>Double-tap</b> a knob or bar: back to default. Tap a bar's value to type one.</li>
+      <li><b>Swipe</b> an effect's picture: next / previous style.</li>
+      <li>Preset bar: <b>◀ ▶</b> step, <b>hold</b> them to jump 10, <b>tap the name</b> for the list, <b>swipe the name</b> to step. Keys: [ ] and 1–5.</li>
+    </ul>
+    <h3>Good to know</h3>
+    <ul>
+      <li>Preset stepping uses the pedal's own front arrows, so the pedal must be on its preset screen. Jumping to a preset steps there one by one.</li>
+      <li>The pedal only reports the current preset's name: the list fills as you visit presets, or tap <b>Learn all</b> once.</li>
+      <li>The effect send levels (LEAD TO DELAY, UMOD TO REV …) are real per-preset parameters the pedal never shows. The signal order in the chain views comes from them.</li>
+      <li>MIDI CTRL and FILTER are never written: they can lock USB out until a factory reset.</li>
     </ul>
   </div>
 </main>
@@ -56,10 +64,10 @@ const C = [
   ["3-signal-grid.html", "KNOWN PATTERN", "Signal grid", "--c-umod", [92, 133, 118],
     "The signal-flow-plus-inspector layout from HX Edit, Quad Cortex and Axe-Edit: blocks on a routed path, with the selected block's knobs underneath.",
     ["Vocal and guitar as two lanes, voices as a parallel split", "Dashed = bypassed, HIT tag = follows the HIT switch", "Inspector shows the block's basic and advanced knobs together"]],
-  ["4-stage.html", "OWN IDEA", "Stage mode", "--c-hardtune", [133, 34, 24],
+  ["4-stage.html", "STAGE", "Stage mode", "--c-hardtune", [133, 34, 24],
     "For an iPad on the mic stand mid-gig: a huge preset name, thumb-sized tiles and no menus.",
     ["Tap a tile for on/off, hold it for momentary, swipe across it for its main level", "Huge HIT: tap to latch, hold for momentary", "SPACE pad: one finger mixes delay against reverb"]],
-  ["5-voice-map.html", "OWN IDEA", "Voice map", "--c-double", [93, 102, 117],
+  ["5-voice-map.html", "EXPLORE", "Voice map", "--c-double", [93, 102, 117],
     "Shows what the audience hears. Harmony voices sit on a pitch ladder, doubles are ghosts beside you, the reverb is the room around you and the delay is echo rings.",
     ["Tap rungs to build a harmony: the 28-style list becomes 2 taps", "Drag the room's corner to change decay; reverbs are grouped by space", "Key wheel with AUTO in the middle"]],
 ];

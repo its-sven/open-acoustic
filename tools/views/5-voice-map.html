@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Voice map mockup</title>
+<title>Voice map</title>
 <link rel="stylesheet" href="views.css">
 <style>
 /* Voice map: show what the audience hears instead of what the menu is called.
@@ -29,7 +29,7 @@
 .ghost .art { filter: blur(.4px); opacity: .5; }
 .ring { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px; border-radius: 50%; border: 2px solid var(--c-delay); opacity: 0; pointer-events: none; animation: ring var(--d) linear infinite; animation-delay: var(--dl); }
 @keyframes ring { 0% { transform: scale(.6); opacity: var(--o); } 100% { transform: scale(var(--s)); opacity: 0; } }
-.hint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font-size: 12px; color: var(--muted); background: #0b0e12cc; border-radius: 8px; padding: 6px 12px; white-space: nowrap; }
+.hint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font-size: 12px; color: var(--muted); background: #0b0e12cc; border-radius: 8px; padding: 6px 12px; width: max-content; max-width: calc(100% - 32px); text-align: center; }
 .modes { position: absolute; left: 32px; top: 12px; display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; z-index: 3; }
 .modes button { background: #0b0e12cc; border: 0; padding: 6px 10px; font: 700 10px var(--mono); color: var(--muted); cursor: pointer; }
 .modes button.sel { background: var(--c-harmony); color: #fff; }
@@ -77,11 +77,13 @@ const RUNGS = { smart: [["OCTUP", "OCT UP", 6], ["HIGHER", "HIGHER", 24], ["HIGH
 let mode = SETS[H.style].some(r => /\d/.test(r)) ? "fixed" : "smart", voices = [...SETS[H.style]], tab = "harmony", note = "", resizing = false;
 const FAM = [[118, "Plates", [0, 8]], [117, "Halls", [8, 11]], [119, "Rooms", [11, 18]], [116, "Chambers & churches", [18, 22]], [115, "Big spaces", [22, 26]], [120, "Springs", [26, 28]]];
 const famOf = i => FAM.find(f => i >= f[2][0] && i < f[2][1]);
-const live = fx => fx.state !== "off";
+const live = fx => fx.state !== "off" && (fx.state !== "hit" || PA.hitOn());   // HIT-assigned effects light up while HIT is on
 const DIV = { QUARTER: 1, EIGHTH: .5, TRIPLET: 1 / 3, "DOTTED 1/8": .75, "DOTTED 1/4": 1.5, "1/4 TRIPLET": 2 / 3, SIXTEENTH: .25 };
 
 function yOf(id) { const r = RUNGS[mode].find(r => r[0] === id); return r ? r[2] : 50; }
+let busy = false, pending = false;   // while a finger is down nothing is re-rendered (it would cancel the gesture)
 function stage() {
+  if (busy) { pending = true; return; }
   const st = document.getElementById("stage"), fam = famOf(R.style), dec = R.vals.DECAY / 290;
   const size = { 118: [.5, .55, 8], 117: [.86, .8, 40], 119: [.6, .6, 14], 116: [.72, .72, 120], 115: [.94, .9, 60], 120: [.42, .46, 30] }[fam[0]];
   const w = (size[0] * .6 + dec * .4) * 100, h = (size[1] * .6 + dec * .4) * 100;
@@ -95,10 +97,10 @@ function stage() {
     <div class="modes"><button data-mode="smart" class="${mode === "smart" ? "sel" : ""}">IN KEY</button><button data-mode="fixed" class="${mode === "fixed" ? "sel" : ""}">FIXED</button></div>
     <div class="ladder">${RUNGS[mode].map(([id, t, y]) => `<div class="rung ${id === "LEAD" ? "lead" : voices.includes(id) ? "sel" : ""}" data-rung="${id}" style="top:${y}%"><span class="pip"></span>${t}</div>`).join("")}</div>
     ${live(E) ? Array.from({ length: rings }, (_, i) => `<span class="ring" style="--d:${(step * rings).toFixed(2)}s;--dl:${(i * step).toFixed(2)}s;--s:${3 + i * .6};--o:${Math.pow(10, E.vals.LEVEL / 20) * Math.pow(E.vals.FEEDBACK / 100, i) + .15}"></span>`).join("") : ""}
-    ${Array.from({ length: dn }, (_, i) => `<div class="who ghost ${live(D) ? "" : "off"}" data-tab="double" style="--c:var(--c-double);--w:96px;left:${50 + (i ? loose : -loose)}%;top:${dy(i) + (dy(i) === 50 ? 2 : 0)}%">${PA.artHTML(102)}</div>`).join("")}
-    <div class="who" data-tab="harmony" style="--c:var(--ink);--w:130px;left:50%;top:50%">${PA.artHTML(102)}<span class="tag">YOU</span></div>
-    ${voices.map((v, i) => `<span class="guide" style="top:${yOf(v)}%"></span><div class="who ${live(H) ? "" : "off"}" data-tab="harmony" style="--c:var(--c-harmony);--w:${70 + hv * 40}px;left:${i ? 70 : 30}%;top:${yOf(v)}%">${PA.artHTML(i ? 93 : 92)}<span class="tag">${RUNGS[mode].find(r => r[0] === v)?.[1] ?? v}</span></div>`).join("")}
-    <div class="hint">${note || "Tap the ladder to place harmony voices · drag the room's corner for decay · tap anything to edit it"}</div>`;
+    ${Array.from({ length: dn }, (_, i) => `<div class="who ghost ${live(D) ? "" : "off"}" data-tab="double" data-ghost style="--c:var(--c-double);--w:96px;left:${50 + (i ? loose : -loose)}%;top:${dy(i) + (dy(i) === 50 ? 2 : 0)}%">${PA.artHTML(102)}</div>`).join("")}
+    <div class="who" data-tab="harmony" data-lead style="--c:var(--ink);--w:130px;left:50%;top:50%">${PA.artHTML(102)}<span class="tag">YOU</span></div>
+    ${voices.map((v, i) => `<span class="guide" style="top:${yOf(v)}%"></span><div class="who ${live(H) ? "" : "off"}" data-tab="harmony" data-voice="${v}" style="--c:var(--c-harmony);--w:${70 + hv * 40}px;left:${i ? 70 : 30}%;top:${yOf(v)}%">${PA.artHTML(i ? 93 : 92)}<span class="tag">${RUNGS[mode].find(r => r[0] === v)?.[1] ?? v}</span></div>`).join("")}
+    <div class="hint">${note || "Tap a rung or drag a voice to build the harmony · double-tap a voice to remove it · double-tap you, a ghost or the room = on/off · hold you = HIT · drag the room's corner = decay"}</div>`;
   const grip = document.getElementById("grip");
   grip.addEventListener("pointerdown", e => {
     e.stopPropagation(); grip.setPointerCapture(e.pointerId); const r = st.getBoundingClientRect();
@@ -111,7 +113,7 @@ function stage() {
 }
 function chooseRung(id) {
   if (id === "LEAD") return;
-  voices = voices.includes(id) ? voices.filter(v => v !== id) : [...voices, id].slice(-2);
+  if (id != null) voices = voices.includes(id) ? voices.filter(v => v !== id) : [...voices, id].slice(-2);
   const i = SETS.findIndex(s => s.length === voices.length && s.every(v => voices.includes(v)));
   if (i >= 0) { note = ""; PA.setStyle("harmony", i); } else note = voices.length ? `No preset style has ${voices.join(" + ")}: add or move a voice` : "Pick at least one voice";
   render();
@@ -127,7 +129,7 @@ function panel() {
       <h4>Key</h4><div class="wheel">${["C", "G", "D", "A", "E", "B", "F#", "C#", "G#", "D#", "A#", "F"].map((k, i) => {
         const a = (i / 12) * 2 * Math.PI - Math.PI / 2, idx = H.pageObj.rows.flat().find(c => c && c.label === "KEY").values.indexOf(k);
         return `<button data-key="${idx}" class="${H.vals.KEY === idx ? "sel" : ""}" style="left:${50 + Math.cos(a) * 40}%;top:${50 + Math.sin(a) * 40}%">${k}</button>`; }).join("")}
-        <button class="auto ${H.vals.KEY === 0 ? "sel" : ""}" data-key="0">AUTO<br><small style="font-size:9px;opacity:.7">hears G</small></button></div>
+        <button class="auto ${H.vals.KEY === 0 ? "sel" : ""}" data-key="0">AUTO</button></div>
       <h4>Scale</h4><div class="chips">${PA.cellOf(H, "SCALE").values.map((s, i) => `<button data-p="SCALE" data-v="${i}" class="${H.vals.SCALE === i ? "sel" : ""}">${s}</button>`).join("")}</div>`;
   if (tab === "double") body = `<div class="sub">ghosts beside you on the stage</div>${knobs(D, ["LEVEL"])}
       <h4>Style</h4><div class="chips">${D.styleCell.values.map((s, i) => `<button data-sty="${i}" class="${D.style === i ? "sel" : ""}">${s}</button>`).join("")}</div>`;
@@ -144,25 +146,51 @@ function panel() {
 function render() { stage(); panel(); }
 render();
 
-document.getElementById("stage").addEventListener("click", e => {
+const stageEl = document.getElementById("stage"), pnl = document.getElementById("pnl");
+// any finger down pauses re-rendering; the last change is drawn when it lifts
+document.addEventListener("pointerdown", e => { if (e.target.closest("#stage, #pnl")) busy = true; }, true);
+document.addEventListener("pointerup", () => { if (!busy) return; busy = false; if (pending) { pending = false; setTimeout(render, 0); } }, true);
+stageEl.addEventListener("click", e => {
   const m = e.target.closest("[data-mode]"); if (m) { mode = m.dataset.mode; voices = mode === "fixed" ? ["+7", "-5"] : ["HIGH", "LOW"]; chooseRung(null); return; }
-  const r = e.target.closest("[data-rung]"); if (r) { tab = "harmony"; chooseRung(r.dataset.rung); return; }
-  const t = e.target.closest("[data-tab]"); if (t) { tab = t.dataset.tab; panel(); }
+  const r = e.target.closest("[data-rung]"); if (r) { tab = "harmony"; chooseRung(r.dataset.rung); }
 });
-document.getElementById("pnl").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
+const show = t => { tab = t; panel(); };
+const toggle = fx => { PA.setState(fx.id, PA.nextState(fx)); PA.toast(`${fx.name === "Reverb" ? "Room" : fx.name}: ${fx.state.toUpperCase()}`); };
+PA.gestureAll(stageEl, ".who, .room", el => {
+  if (el.dataset.voice) {   // a harmony voice: drag it to another rung, double-tap removes it
+    let y0;
+    return { tap: () => show("harmony"), double: () => chooseRung(el.dataset.voice),
+      dragStart: () => { y0 = el.offsetTop; el.style.transition = "none"; }, drag: (dx, dy) => { el.style.top = (y0 + dy) + "px"; },
+      dragEnd: () => { const r = stageEl.getBoundingClientRect(), y = el.getBoundingClientRect(), pct = ((y.top + y.height / 2) - r.top) / r.height * 100;
+        const lad = stageEl.querySelector(".ladder").getBoundingClientRect(), lp = ((y.top + y.height / 2) - lad.top) / lad.height * 100;
+        const free = RUNGS[mode].filter(([id]) => id !== "LEAD" && (id === el.dataset.voice || !voices.includes(id)));
+        const best = free.reduce((a, b) => Math.abs(b[2] - lp) < Math.abs(a[2] - lp) ? b : a);
+        busy = false; voices = voices.map(v => v === el.dataset.voice ? best[0] : v); chooseRung(null); } };
+  }
+  if (el.dataset.lead !== undefined) return { tap: () => show("harmony"), double: () => toggle(H),
+    hold: () => { PA.setState(H.id, H.state === "hit" ? "on" : "hit"); PA.toast(H.state === "hit" ? "Harmony follows HIT" : "Harmony no longer on HIT"); } };
+  if (el.dataset.ghost !== undefined) return { tap: () => show("double"), double: () => toggle(D) };
+  return { tap: () => show("reverb"), double: () => toggle(R) };   // the room
+});
+pnl.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b || b.dataset.tog) return;
   const fx = { harmony: H, double: D, reverb: R, delay: E }[tab];
-  if (b.dataset.tabb) { tab = b.dataset.tabb; panel(); }
-  else if (b.dataset.tog) PA.setState(b.dataset.tog, fx.state === "off" ? "on" : fx.state === "on" && PA.hasHit(fx) ? "hit" : "off");
+  if (b.dataset.tabb) { tab = b.dataset.tabb; panel(); return; }
   else if (b.dataset.key) PA.set("harmony", "KEY", +b.dataset.key);
   else if (b.dataset.sty) PA.setStyle(fx.id, +b.dataset.sty);
   else if (b.dataset.p) PA.set(fx.id, b.dataset.p, +b.dataset.v);
   else return;
   render();
 });
-document.addEventListener("pa:preset", render);
+// panel switch: tap = on/off, hold = HIT
+PA.gestureAll(pnl, "[data-tog]", b => { const fx = PA.byId[b.dataset.tog];
+  return { tap: () => toggle(fx), hold: () => { if (PA.hasHit(fx)) PA.setState(fx.id, fx.state === "hit" ? "on" : "hit"); } }; });
+// chooseRung(null) re-resolves the style from `voices`; a style coming from the pedal resets the voices
+const fromPedal = () => { const s = SETS[H.style]; if (s) { voices = [...s]; mode = s.some(r => /\d/.test(r)) ? "fixed" : "smart"; } };
+document.addEventListener("pa:style", e => { if (e.detail.fx === H && !busy) fromPedal(); render(); });
+["preset", "sync"].forEach(t => document.addEventListener("pa:" + t, () => { fromPedal(); note = ""; render(); }));
+["state", "hit"].forEach(t => document.addEventListener("pa:" + t, render));
 document.addEventListener("pa:change", () => { if (!resizing) stage(); });
-document.addEventListener("pa:style", e => { if (e.detail.fx === H) voices = [...SETS[H.style]]; });
 </script>
 </body>
 </html>
