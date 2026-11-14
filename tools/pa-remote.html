@@ -513,6 +513,11 @@ function renderFx(g, sp) {
 const MENU = { 0: () => $("advChk").checked ? "VOCAL ADV" : "VOCAL", 2: () => $("advChk").checked ? "GUITAR ADV" : "GUITAR", 4: () => "MIX", 5: () => "SETUP" };
 function selSlot(i) { const sp = curSub(); if (!isHome() && sp.s[i]) { pnl.sel = i; renderPanel(); } }
 function softPress(i) { if (isHome()) { const m = MENU[i]; if (m) gotoPage(m()); } else selSlot(i); }
+// NOTE / open issue: the pedal remembers the last sub-page per menu PER PRESET and reopens the menu there,
+// so assuming pnl.sub = 0 on entry is sometimes wrong — e.g. if you last left Vocal FX on page 2 of preset 2,
+// re-entering that menu on preset 2 lands on page 2, not page 0. We don't yet know how to read the pedal's
+// remembered page, so the on-screen page can disagree with the unit until a ◀ ▶ echo corrects it. Event-driven
+// reads don't make this worse (we still read whatever page we think we're on); a real fix needs the pedal's page.
 function gotoPage(name) { pnl.page = name; pnl.sub = 0; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true); }
 function gotoSub(d) { if (isHome()) return; const n = pages().length, s = Math.max(0, Math.min(n - 1, pnl.sub + d)); if (s === pnl.sub) return; pnl.sub = s; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true); }
 async function panelRead(id) {
@@ -644,7 +649,13 @@ knob.addEventListener("pointerup", () => { dragY = null; });
 knob.addEventListener("keydown", e => { const m = e.shiftKey ? 10 : 1;
   if (e.key === "ArrowUp" || e.key === "ArrowRight") { e.preventDefault(); turn(m); } else if (e.key === "ArrowDown" || e.key === "ArrowLeft") { e.preventDefault(); turn(-m); }
   else if (e.key === "PageUp") { e.preventDefault(); turn(10); } else if (e.key === "PageDown") { e.preventDefault(); turn(-10); } });
-setInterval(() => pollPanel(false), 800);
+// Event-driven refresh: instead of a tight 800ms timer, read only when something actually changes — on
+// connect, on navigation (gotoPage/gotoSub), on preset change (fastPreset), and whenever the pedal echoes a
+// panel event (see onMsg). A slow heartbeat stays as a light safety net for anything an echo doesn't cover.
+// This cuts idle BLE traffic to ~zero so button presses get the link to themselves.
+let pollSoon = null;
+function schedulePoll() { clearTimeout(pollSoon); pollSoon = setTimeout(() => pollPanel(true), 150); }   // debounce rapid echoes into one read
+setInterval(() => pollPanel(false), 5000);   // safety heartbeat only; the pnl.touched guard skips it while you interact
 // Stage layout: scale the pedal (designed at 780 px) to fill the window below the top bar, up to 2×.
 // Phones (< 700 px) use the responsive layout instead.
 function fitPedal() {
@@ -660,7 +671,7 @@ function onMsg(e) {
   const d = e.data; if (!d || !d.length) return;
   if (d[0] === 0xF0) for (const h of [...sysexWaiters]) h(d);
   if (d[0] === 0xF0 && d[3] === 0x38 && d[6] === 0x55 && d.length >= 12) { const v = dec28(d, 7);
-    log(`← panel event ${[(v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF].map(x => x.toString(16).padStart(2, "0")).join(" ")}`, "in"); return; }
+    log(`← panel event ${[(v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF].map(x => x.toString(16).padStart(2, "0")).join(" ")}`, "in"); schedulePoll(); return; }   // the pedal did something (knob/button, physical or mirrored) → refresh once
   const st = d[0] & 0xF0, ch = (d[0] & 0x0F) + 1;
   if (st === 0xC0) fastPreset();   // the pedal reports preset changes as Program Change: refresh name/number now
   if (st === 0xB0 || st === 0xC0) log(`← ch${ch} ${[...d].map(x => x.toString(16).padStart(2, "0")).join(" ")}`, "in");
@@ -695,7 +706,7 @@ function bind() {
   if (inp) inp.onmidimessage = null;
   inp = access.inputs.get($("inSel").value) || null; if (inp) inp.onmidimessage = onMsg;
   const s = $("status");
-  if (out && inp) { s.textContent = `Checking "${out.name}"…`; s.className = "status"; ensureId().catch(e => { if (e.message === "port changed") return; s.textContent = e.message; s.className = "status bad"; }); }
+  if (out && inp) { s.textContent = `Checking "${out.name}"…`; s.className = "status"; ensureId().then(() => { if (out && inp) pollPanel(true); }).catch(e => { if (e.message === "port changed") return; s.textContent = e.message; s.className = "status bad"; }); }
   else { s.textContent = "No Play Acoustic port found: choose its MIDI in and out above"; s.className = "status bad"; }
 }
 async function initMidi(auto) {
