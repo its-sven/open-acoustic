@@ -83,7 +83,7 @@ document.getElementById("tv").innerHTML = PA.vocal.map(tile).join("") + `<button
 document.getElementById("tg").innerHTML = PA.guitar.map(tile).join("");
 function paintTile(fx) {
   const t = document.querySelector(`.tile[data-id="${fx.id}"]`), c = PA.cellOf(fx, SWIPE[fx.id]);
-  t.classList.toggle("on", PA.live(fx) || fx.always); t.classList.toggle("hitas", fx.state === "hit");
+  t.classList.toggle("on", !!(PA.live(fx) || fx.always)); t.classList.toggle("hitas", fx.state === "hit");
   t.querySelector(".tart").innerHTML = PA.artHTML(PA.img(fx)); t.querySelector(".sn").textContent = PA.styleName(fx);
   t.style.setProperty("--lv", lv(fx)); t.querySelector(".readout").innerHTML = `<div><small>${c.label}</small>${PA.fmt(c, fx.vals[c.label])}</div>`;
 }

@@ -213,7 +213,7 @@
     } finally { if (g === gen) { syncing = false; emit("syncing", { on: false }); } }
   }
   let syncT = null; const syncSoon = (ms = 400) => { clearTimeout(syncT); syncT = setTimeout(sync, ms); };
-  L.on("ready", () => { P.live = true; P.num = null; P.name = "…"; complete = false; emit("preset", preset()); emit("link", linkState()); sync(true); });
+  L.on("ready", () => { P.live = true; complete = false; if (!known) { P.num = null; P.name = "…"; emit("preset", preset()); } emit("link", linkState()); sync(true); });
   L.on("status", () => { if (!L.ready && P.live) { P.live = false; } emit("link", linkState()); paintBar(); });
   let lastProg = null, walking = false;
   L.on("program", p => {
@@ -454,6 +454,8 @@
       <div class="views">${VIEWS.map(([h, t, ic], i) => `<a href="${h}${location.search}" class="${h === here ? "on" : ""}" title="${t} (${i + 1})"><b>${ic}</b><span>${t}</span></a>`).join("")}</div>
     </nav>`);
     bar = document.querySelector(".pbar");
+    // The page's own markup stays hidden (views.css) until its script has drawn the view: this runs right after it.
+    const reveal = () => document.documentElement.classList.add("pa-drawn"); Promise.resolve().then(reveal); setTimeout(reveal, 1500);
     if (!o.noCover) document.body.insertAdjacentHTML("beforeend", `<div class="nopedal" hidden><div class="npbox">
         <h2></h2><p class="npmsg"></p>
         <div class="crow"><button class="pri" data-np="connect">Connect</button><button data-np="ports">Choose ports…</button></div>
@@ -518,7 +520,7 @@
   }
   // The strip is for a connection that dropped. A view that just opened reconnects quietly; only if that takes
   // longer than a few seconds does the strip appear.
-  let wasReady = false, grace = true; setTimeout(() => { grace = false; paintCover(); }, 4000); L.on("ready", () => (wasReady = true));
+  let wasReady = false, grace = true; setTimeout(() => { grace = false; paintBar(); }, 4000); L.on("ready", () => (wasReady = true));
   function paintCover() {
     const cv = document.querySelector(".nopedal"), ob = document.querySelector(".offbar"); if (!cv) return;
     cv.hidden = known; ob.hidden = !known || L.ready || (grace && !wasReady);
@@ -528,12 +530,15 @@
     ob.querySelector("span").textContent = L.status === "connecting" ? "Reconnecting… showing the pedal's last values" : "Not connected · showing the pedal's last values · changes are off";
   }
   document.addEventListener("pa:known", paintCover); document.addEventListener("pa:link", paintCover);
+  let slowSync = false, slowT = null;
+  document.addEventListener("pa:syncing", e => { clearTimeout(slowT); if (e.detail.on) slowT = setTimeout(() => { slowSync = true; paintBar(); }, 700); else slowSync = false; });
   function paintBar() {
     paintCover();
     if (!bar) return;
     bar.querySelector(".pnum").textContent = P.num ?? "—"; bar.querySelector(".pnm").textContent = P.name ?? (P.live || known ? "…" : "No pedal");
-    const c = bar.querySelector(".conn"), st = L.ready ? "ready" : L.status === "connecting" ? "connecting" : "off";
-    c.dataset.s = st; c.querySelector("span").textContent = st === "ready" ? (syncing ? "Syncing" : window.simPedal ? "Sim" : "Pedal") : st === "connecting" ? "Connecting" : "No pedal";
+    const quiet = known && !wasReady && grace && !L.ready && L.status !== "bad";   // a view that just opened, reconnecting
+    const c = bar.querySelector(".conn"), st = L.ready || quiet ? "ready" : L.status === "connecting" ? "connecting" : "off";
+    c.dataset.s = st; c.querySelector("span").textContent = st === "ready" ? (slowSync ? "Syncing" : window.simPedal ? "Sim" : "Pedal") : st === "connecting" ? "Connecting" : "No pedal";
     c.title = L.message; const pi = bar.querySelector(".pinfo"); if (pi) pi.textContent = keyInfo();
   }
   const keyInfo = () => { const h = byId.harmony, k = cellOf(h, "KEY"), d = byId.delay; return `KEY ${fmt(k, h.vals.KEY)} · ${d.vals.TEMPO} BPM`; };

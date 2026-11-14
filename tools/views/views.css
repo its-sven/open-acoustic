@@ -147,3 +147,5 @@ html.bigbar { --barh: 104px; }
 .offbar button { background: var(--warn); color: #241800; border: 0; border-radius: 6px; padding: 5px 10px; font: 700 12px var(--sans); cursor: pointer; }
 .npsim { display: flex; align-items: center; gap: 10px; margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--rule); }
 .npsim button { background: var(--surface-2); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 14px; cursor: pointer; font-size: 14px; color: var(--ink); }
+/* hide a view's own markup until its script has drawn it (no half-built page on a view switch) */
+html:not(.pa-drawn) body > :not(.pbar):not(.nopedal):not(.offbar) { visibility: hidden; }
