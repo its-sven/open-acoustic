@@ -170,6 +170,8 @@ button, .soft, .hwbtn, .fsw, .cell, .fxcell, .fxstyle { touch-action: manipulati
 .modeToggle { position: absolute; left: 16px; bottom: 14px; display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; background: #05070a; box-shadow: inset 0 0 0 1px #262d33; z-index: 6; }
 .modeToggle .seg { font: 700 10px/1 system-ui, sans-serif; letter-spacing: .05em; text-transform: uppercase; color: #8c97a0; background: transparent; border: 0; border-radius: 999px; padding: 6px 11px; cursor: pointer; }
 .modeToggle .seg.on { background: var(--accent); color: #fff; }
+.soft { position: relative; }
+.soft.hasadv::after { content: "\2935"; position: absolute; top: 2px; right: 4px; font-size: 10px; line-height: 1; opacity: .8; }
 .modeToggle .seg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (max-width: 560px) { .modeToggle { left: 8px; bottom: 8px; } .modeToggle .seg { padding: 5px 8px; font-size: 9px; } }
 </style>
@@ -421,12 +423,15 @@ try {
   });
   if (!Object.keys(MENUS).length) throw new Error("pa-menus.js not loaded");
 } catch (e) { setTimeout(() => { $("panelStatus").textContent = "Menu file problem: " + e.message; $("panelStatus").className = "status bad"; }, 0); }
-// Fold the advanced FX pages onto the end of the basic menus: VOCAL FX / GUITAR FX always open the top level,
-// and the advanced pages are reached by paging ▶ (so "advanced" is deeper in, not a separate mode).
+// Advanced FX pages are reached from a basic effect page by press-and-holding its soft button (like the real
+// pedal), not by paging. Link them by matching title: an effect's advanced page has the same title as the
+// basic page (e.g. GUITAR DELAY -> GUITAR DELAY advanced). Pages with no match (e.g. BODYREZ) have no advanced.
+const ADV_OF = {};   // `${baseMenu}|${pageTitle}` -> { menu: "<BASE> ADV", sub: <page index> }
 for (const base of ["VOCAL", "GUITAR"]) {
-  if (MENUS[base] && MENUS[base + " ADV"]) MENUS[base] = MENUS[base].concat(MENUS[base + " ADV"]);
-  delete MENUS[base + " ADV"];
+  const adv = MENUS[base + " ADV"]; if (!adv) continue;
+  adv.forEach((p, i) => { if (ADV_OF[base + "|" + p.t] == null) ADV_OF[base + "|" + p.t] = { menu: base + " ADV", sub: i }; });
 }
+const advLink = (menuKey, title) => ADV_OF[menuKey + "|" + title] || null;
 // ── virtual front panel logic ──
 const pnl = { page: "PRESET", sub: 0, sel: 0, vals: {}, touched: 0, sendT: null };
 const pDef = new Map(); for (const k in MENUS) for (const e of MENUS[k]) for (const c of e.s) if (c) pDef.set(c[0], c[5]);
@@ -482,9 +487,10 @@ function renderPanel() {
     }
     g.appendChild(d);
   });
+  const drill = !!curAdvLink();   // this effect has an advanced page you can hold a soft button to open
   document.querySelectorAll(".soft").forEach(b => { const i = +b.dataset.slot;
-    if (isHome()) { const ok = !!MENU[i]; b.className = "soft" + (ok ? " white" : ""); b.disabled = !ok; }
-    else { const ok = !isProductInfo(sp) && !!sp.s[i]; b.className = "soft" + (ok ? " blue" : "") + (ok && i === pnl.sel ? " on" : ""); b.disabled = !ok; } });
+    if (isHome()) { const ok = !!MENU[i]; b.className = "soft" + (ok ? " white" : ""); b.disabled = !ok; b.title = ""; }
+    else { const ok = !isProductInfo(sp) && !!sp.s[i]; const adv = ok && drill && i === 4; b.className = "soft" + (ok ? " blue" : "") + (ok && i === pnl.sel ? " on" : "") + (adv ? " hasadv" : ""); b.disabled = !ok; b.title = adv ? "Hold for advanced settings" : ""; } });
   $("hitLed").classList.toggle("lit", !!pnl.vals[0x2A8]);
   const c = isHome() ? null : sp.s[pnl.sel], k = $("knob");
   if (c) { const v = val(c[0]) ?? c[2]; const f = (v - c[2]) / Math.max(1, c[3] - c[2]);
@@ -535,8 +541,21 @@ function softPress(i) { if (isHome()) { const m = MENU[i]; if (m) gotoPage(m());
 // re-entering that menu on preset 2 lands on page 2, not page 0. We don't yet know how to read the pedal's
 // remembered page, so the on-screen page can disagree with the unit until a ◀ ▶ echo corrects it. Event-driven
 // reads don't make this worse (we still read whatever page we think we're on); a real fix needs the pedal's page.
-function gotoPage(name) { pnl.page = name; pnl.sub = 0; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true); }
+function gotoPage(name) { advReturn = null; pnl.page = name; pnl.sub = 0; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true); }
 function gotoSub(d) { if (isHome()) return; const n = pages().length, s = Math.max(0, Math.min(n - 1, pnl.sub + d)); if (s === pnl.sub) return; pnl.sub = s; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true); }
+// Press-and-hold a soft button on an effect that has an advanced page to drill into it; BACK returns here.
+let advReturn = null;
+const curAdvLink = () => isHome() ? null : advLink(pnl.page, curSub().t);
+function drillIntoAdvanced() {
+  const link = curAdvLink(); if (!link) return false;
+  advReturn = { page: pnl.page, sub: pnl.sub };
+  pnl.page = link.menu; pnl.sub = link.sub; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true);
+  return true;
+}
+function doBack() {
+  if (advReturn) { pnl.page = advReturn.page; pnl.sub = advReturn.sub; advReturn = null; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true); }
+  else gotoPage("PRESET");
+}
 async function panelRead(id) {
   const p = collect(600, 1, m => m[0] === 0xF0 && m[3] === 0x38 && m[6] === 0x22 && (((m[7] << 7) | m[8]) === id));
   out.send([...hdr(), 0x47, (id >> 7) & 0x7F, id & 0x7F, 0xF7]);
@@ -617,9 +636,10 @@ function consumeSelfEcho(k) { const t = performance.now();
   return false; }
 function applyPanelEvent(e0, e1, e2) {
   if (e0 !== 0xDB) return;   // knob (AE) and the rest: value-only, handled by the refresh poll
-  if (e2 !== 0x00) return;   // act on press; ignore release/hold
+  if (e2 === 0x02) { if (e1 in SOFT_BY_CODE) drillIntoAdvanced(); return; }   // a HELD soft button → drill into advanced
+  if (e2 !== 0x00) return;   // act on press; ignore release
   if (e1 in SOFT_BY_CODE) { softPress(SOFT_BY_CODE[e1]); return; }
-  if (e1 === BTN.back) { gotoPage("PRESET"); return; }
+  if (e1 === BTN.back) { doBack(); return; }
   if (!isHome()) { if (e1 === BTN.next) gotoSub(1); else if (e1 === BTN.prev) gotoSub(-1); }
   // store / HIT / footswitches / preset-screen arrows: no page nav here (preset changes arrive as Program Change)
 }
@@ -660,12 +680,32 @@ function turn(delta) {
   clearTimeout(pnl.sendT);
   pnl.sendT = setTimeout(async () => { if (!out) { $("panelStatus").textContent = "Not connected: change not sent"; $("panelStatus").className = "status bad"; return; } await ensureId(); setParam(c[0], pnl.vals[c[0]]); }, 35);
 }
-document.querySelectorAll(".soft").forEach(b => b.onclick = () => { const i = +b.dataset.slot; if (mirror()) pressButton(BTN.soft[i]); softPress(i); });
+// Soft buttons: a tap navigates (as before); a press-and-hold on an effect that has an advanced page drills
+// into it. In Mirror mode we send press (00) on down, held (02) once the hold fires, and release (01) on up,
+// so the pedal makes the same tap/hold distinction.
+document.querySelectorAll(".soft").forEach(b => {
+  const slot = () => +b.dataset.slot;
+  let holdT = null, held = false, sentDown = false;
+  b.addEventListener("pointerdown", e => {
+    if (b.disabled) return;
+    try { b.setPointerCapture(e.pointerId); } catch (_) {}
+    held = false; sentDown = mirror();
+    if (sentDown) injectEvent(0xDB, BTN.soft[slot()], 0x00).catch(() => {});
+    holdT = setTimeout(() => {
+      held = true;
+      if (mirror()) injectEvent(0xDB, BTN.soft[slot()], 0x02).catch(() => {});
+      if (!isHome()) drillIntoAdvanced();   // hold on an effect page → its advanced page (if any)
+    }, 450);
+  });
+  const release = () => { clearTimeout(holdT); if (sentDown) injectEvent(0xDB, BTN.soft[slot()], 0x01).catch(() => {}); sentDown = false; };
+  b.addEventListener("pointerup", () => { release(); if (!held) softPress(slot()); held = false; });
+  b.addEventListener("pointercancel", () => { release(); held = false; });
+});
 $("hwStore").onclick = () => { if (!mirror()) return; pressButton(BTN.store); $("panelStatus").textContent = "STORE pressed on the pedal (its store screen isn't shown here)"; $("panelStatus").className = "status"; };
 $("fswDown").onclick = () => press(EVT.fswDown); $("fswUp").onclick = () => press(EVT.fswUp);
 $("hwPrev").onclick = () => { if (isHome()) return stepPreset(-1); if (mirror()) pressButton(BTN.prev); gotoSub(-1); };
 $("hwNext").onclick = () => { if (isHome()) return stepPreset(1); if (mirror()) pressButton(BTN.next); gotoSub(1); };
-$("hwBack").onclick = () => { if (mirror()) pressButton(BTN.back); gotoPage("PRESET"); };
+$("hwBack").onclick = () => { if (mirror()) pressButton(BTN.back); doBack(); };
 // HIT: with mirroring on, press the real HIT footswitch (DB 0B 00 on press, DB 0B 01 on release), so holding it
 // gives TALK like on the pedal; otherwise toggle the HIT parameter 0x2A8.
 const hitToggle = async () => { if (!out) return; await ensureId(); const v = await panelRead(0x2A8); pnl.vals[0x2A8] = v ? 0 : 1; setParam(0x2A8, pnl.vals[0x2A8]); renderPanel(); setTimeout(() => pollPanel(true), 200); };
