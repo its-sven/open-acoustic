@@ -171,7 +171,14 @@
   const saveLib = () => L.store.set(LIB_KEY, lib);
   const libEntry = n => { const e = lib.presets[n]; return e && e.t > lib.storeAt ? e : null; };
   function libPut(n, name, vals) { lib.presets[n] = { name, t: Date.now(), vals: Object.entries(vals).map(([id, v]) => [+id, v]) }; if (name != null) { names[n] = name; L.store.set("pa-preset-names", names); } saveLib(); }
-  function libApply(e) { const g = new Set(lib.global); for (const [id, v] of e.vals) if (!g.has(id) && id !== HIT) V.set(id, v); }
+  // HIT and the MIX levels belong to the pedal, not to a preset: a preset change keeps their current values.
+  const GLOBALS = new Set([HIT, ...MIX.map(c => c.id)]);
+  function libApply(e) { for (const [id, v] of e.vals) if (!GLOBALS.has(id)) V.set(id, v); }
+  // Show a preset from the library: no reads at all.
+  function showFromLib(n, e) {
+    P.num = n; libApply(e); P.name = e.name ?? names[n] ?? null; complete = true; setKnown(true);
+    saveCache(); emit("preset", preset()); emit("sync", {});
+  }
   let fresh = false;      // the pedal just loaded a preset and nothing has been edited yet: what we read is the stored preset
   // Opened from another view that was connected a moment ago: show the pedal's values right away, so the view is
   // usable at once and nothing changes while it reconnects (it re-checks the preset number once ready).
@@ -196,10 +203,7 @@
       if (n != null && lp != null && lib.pcOffset !== n - lp) { lib.pcOffset = n - lp; saveLib(); }   // PC number → shown number
       if (reuse && n != null && loadCache(n, 30000)) { complete = true; setKnown(true); emit("sync", {}); return; }
       const e = n != null && fresh && libEntry(n);
-      if (e) { libApply(e); P.name = e.name ?? names[n] ?? null; setKnown(true); emit("preset", preset()); emit("sync", {});
-        // values that looked global (same in every preset) are still read: a few reads, and they stay right if you changed one
-        if (!(await L.getMany(lib.global, alive, (id, v) => { if (!recent(id)) V.set(id, v); }))) return;
-        complete = true; setKnown(true); saveCache(); emit("sync", {}); return; }
+      if (e) { showFromLib(n, e); return; }
       if (n != null && names[n] == null) { const nm = await L.presetName(); if (!alive()) return; if (nm != null) { names[n] = nm; L.store.set("pa-preset-names", names); } P.name = names[n] ?? null; emit("preset", preset()); }
       const apply = (id, v) => { if (!recent(id)) V.set(id, v); };
       if (!(await L.getMany(firstIds(), alive, apply))) return; emit("sync", {});
@@ -212,10 +216,24 @@
   L.on("ready", () => { P.live = true; P.num = null; P.name = "…"; complete = false; emit("preset", preset()); emit("link", linkState()); sync(true); });
   L.on("status", () => { if (!L.ready && P.live) { P.live = false; } emit("link", linkState()); paintBar(); });
   let lastProg = null, walking = false;
-  L.on("program", p => { lastProg = p; if (walking) return; gen++; if (P.num != null) dropCache(P.num); complete = false; fresh = true; syncSoon(120); });
+  L.on("program", p => {
+    lastProg = p; if (walking) return; gen++; if (P.num != null) dropCache(P.num); complete = false; fresh = true; clearTimeout(syncT);
+    // The Program Change carries the preset number: with the library that's all we need, so the views update at once.
+    const n = lib.pcOffset != null ? p + lib.pcOffset : null, e = n != null && libEntry(n);
+    if (e) { showFromLib(n, e); checkNumber(n); return; }
+    syncSoon(30);
+  });
+  // One background read to confirm the preset number after a library switch; only if it differs is anything re-read.
+  async function checkNumber(n) { const g = gen, m = await L.get(PRESET); if (g === gen && m != null && m !== n) { lib.pcOffset = null; saveLib(); fresh = true; sync(); } }
+  const NAV = new Set([L.EVT.next, L.EVT.prev, L.EVT.fswUp, L.EVT.fswDown]);
+  let hitT = null;
   L.on("panel", e => {
     if (e.e0 === 0xDB && e.e1 === L.EVT.store && e.e2 === 0x00) { lib.storeAt = Date.now(); saveLib(); }   // a STORE (here or on the unit) may change any preset
-    if (!e.self && !walking) { fresh = false; syncSoon(e.e0 === 0xAE ? 500 : 250); }   // something was used on the unit itself
+    if (e.self || walking) return;
+    if (e.e0 === 0xDB && NAV.has(e.e1)) return;   // preset buttons on the unit: the Program Change that follows handles it
+    if (e.e0 === 0xDB && e.e1 === L.EVT.hit) {     // HIT on the unit: only HIT changes
+      clearTimeout(hitT); hitT = setTimeout(async () => { const v = await L.get(HIT); if (v != null && v !== V.get(HIT)) { V.set(HIT, v); emit("hit", { on: !!v }); saveCache(); } }, 150); return; }
+    fresh = false; syncSoon(e.e0 === 0xAE ? 500 : 250);   // a knob or another control was used on the unit itself
   });
   const preset = () => ({ ...P, names });
   const linkState = () => ({ status: L.status, message: L.message, ready: L.ready });
@@ -272,8 +290,6 @@
       }
       if (!cancelLearn && cur !== start) { emit("busy", { text: "Going back…" }); walking = false; await gotoPreset(start); walking = true; if (!seen.has(start)) await readHere(start); }
       // parameters that never differ between presets are global, not part of a preset
-      const ids = allIds(), all = Object.values(perVals);
-      if (all.length > 3) { lib.global = ids.filter(id => all.every(v => v[id] === all[0][id])); }
       lib.readAt = Date.now(); lib.storeAt = Math.min(lib.storeAt, lib.readAt - 1); saveLib();
       toast(`Read ${count} presets in ${fmtDur((performance.now() - t0) / 1000)}`, 3000);
     } finally { walking = false; cancelLearn = false; emit("busy", null); gen++; fresh = true; complete = false; sync(); }
@@ -500,9 +516,12 @@
     if (!P.live) { notConnected(); return; }
     if (confirm(`Read every preset into the library?\n\n${libSummary()}\n\nThe pedal steps through all presets and ends on this one again. Unsaved changes to the current preset are lost.`)) readAll();
   }
+  // The strip is for a connection that dropped. A view that just opened reconnects quietly; only if that takes
+  // longer than a few seconds does the strip appear.
+  let wasReady = false, grace = true; setTimeout(() => { grace = false; paintCover(); }, 4000); L.on("ready", () => (wasReady = true));
   function paintCover() {
     const cv = document.querySelector(".nopedal"), ob = document.querySelector(".offbar"); if (!cv) return;
-    cv.hidden = known; ob.hidden = !known || L.ready;
+    cv.hidden = known; ob.hidden = !known || L.ready || (grace && !wasReady);
     cv.querySelector("h2").textContent = L.ready ? "Reading the preset…" : L.status === "connecting" ? "Connecting to your Play Acoustic…" : "Connect your Play Acoustic";
     cv.querySelector(".npmsg").textContent = L.ready ? "" : L.message;
     cv.querySelector(".crow").hidden = L.ready || L.status === "connecting";

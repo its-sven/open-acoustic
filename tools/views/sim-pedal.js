@@ -42,6 +42,8 @@
     }
   } };
   // "use" the pedal yourself: window.simPedal.turn(0x0B9, -3) changes a value and echoes a knob event, like the unit
-  window.simPedal = { reads: 0, turn(id, d) { set(id, get(id) + d); if (tunnel) reply([...H, 0x55, ...enc28(0xAE0001), 0xF7]); }, next() { cur = (cur + 1) % NAMES.length; reply([0xC0, cur]); }, get, P };
+  window.simPedal = { reads: 0, turn(id, d) { set(id, get(id) + d); if (tunnel) reply([...H, 0x55, ...enc28(0xAE0001), 0xF7]); }, next() { cur = (cur + 1) % NAMES.length; reply([0xC0, cur]); },
+    // press the ▲ footswitch on the unit: press echo, Program Change, release echo (like the hardware)
+    footswitchUp() { if (tunnel) reply([...H, 0x55, ...enc28(0xDB0C00), 0xF7]); cur = (cur + 1) % NAMES.length; reply([0xC0, cur]); if (tunnel) reply([...H, 0x55, ...enc28(0xDB0C01), 0xF7]); }, get, P };
   navigator.requestMIDIAccess = async () => ({ inputs: new Map([[input.id, input]]), outputs: new Map([[output.id, output]]), onstatechange: null });
 })();
