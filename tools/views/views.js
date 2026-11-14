@@ -1,6 +1,6 @@
 // Shared model, pedal sync, gestures and top bar for the touch views (tools/views).
 // Effects, labels, ranges, value formats, style lists and pictures come from ../pa-menus.js and ../pa-images.js;
-// the pedal is reached through ../pa-link.js. With no pedal connected the views run on a demo preset.
+// the pedal is reached through ../pa-link.js. Values only ever come from the pedal (or ?sim, a simulated one).
 (function () {
   const M = window.PA_MENUS, IM = window.PA_IMAGES || {}, L = window.PALink;
   const pageOf = (menu, title) => (M[menu] && M[menu].pages.find(p => p.title === title)) || null;
@@ -8,21 +8,19 @@
   const hex = s => parseInt(s, 16);
 
   // Effects in signal order (from the firmware's send parameters: LEAD TO UMOD, UMOD TO DELAY, DELAY TO REVERB, GTR TO UMOD …).
-  // `demo` values are only used while no pedal is connected.
   const DEF = [
-    { id: "hardtune",   side: "vocal",  name: "HardTune",   color: "--c-hardtune",   page: ["VOCAL", "HARDTUNE"],   demo: { state: 0, style: 3 } },
-    { id: "transducer", side: "vocal",  name: "Transducer", color: "--c-transducer", page: ["VOCAL", "TRANSDUCER"], adv: [["VOCAL ADV", "TRANSDUCER"]], demo: { state: 2, style: 0, DRIVE: 62, FILTER: 40, "GATE THRESHOLD": -40 } },
-    { id: "double",     side: "vocal",  name: "Double",     color: "--c-double",     page: ["VOCAL", "DOUBLE"],     demo: { state: 1, style: 1, LEVEL: -6 } },
-    { id: "harmony",    side: "vocal",  name: "Harmony",    color: "--c-harmony",    page: ["VOCAL", "HARMONY"],    adv: [["VOCAL ADV", "HARMONY"]], demo: { state: 1, style: 6, LEVEL: -4, HUMANIZE: 35, PORTAMENTO: 40 } },
-    { id: "umod",       side: "vocal",  name: "uMOD",       color: "--c-umod",       page: ["VOCAL", "uMOD"],       demo: { state: 0, style: 4, LEVEL: -12, SPEED: 180 } },
-    { id: "delay",      side: "vocal",  name: "Delay",      color: "--c-delay",      page: ["VOCAL", "DELAY"],      adv: [["VOCAL ADV", "DELAY"]], demo: { state: 1, style: 1, LEVEL: -14, FEEDBACK: 28, FILTER: 1, TEMPO: 96 } },
-    { id: "reverb",     side: "vocal",  name: "Reverb",     color: "--c-reverb",     page: ["VOCAL", "REVERB"],     demo: { state: 1, style: 9, LEVEL: -10, DECAY: 120 } },
-    { id: "g-bodyrez",  side: "guitar", name: "BodyRez",    color: "--c-bodyrez",    page: ["GUITAR", "BODYREZ EQ"], adv: [["GUITAR", "BODYREZ SHELF EQ"], ["GUITAR", "BODYREZ PARAMETRIC EQ"]], always: true,
-      demo: { style: 5, AMOUNT: 6, "LOW GAIN": -2, "HI GAIN": 3, "LOW FREQ": 60, "HI FREQ": 180, "PARA 1 FREQ": 95, "PARA 2 FREQ": 150, "PARA 1 WIDTH": 16, "PARA 2 WIDTH": 12, "PARA 1 GAIN": -4, "PARA 2 GAIN": 2 } },
-    { id: "g-comp",     side: "guitar", name: "Comp",       color: "--c-comp",       page: ["GUITAR", "BODYREZ COMPRESSOR"], always: true, img: 9, demo: { THRESHOLD: -18, RATIO: 8, ATTACK: 6, RELEASE: 10, "MAKEUP GAIN": 4, AMBIENCE: -12 } },
-    { id: "g-umod",     side: "guitar", name: "uMOD",       color: "--c-umod",       page: ["GUITAR", "GUITAR uMOD"],   adv: [["GUITAR ADV", "GUITAR uMOD"]], demo: { state: 1, style: 0, "UMOD LEVEL": -10, SPEED: 120, DEPTH: 60 } },
-    { id: "g-delay",    side: "guitar", name: "Delay",      color: "--c-delay",      page: ["GUITAR", "GUITAR DELAY"],  adv: [["GUITAR ADV", "GUITAR DELAY"]], demo: { state: 0, style: 2, "DELAY LEVEL": -16, FEEDBACK: 22, TEMPO: 96, FILTER: 1 } },
-    { id: "g-reverb",   side: "guitar", name: "Reverb",     color: "--c-reverb",     page: ["GUITAR", "GUITAR REVERB"], adv: [["GUITAR ADV", "GUITAR REVERB"]], demo: { state: 1, style: 0, "REVERB LEVEL": -12, "REVERB DECAY": 130, "REVERB PRE DLY": 20 } },
+    { id: "hardtune",   side: "vocal",  name: "HardTune",   color: "--c-hardtune",   page: ["VOCAL", "HARDTUNE"] },
+    { id: "transducer", side: "vocal",  name: "Transducer", color: "--c-transducer", page: ["VOCAL", "TRANSDUCER"], adv: [["VOCAL ADV", "TRANSDUCER"]] },
+    { id: "double",     side: "vocal",  name: "Double",     color: "--c-double",     page: ["VOCAL", "DOUBLE"] },
+    { id: "harmony",    side: "vocal",  name: "Harmony",    color: "--c-harmony",    page: ["VOCAL", "HARMONY"],    adv: [["VOCAL ADV", "HARMONY"]] },
+    { id: "umod",       side: "vocal",  name: "uMOD",       color: "--c-umod",       page: ["VOCAL", "uMOD"] },
+    { id: "delay",      side: "vocal",  name: "Delay",      color: "--c-delay",      page: ["VOCAL", "DELAY"],      adv: [["VOCAL ADV", "DELAY"]] },
+    { id: "reverb",     side: "vocal",  name: "Reverb",     color: "--c-reverb",     page: ["VOCAL", "REVERB"] },
+    { id: "g-bodyrez",  side: "guitar", name: "BodyRez",    color: "--c-bodyrez",    page: ["GUITAR", "BODYREZ EQ"], adv: [["GUITAR", "BODYREZ SHELF EQ"], ["GUITAR", "BODYREZ PARAMETRIC EQ"]], always: true },
+    { id: "g-comp",     side: "guitar", name: "Comp",       color: "--c-comp",       page: ["GUITAR", "BODYREZ COMPRESSOR"], always: true, img: 9 },
+    { id: "g-umod",     side: "guitar", name: "uMOD",       color: "--c-umod",       page: ["GUITAR", "GUITAR uMOD"],   adv: [["GUITAR ADV", "GUITAR uMOD"]] },
+    { id: "g-delay",    side: "guitar", name: "Delay",      color: "--c-delay",      page: ["GUITAR", "GUITAR DELAY"],  adv: [["GUITAR ADV", "GUITAR DELAY"]] },
+    { id: "g-reverb",   side: "guitar", name: "Reverb",     color: "--c-reverb",     page: ["GUITAR", "GUITAR REVERB"], adv: [["GUITAR ADV", "GUITAR REVERB"]] },
   ];
 
   // ── central value store: parameter id → value ───────────────────────────
@@ -55,11 +53,11 @@
     ["Lead vocal", "Reverb", 177], ["Harmony", "Reverb", 178], ["Delay (vocal)", "Reverb", 179], ["uMOD (vocal)", "Reverb", 180],
     ["Guitar", "uMOD", 181], ["Guitar", "Delay", 176], ["Guitar", "Reverb", 182], ["uMOD (guitar)", "Reverb", 183]]
     .map(([from, to, id]) => ({ from, to, id, side: /guitar/i.test(from) ? "guitar" : "vocal" }));
-  for (const sd of SENDS) addParam(sd.id, { label: `${sd.from} → ${sd.to}`, min: -36, max: 0, format: "dB", default: -36, demoValue: -12 });
+  for (const sd of SENDS) addParam(sd.id, { label: `${sd.from} → ${sd.to}`, min: -36, max: 0, format: "dB", default: -36 });
   // the effects each send feeds or comes from, for "show me this block's sends"
   const SEND_FX = { "Lead vocal": null, "Harmony": "harmony", "uMOD (vocal)": "umod", "Delay (vocal)": "delay", "Guitar": null, "uMOD (guitar)": "g-umod" };
   const sendsOf = fx => SENDS.filter(sd => sd.side === fx.side && (SEND_FX[sd.from] === fx.id || (fx.name === sd.to && (sd.side === "vocal") === (fx.side === "vocal"))));
-  const MIX = [...new Map(M.MIX.pages.flatMap(p => p.rows.flat()).filter(Boolean).map(c => [c.param, c])).values()].map(c => addParam(hex(c.param), { ...c, demoValue: -8 }));
+  const MIX = [...new Map(M.MIX.pages.flatMap(p => p.rows.flat()).filter(Boolean).map(c => [c.param, c])).values()].map(c => addParam(hex(c.param), { ...c }));
 
   // ── value formats (same rules as pa-remote.html, incl. the calibration points in pa-menus.js) ──
   const trim = (n, d) => (+(+n).toFixed(d)).toString();
@@ -94,32 +92,34 @@
   const touched = new Map(), pending = new Map(); let flushT = null;
   function send(id, v) {
     touched.set(id, performance.now()); fresh = false;
-    if (!L.ready) { clearTimeout(flushT); flushT = setTimeout(saveCache, 30); return; }
+    if (!L.ready) return;
     pending.set(id, v); if (!flushT) flushT = setTimeout(flush, 30);
   }
   function flush() { clearTimeout(flushT); flushT = null; for (const [id, v] of pending) L.set(id, v); pending.clear(); saveCache(); }
   addEventListener("pagehide", flush);
   function store(id, v) { V.set(id, v); }
+  // Changes need the pedal: while it isn't connected nothing changes on screen either (and a note says why).
+  let ncT = 0; function notConnected() { if (performance.now() - ncT > 1500) { ncT = performance.now(); toast(L.status === "connecting" ? "Still connecting to the pedal…" : "Not connected: connect the pedal to make changes"); } }
   function setParam(id, v, { quiet } = {}) {
-    const c = CELL.get(id); if (!c) return; v = clampC(c, v);
+    const c = CELL.get(id); if (!c) return; if (!L.ready) { notConnected(); return; } v = clampC(c, v);
     if (V.get(id) === v) return; record(id); store(id, v); send(id, v);
     for (const o of owners.get(id) || []) { emit("change", { fx: o.fx, label: o.label, v, cell: c }); redrawKnobs(o.fx.id, o.label); }
     if (!owners.has(id) && !quiet) emit("param", { id, v, cell: c });
   }
   function set(fxId, label, v) { const c = cellOf(byId[fxId], label); if (c) setParam(c.id, v); }
   function setStyle(fxId, i) {
-    const fx = byId[fxId]; if (!fx.styleCell) return; const n = fx.styleCell.values.length; i = ((i % n) + n) % n;
+    const fx = byId[fxId]; if (!fx.styleCell) return; if (!L.ready) { notConnected(); return; } const n = fx.styleCell.values.length; i = ((i % n) + n) % n;
     if (fx.style === i) return; record(fx.styleCell.id); store(fx.styleCell.id, i); send(fx.styleCell.id, i); emit("style", { fx });
   }
   function setState(fxId, s) {
-    const fx = byId[fxId]; if (fx.always || !fx.control) return; if (s === "hit" && !hasHit(fx)) s = "on";
+    const fx = byId[fxId]; if (fx.always || !fx.control) return; if (!L.ready) { notConnected(); return; } if (s === "hit" && !hasHit(fx)) s = "on";
     const v = ["off", "on", "hit"].indexOf(s); if (V.get(fx.control.id) === v) return;
     record(fx.control.id); store(fx.control.id, v); send(fx.control.id, v); emit("state", { fx });
   }
   const nextState = fx => (fx.state === "off" ? "on" : "off");
   const hasHit = fx => !!(fx.control && fx.control.values.includes("HIT"));
   const hitOn = () => !!V.get(HIT);
-  function setHit(on) { on = on ? 1 : 0; if (V.get(HIT) === on) return; store(HIT, on); send(HIT, on); emit("hit", { on: !!on }); }
+  function setHit(on) { if (!L.ready) { notConnected(); return; } on = on ? 1 : 0; if (V.get(HIT) === on) return; store(HIT, on); send(HIT, on); emit("hit", { on: !!on }); }
   // An effect is audible when ON, or when set to HIT and HIT is engaged.
   const live = fx => fx.state === "on" || (fx.state === "hit" && hitOn());
 
@@ -132,6 +132,7 @@
   }
   let replaying = false;
   function undo() {
+    if (!L.ready) { notConnected(); return false; }
     const g = history.pop(); if (!g) return false; replaying = true;
     for (const [id, v] of g) if (v != null) applyRemote(id, v, true);
     replaying = false; group = null; emit("history", { n: history.length }); emit("sync", {}); return true;
@@ -139,36 +140,24 @@
   // Put a value in the model and send it (used by undo / A-B); fires the right events.
   function applyRemote(id, v, sendIt) { store(id, v); if (sendIt) send(id, v); }
   const snapshot = () => new Map([...CELL.keys()].filter(id => id !== HIT && V.has(id)).map(id => [id, V.get(id)]));
-  function restore(snap) { replaying = true; for (const [id, v] of snap) if (V.get(id) !== v) applyRemote(id, v, true); replaying = false; emit("sync", {}); }
-
-  // ── demo presets (no pedal) ──────────────────────────────────────────────
-  const DEMO_NAMES = ["Open Mic Warm", "Ballad Hall", "Coffee House Duet", "Big Chorus Stack", "Slapback Country", "Octave Doubler", "Radio Verse",
-    "Megaphone Bridge", "Tight Double", "Church Choir", "Tape Echo Folk", "Robot HardTune", "Shimmer Room", "Dry Talk", "Arena Anthem",
-    "Bossa Nylon", "Campfire", "Spring Surf", "Unplugged Set", "Encore"];
-  function loadDemo(i) {
-    for (const fx of FX) {
-      for (const c of [...fx.params, ...fx.adv]) V.set(c.id, fx.demo[c.label] ?? c.default ?? clampC(c, 0));
-      if (fx.styleCell) V.set(fx.styleCell.id, fx.demo.style ?? 0);
-      if (fx.control) { const k = FX.indexOf(fx), r = (i * 7 + k * 13 + (i * k) % 5) % 5;
-        V.set(fx.control.id, i === 2 ? fx.demo.state ?? 0 : r < 2 ? 0 : r === 4 && hasHit(fx) ? 2 : 1); }
-    }
-    for (const [id, c] of CELL) if (!V.has(id)) V.set(id, c.demoValue ?? c.default ?? clampC(c, 0));
-    V.set(HIT, 0);
-  }
+  function restore(snap) { if (!L.ready) { notConnected(); return; } replaying = true; for (const [id, v] of snap) if (V.get(id) !== v) applyRemote(id, v, true); replaying = false; emit("sync", {}); }
 
   // ── preset + sync with the pedal ─────────────────────────────────────────
   const names = Object.assign({}, L.store.get("pa-preset-names") || {});   // number → name, learned while browsing
-  const P = { num: 12, name: DEMO_NAMES[2], live: false };
-  let demoIdx = 2; try { const s = sessionStorage.getItem("pa-demo-preset"); if (s !== null && DEMO_NAMES[+s]) demoIdx = +s; } catch {}
+  const P = { num: null, name: null, live: false };
+  // `known`: the model holds real values (read from the pedal, or saved by the view you came from). Until then the
+  // views are covered by the "connect your pedal" screen; nothing is ever made up.
+  let known = false;
+  const setKnown = k => { if (known === k) return; known = k; emit("known", { known }); };
   // Values are read from the pedal once per preset and kept in sessionStorage, so switching views (each view is
   // its own page) reuses them instead of reading everything again. Your edits update the saved copy as they're sent.
   const pfx = () => (window.simPedal ? "sim-" : "");
-  const cacheKey = (n, live = P.live) => pfx() + (live ? "pa-vals-" : "pa-demo-vals-") + n;
+  const cacheKey = n => pfx() + "pa-vals-" + n;
   // The copy is saved again when you leave a view, so a fresh one (< 30 s) means "just switched views". An older one
   // (the tab was closed or asleep and the pedal may have been used meanwhile) is read again from the pedal.
-  function saveCache() { if (P.num == null || (P.live && !complete)) return; try { sessionStorage.setItem(cacheKey(P.num), JSON.stringify({ t: Date.now(), v: [...V] }));
-    if (P.live) sessionStorage.setItem(pfx() + "pa-live", JSON.stringify({ num: P.num, name: P.name, t: Date.now() })); } catch {} }
-  function loadCache(n, maxAge = Infinity, live = P.live) { try { const a = JSON.parse(sessionStorage.getItem(cacheKey(n, live)));
+  function saveCache() { if (P.num == null || !P.live || !complete) return; try { sessionStorage.setItem(cacheKey(P.num), JSON.stringify({ t: Date.now(), v: [...V] }));
+    sessionStorage.setItem(pfx() + "pa-live", JSON.stringify({ num: P.num, name: P.name, t: Date.now() })); } catch {} }
+  function loadCache(n, maxAge = Infinity) { try { const a = JSON.parse(sessionStorage.getItem(cacheKey(n)));
     if (a && a.v && Date.now() - a.t < maxAge) { for (const [id, v] of a.v) V.set(id, v); return true; } } catch {} return false; }
   const dropCache = n => { try { sessionStorage.removeItem(cacheKey(n)); } catch {} };
   let complete = false;   // true once every value of the current preset has been read (or came from the saved copy)
@@ -184,11 +173,10 @@
   function libPut(n, name, vals) { lib.presets[n] = { name, t: Date.now(), vals: Object.entries(vals).map(([id, v]) => [+id, v]) }; if (name != null) { names[n] = name; L.store.set("pa-preset-names", names); } saveLib(); }
   function libApply(e) { const g = new Set(lib.global); for (const [id, v] of e.vals) if (!g.has(id) && id !== HIT) V.set(id, v); }
   let fresh = false;      // the pedal just loaded a preset and nothing has been edited yet: what we read is the stored preset
-  loadDemo(demoIdx); P.num = demoIdx + 10; P.name = DEMO_NAMES[demoIdx]; loadCache(P.num);
-  // Opened from another view that was connected a moment ago: show the pedal's values right away instead of the
-  // demo preset, so nothing flips on/off while this view reconnects (it re-checks the preset number once ready).
+  // Opened from another view that was connected a moment ago: show the pedal's values right away, so the view is
+  // usable at once and nothing changes while it reconnects (it re-checks the preset number once ready).
   try { const b = JSON.parse(sessionStorage.getItem(pfx() + "pa-live"));
-    if (b && Date.now() - b.t < 30000 && loadCache(b.num, 30000, true)) { P.num = b.num; P.name = b.name; } } catch {}
+    if (b && Date.now() - b.t < 30000 && loadCache(b.num, 30000)) { P.num = b.num; P.name = b.name; known = true; } } catch {}
   // A view brought back by the browser's Back (or a swipe back) is an old snapshot: load it again
   addEventListener("pageshow", e => { if (e.persisted) location.reload(); });
   const recent = id => touched.has(id) && performance.now() - touched.get(id) < 1500;   // don't overwrite what the user is dragging
@@ -206,17 +194,17 @@
       if (n != null && n !== P.num) { P.num = n; P.name = names[n] ?? null; complete = false; emit("preset", preset()); }
       const lp = lastProg; lastProg = null;   // only a Program Change the pedal just sent tells us its numbering
       if (n != null && lp != null && lib.pcOffset !== n - lp) { lib.pcOffset = n - lp; saveLib(); }   // PC number → shown number
-      if (reuse && n != null && loadCache(n, 30000)) { complete = true; emit("sync", {}); return; }
+      if (reuse && n != null && loadCache(n, 30000)) { complete = true; setKnown(true); emit("sync", {}); return; }
       const e = n != null && fresh && libEntry(n);
-      if (e) { libApply(e); P.name = e.name ?? names[n] ?? null; emit("preset", preset()); emit("sync", {});
+      if (e) { libApply(e); P.name = e.name ?? names[n] ?? null; setKnown(true); emit("preset", preset()); emit("sync", {});
         // values that looked global (same in every preset) are still read: a few reads, and they stay right if you changed one
         if (!(await L.getMany(lib.global, alive, (id, v) => { if (!recent(id)) V.set(id, v); }))) return;
-        complete = true; saveCache(); emit("sync", {}); return; }
+        complete = true; setKnown(true); saveCache(); emit("sync", {}); return; }
       if (n != null && names[n] == null) { const nm = await L.presetName(); if (!alive()) return; if (nm != null) { names[n] = nm; L.store.set("pa-preset-names", names); } P.name = names[n] ?? null; emit("preset", preset()); }
       const apply = (id, v) => { if (!recent(id)) V.set(id, v); };
       if (!(await L.getMany(firstIds(), alive, apply))) return; emit("sync", {});
       if (!(await L.getMany(allIds().filter(id => !firstIds().includes(id)), alive, apply))) return;
-      complete = true; saveCache(); emit("sync", {});
+      complete = true; setKnown(true); saveCache(); emit("sync", {});
       if (fresh && n != null) { const vals = {}; for (const id of allIds()) vals[id] = V.get(id); libPut(n, P.name, vals); }   // keep it for next time
     } finally { if (g === gen) { syncing = false; emit("syncing", { on: false }); } }
   }
@@ -235,12 +223,11 @@
   // Preset stepping uses the pedal's own front arrows (they step presets on its preset screen).
   function waitProgram(ms = 900) { return new Promise(res => { const off = L.on("program", p => { off(); clearTimeout(t); res(p); }); const t = setTimeout(() => { off(); res(null); }, ms); }); }
   async function stepPreset(d) {
-    if (!P.live) { dropCache(P.num); demoIdx = (demoIdx + d + DEMO_NAMES.length) % DEMO_NAMES.length; try { sessionStorage.setItem("pa-demo-preset", demoIdx); } catch {}
-      loadDemo(demoIdx); P.num = demoIdx + 10; P.name = DEMO_NAMES[demoIdx]; history.length = 0; emit("preset", preset()); emit("sync", {}); return; }
+    if (!P.live) { notConnected(); return; }
     history.length = 0; await L.press(d > 0 ? L.EVT.next : L.EVT.prev);
   }
   async function gotoPreset(n) {
-    if (!P.live) { stepPreset(n - 10 - demoIdx); return; }
+    if (!P.live) { notConnected(); return; }
     let cur = P.num, guard = 0; if (cur == null || n === cur) return;
     walking = true; history.length = 0;
     try {
@@ -451,11 +438,20 @@
       <div class="views">${VIEWS.map(([h, t, ic], i) => `<a href="${h}${location.search}" class="${h === here ? "on" : ""}" title="${t} (${i + 1})"><b>${ic}</b><span>${t}</span></a>`).join("")}</div>
     </nav>`);
     bar = document.querySelector(".pbar");
+    if (!o.noCover) document.body.insertAdjacentHTML("beforeend", `<div class="nopedal" hidden><div class="npbox">
+        <h2></h2><p class="npmsg"></p>
+        <div class="crow"><button class="pri" data-np="connect">Connect</button><button data-np="ports">Choose ports…</button></div>
+        <p class="note">Connect the Play Acoustic by USB (Chrome or Edge on a Mac/PC), or on an iPad use a Web MIDI browser app with a USB adapter or a Bluetooth MIDI adapter.
+          No pedal at hand? <a href="${location.pathname}?sim">Try a simulated one</a>.</p></div></div>
+      <div class="offbar" hidden><span></span><button data-np="connect">Reconnect</button></div>`);
+    document.querySelectorAll("[data-np]").forEach(b => b.onclick = async () => {
+      if (b.dataset.np === "connect" && (await L.start()) && L.ready) return;
+      const cp = bar.querySelector(".cpop"); if (cp.hidden) bar.querySelector(".conn").click(); });
     const list = bar.querySelector(".plist"), q = list.querySelector("input"), items = list.querySelector(".pitems"), name = bar.querySelector(".pname");
-    const entries = () => P.live ? Object.entries(names).map(([n, nm]) => ({ num: +n, name: nm })).sort((a, b) => a.num - b.num) : DEMO_NAMES.map((nm, i) => ({ num: i + 10, name: nm }));
+    const entries = () => Object.entries(names).map(([n, nm]) => ({ num: +n, name: nm })).sort((a, b) => a.num - b.num);
     const fill = () => { const f = q.value.trim().toLowerCase(), all = entries();
       items.innerHTML = all.filter(p => !f || (p.num + " " + p.name).toLowerCase().includes(f)).map(p => `<button role="option" data-n="${p.num}" class="${p.num === P.num ? "sel" : ""}"><span>${p.num}</span>${p.name || "—"}${P.live && libEntry(p.num) ? `<i class="inlib" title="In the library: loads instantly">●</i>` : ""}</button>`).join("") || `<div class="none">No match</div>`;
-      list.querySelector(".pfoot").innerHTML = P.live ? `<span class="note">${libSummary()}</span> <button data-act="names">${lib.readAt ? "Read again" : "Read all"}</button>` : `<span class="note">Demo presets: connect the pedal for yours.</span>`; };
+      list.querySelector(".pfoot").innerHTML = P.live ? `<span class="note">${libSummary()}</span> <button data-act="names">${lib.readAt ? "Read again" : "Read all"}</button>` : `<span class="note">Connect the pedal to load presets.</span>`; };
     const open = v => { list.hidden = !v; name.setAttribute("aria-expanded", v); if (v) { q.value = ""; fill(); items.querySelector(".sel")?.scrollIntoView({ block: "center" }); } };
     gesture(name, { tap: () => open(list.hidden), drag: dx => { name.style.transform = `translateX(${Math.max(-60, Math.min(60, dx / 3))}px)`; },
       dragEnd: e => { name.style.transform = ""; } , threshold: 12 });
@@ -463,7 +459,7 @@
     let sx = null; name.addEventListener("pointerdown", e => sx = e.clientX);
     name.addEventListener("pointerup", e => { if (sx != null && Math.abs(e.clientX - sx) > 50) stepPreset(e.clientX < sx ? 1 : -1); sx = null; });
     bar.querySelectorAll(".pstep").forEach(b => gesture(b, { tap: () => stepPreset(+b.dataset.step),
-      hold: () => { const t = (P.num ?? 0) + 10 * +b.dataset.step; gotoPreset(P.live ? t : Math.max(10, Math.min(29, t))); } }));
+      hold: () => { const t = (P.num ?? 0) + 10 * +b.dataset.step; gotoPreset(t); } }));
     q.oninput = fill;
     q.onkeydown = e => { if (e.key === "Enter") { const b = items.querySelector("button"); if (b) { gotoPreset(+b.dataset.n); open(false); } } if (e.key === "Escape") open(false); };
     items.onclick = e => { const b = e.target.closest("[data-n]"); if (b) { gotoPreset(+b.dataset.n); open(false); } };
@@ -498,14 +494,24 @@
              : `No library yet. Reading every preset once takes ${t}${est.measured ? "" : " over USB (estimate)"}; after that, presets switch without reading.`;
   }
   function askReadAll() {
-    if (!P.live) { toast("Connect the pedal first"); return; }
+    if (!P.live) { notConnected(); return; }
     if (confirm(`Read every preset into the library?\n\n${libSummary()}\n\nThe pedal steps through all presets and ends on this one again. Unsaved changes to the current preset are lost.`)) readAll();
   }
+  function paintCover() {
+    const cv = document.querySelector(".nopedal"), ob = document.querySelector(".offbar"); if (!cv) return;
+    cv.hidden = known; ob.hidden = !known || L.ready;
+    cv.querySelector("h2").textContent = L.ready ? "Reading the preset…" : L.status === "connecting" ? "Connecting to your Play Acoustic…" : "Connect your Play Acoustic";
+    cv.querySelector(".npmsg").textContent = L.ready ? "" : L.message;
+    cv.querySelector(".crow").hidden = L.ready || L.status === "connecting";
+    ob.querySelector("span").textContent = L.status === "connecting" ? "Reconnecting… showing the pedal's last values" : "Not connected · showing the pedal's last values · changes are off";
+  }
+  document.addEventListener("pa:known", paintCover); document.addEventListener("pa:link", paintCover);
   function paintBar() {
+    paintCover();
     if (!bar) return;
-    bar.querySelector(".pnum").textContent = P.num ?? "··"; bar.querySelector(".pnm").textContent = P.name ?? "…";
-    const c = bar.querySelector(".conn"), st = L.ready ? "ready" : L.status === "connecting" ? "connecting" : "demo";
-    c.dataset.s = st; c.querySelector("span").textContent = st === "ready" ? (syncing ? "Syncing" : "Pedal") : st === "connecting" ? "Connecting" : "Demo";
+    bar.querySelector(".pnum").textContent = P.num ?? "—"; bar.querySelector(".pnm").textContent = P.name ?? (P.live || known ? "…" : "No pedal");
+    const c = bar.querySelector(".conn"), st = L.ready ? "ready" : L.status === "connecting" ? "connecting" : "off";
+    c.dataset.s = st; c.querySelector("span").textContent = st === "ready" ? (syncing ? "Syncing" : "Pedal") : st === "connecting" ? "Connecting" : "No pedal";
     c.title = L.message; const pi = bar.querySelector(".pinfo"); if (pi) pi.textContent = keyInfo();
   }
   const keyInfo = () => { const h = byId.harmony, k = cellOf(h, "KEY"), d = byId.delay; return `KEY ${fmt(k, h.vals.KEY)} · ${d.vals.TEMPO} BPM`; };

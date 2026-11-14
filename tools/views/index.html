@@ -27,7 +27,7 @@ a.card:hover { transform: translateY(-2px); border-color: var(--cc); }
 <body>
 <main>
   <h1>Play Acoustic views</h1>
-  <p class="lead">Five touch-screen ways to control a stock Play Acoustic, each for a different job. They share one connection, one preset bar and the same gestures, and they all stay in step with the pedal: change something here or on the unit and every view follows. Without a pedal they run on a demo preset; add <code>?sim</code> to the address to try them against a simulated pedal.</p>
+  <p class="lead">Five touch-screen ways to control a stock Play Acoustic, each for a different job. They share one connection, one preset bar and the same gestures, and they all stay in step with the pedal: change something here or on the unit and every view follows. Every value comes from the pedal; without one the views ask you to connect. Add <code>?sim</code> to the address to try them against a simulated pedal.</p>
   <div class="cards" id="cards"></div>
   <div class="facts">
     <h3>Gestures (the same everywhere)</h3>
@@ -54,7 +54,7 @@ a.card:hover { transform: translateY(-2px); border-color: var(--cc); }
 <script src="../pa-link.js"></script>
 <script src="views.js"></script>
 <script>
-PA.nav();
+PA.nav({ noCover: true });
 const C = [
   ["1-pedalboard.html", "FX CHAIN", "Pedalboard", "--c-harmony", [11, 77, 123],
     "Each effect is a stomp box on a board. Vocal and guitar each get their own board, and Double + Harmony share a two-switch enclosure because they run in parallel.",
