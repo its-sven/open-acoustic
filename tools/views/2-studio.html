@@ -92,13 +92,9 @@ input[type=range] { width: 100%; accent-color: var(--fc); }
 <script>
 PA.nav();
 const hex = p => p ? "0x" + p.replace(/^0x/i, "").toUpperCase() : "";
-// Parameters that aren't on an FX page: effect sends and the MIX pages. Registered so they sync with the pedal like the rest.
-const SENDS = { "Lead vocal": { uMOD: 171, Delay: 173, Reverb: 177 }, "Harmony": { uMOD: 172, Delay: 174, Reverb: 178 },
-  "uMOD (vocal)": { Delay: 175, Reverb: 180 }, "Delay (vocal)": { Reverb: 179 }, "Guitar": { uMOD: 181, Delay: 176, Reverb: 182 }, "uMOD (guitar)": { Reverb: 183 } };
-for (const m of Object.values(SENDS)) for (const id of Object.values(m)) PA.addParam(id, { label: "SEND", min: -36, max: 0, format: "dB", default: -36, demoValue: -12 });
-const mixCells = [...new Map([...PA_MENUS.MIX.pages.flatMap(p => p.rows.flat())].filter(Boolean).map(c => [c.param, c])).values()];
-for (const c of mixCells) PA.addParam(parseInt(c.param, 16), { ...c, demoValue: -8 });
-
+// Sends and MIX levels come from the shared kit (PA.SENDS, PA.MIX), so every view keeps them in sync.
+const SENDS = {}; for (const sd of PA.SENDS) (SENDS[sd.from] ||= {})[sd.to] = sd.id;
+const mixCells = PA.MIX;
 let base = PA.snapshot();   // values when the preset loaded: "changed" is measured against this
 function row(fx, c, adv) {
   const ctl = c.format === "list"
@@ -124,7 +120,7 @@ document.getElementById("side").innerHTML = `<h5>Vocal</h5>` + PA.vocal.map(side
 const dests = ["uMOD", "Delay", "Reverb"];
 document.getElementById("mx").innerHTML = `<tr><th>from ↓ / to →</th>${dests.map(d => `<th>${d}</th>`).join("")}</tr>` +
   Object.entries(SENDS).map(([s, m]) => `<tr><td>${s}</td>${dests.map(d => m[d] ? `<td>${PA.fader(m[d])}</td>` : `<td class="na">—</td>`).join("")}</tr>`).join("");
-document.getElementById("mix").innerHTML = mixCells.map(c => `<div class="pr" data-id="${parseInt(c.param, 16)}" data-k="mix ${c.label.toLowerCase()} ${c.param}"><div class="pl">${c.label}<i>${hex(c.param)} · ${c.min}…${c.max}</i></div>${PA.fader(parseInt(c.param, 16))}</div>`).join("");
+document.getElementById("mix").innerHTML = mixCells.map(c => `<div class="pr" data-id="${c.id}" data-k="mix ${c.label.toLowerCase()} ${c.param}"><div class="pl">${c.label}<i>${hex(c.param)} · ${c.min}…${c.max}</i></div>${PA.fader(c.id)}</div>`).join("");
 
 // ── visualisations ────────────────────────────────────────────────────────
 const W = 320, H = 110, F = i => 20 * Math.pow(1000, i / 240), X = f => Math.log10(f / 20) / 3 * W;

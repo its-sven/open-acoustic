@@ -11,6 +11,13 @@ body { display: grid; grid-template-rows: auto auto 1fr auto; min-height: 100vh;
 .hdr { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--rule); }
 .hdr .pn { font: 700 18px var(--sans); } .hdr .pn span { font-family: var(--mono); color: var(--accent); margin-right: 8px; }
 .hdr .sp { flex: 1; }
+.hitb { min-width: 90px; height: 36px; border-radius: 8px; border: 2px solid var(--hit); background: none; color: var(--hit); font: 800 13px var(--sans); letter-spacing: .1em; cursor: pointer; }
+.hitb.on { background: var(--hit); color: #04121f; box-shadow: 0 0 18px #4aa3ff88; }
+.blk.hitlive { border-color: var(--hit); }
+.side .fader { grid-template-columns: 1fr 60px; }
+.side .sl { font: 600 10px var(--mono); color: var(--muted); margin-top: 6px; }
+.followhit { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--rule); background: var(--surface-2); cursor: pointer; font: 700 12px var(--mono); color: var(--muted); }
+.followhit.on { border-color: var(--hit); color: var(--hit); }
 .snap { display: inline-flex; gap: 4px; } .snap button { background: var(--surface-2); border: 1px solid var(--rule); color: var(--muted); border-radius: 6px; padding: 6px 10px; font: 600 12px var(--mono); cursor: pointer; }
 .snap button.sel { color: var(--ink); border-color: var(--accent); }
 .flowwrap { display: grid; align-content: center; background: radial-gradient(circle, #ffffff0d 1px, transparent 1.4px) 0 0 / 22px 22px, var(--bg); }
@@ -61,13 +68,13 @@ body { display: grid; grid-template-rows: auto auto 1fr auto; min-height: 100vh;
 </head>
 <body>
 <div class="hdr">
-  <span class="note">KEY AUTO → G · 96 BPM</span>
+  <span class="note" id="keyinfo"></span>
   <span class="sp"></span>
-  <span class="note">View</span><div class="snap"><button class="sel">Preset</button><button>HIT on</button></div>
+  <button class="hitb" id="hit">HIT</button>
 </div>
 <div class="flowwrap">
   <div class="flow" id="flow"></div>
-  <div class="legend note"><span><b>Tap</b> a block to edit it below</span><span><b>Double-tap</b> bypass</span><span><b>Dashed</b> = off</span><span><b>HIT</b> tag = turns on with the HIT switch</span><span>Blocks sit where the firmware routes them; the order can't be changed on this pedal</span></div>
+  <div class="legend note"><span><b>Tap</b> a block to edit it below</span><span><b>Double-tap</b> on / off</span><span><b>Hold</b> put on HIT</span><span><b>Swipe</b> a block to change its style</span><span><b>Dashed</b> = off</span><span>Blocks sit where the firmware routes them; the order can't be changed on this pedal</span></div>
 </div>
 <div class="insp" id="insp"></div>
 <script src="../pa-menus.js"></script>
@@ -79,34 +86,62 @@ body { display: grid; grid-template-rows: auto auto 1fr auto; min-height: 100vh;
 PA.nav();
 const V = PA.byId;
 let sel = V.harmony;
-const blk = fx => `<div class="blk ${fx.state === "off" ? "off" : ""} ${fx === sel ? "sel" : ""}" data-id="${fx.id}" style="--fc:${PA.color(fx)}">
-  ${PA.artHTML(PA.img(fx))}<span class="bn">${fx.name.toUpperCase()}</span>${fx.state === "hit" ? `<span class="hb">HIT</span>` : ""}</div>`;
-const w = live => `<span class="wire ${live ? "live" : ""}"></span>`;
+const blk = fx => `<div class="blk" data-id="${fx.id}" style="--fc:${PA.color(fx)}">${PA.artHTML(PA.img(fx))}<span class="bn">${fx.name.toUpperCase()}</span><span class="hb" hidden>HIT</span></div>`;
+const w = () => `<span class="wire live"></span>`;
 const io = t => `<div class="io">${t}</div>`;
-function render() {
-  document.getElementById("flow").innerHTML =
-    `<div class="lane" style="margin-top:40px"><span class="lbl" style="top:-40px">VOCAL PATH</span>${io("MIC")}${w(1)}<div class="blk" style="--fc:var(--accent)"><span class="bn" style="font-size:10px;color:var(--ink)">TONE</span><span class="bn">auto EQ/comp</span></div>${w(1)}
-      ${blk(V.hardtune)}${w(1)}${blk(V.transducer)}${w(1)}<div class="split">${blk(V.double)}${blk(V.harmony)}</div>${w(1)}
-      ${blk(V.umod)}${w(1)}${blk(V.delay)}${w(1)}${blk(V.reverb)}${w(1)}${io("OUT L/R")}</div>
-     <div class="lane" style="margin-top:80px"><span class="lbl" style="top:-24px">GUITAR PATH</span>${io("GTR")}${w(1)}${PA.guitar.map(blk).join(w(1))}${w(1)}${io("DI / MIX")}</div>`;
-  const fx = sel, states = fx.always ? [] : PA.hasHit(fx) ? ["off", "on", "hit"] : ["off", "on"];
-  const insp = document.getElementById("insp"); insp.style.setProperty("--fc", PA.color(fx));
-  insp.innerHTML = `<div class="who">${PA.artHTML(PA.img(fx))}<h2>${fx.name} <span class="note">${fx.side}</span></h2>
-      ${fx.styleCell ? `<select id="sty">${fx.styleCell.values.map((s, i) => `<option value="${i}" ${i === fx.style ? "selected" : ""}>${s}</option>`).join("")}</select>` : ""}
-      ${states.length ? `<div class="byp">${states.map(s => `<button data-s="${s}" class="${fx.state === s ? "sel" : ""}">${s.toUpperCase()}</button>`).join("")}</div>` : `<div class="note">Always on</div>`}</div>
+document.getElementById("flow").innerHTML =
+  `<div class="lane" style="margin-top:40px"><span class="lbl" style="top:-40px">VOCAL PATH</span>${io("MIC")}${w()}<div class="blk" style="--fc:var(--accent)"><span class="bn" style="font-size:10px;color:var(--ink)">TONE</span><span class="bn">auto EQ/comp</span></div>${w()}
+    ${blk(V.hardtune)}${w()}${blk(V.transducer)}${w()}<div class="split">${blk(V.double)}${blk(V.harmony)}</div>${w()}
+    ${blk(V.umod)}${w()}${blk(V.delay)}${w()}${blk(V.reverb)}${w()}${io("OUT L/R")}</div>
+   <div class="lane" style="margin-top:80px"><span class="lbl" style="top:-24px">GUITAR PATH</span>${io("GTR")}${w()}${PA.guitar.map(blk).join(w())}${w()}${io("DI / MIX")}</div>`;
+
+function paintBlocks() {
+  for (const fx of PA.FX) {
+    const b = document.querySelector(`.blk[data-id="${fx.id}"]`);
+    b.classList.toggle("off", fx.state === "off"); b.classList.toggle("sel", fx === sel); b.classList.toggle("hitlive", fx.state === "hit" && PA.hitOn());
+    b.querySelector(".hb").hidden = fx.state !== "hit"; b.querySelector(".art").outerHTML = PA.artHTML(PA.img(fx));
+  }
+  document.getElementById("hit").classList.toggle("on", PA.hitOn());
+  document.getElementById("keyinfo").textContent = PA.keyInfo();
+}
+// Inspector: built when the selection changes, updated in place otherwise (so a knob being dragged isn't replaced)
+function buildInspector() {
+  const fx = sel, insp = document.getElementById("insp"), sends = PA.sendsOf(fx);
+  insp.style.setProperty("--fc", PA.color(fx));
+  insp.innerHTML = `<div class="who"><span class="wart"></span><h2>${fx.name} <span class="note">${fx.side}</span></h2>
+      ${fx.styleCell ? `<select id="sty">${fx.styleCell.values.map((s, i) => `<option value="${i}">${s}</option>`).join("")}</select>` : ""}
+      ${PA.statesOf(fx).length ? `<div class="byp">${PA.statesOf(fx).map(s => `<button data-s="${s}">${s.toUpperCase()}</button>`).join("")}</div>` : `<div class="note">Always on</div>`}</div>
     <div class="knobs">${fx.params.map(c => PA.knob(fx, c.label, { size: 62 })).join("")}
       ${fx.adv.length ? `<div class="grp">ADVANCED</div>${fx.adv.map(c => PA.knob(fx, c.label, { size: 52 })).join("")}` : ""}</div>
-    <div class="side"><h4>Footswitch</h4><div class="fsrow"><div class="fs">◀</div><div class="fs">▶</div><div class="fs ${fx.state === "hit" ? "as" : ""}">HIT</div></div>
-      <div class="note">${fx.state === "hit" ? `<b>${fx.name}</b> follows the HIT switch.` : PA.hasHit(fx) ? `Set CONTROL to HIT to put ${fx.name} on the HIT switch.` : "Guitar effects can't follow HIT."}</div>
-      <h4>Send</h4><div class="note">${fx.id === "harmony" ? "Harmony → Delay −14 dB · → Reverb −6 dB" : fx.side === "guitar" ? "Guitar → Reverb −9 dB" : "Lead → Delay −12 dB · → Reverb −8 dB"}</div></div>`;
-  PA.initKnobs(insp);
+    <div class="side">${PA.hasHit(fx) ? `<h4>HIT switch</h4><button class="followhit" id="follow"></button>` : ""}
+      ${sends.length ? `<h4>Sends</h4>${sends.map(sd => `<div class="sl">${sd.from} → ${sd.to}</div>${PA.fader(sd.id, { color: PA.color(fx) })}`).join("")}` : ""}</div>`;
+  PA.initKnobs(insp); PA.initFaders(insp);
   const s = insp.querySelector("#sty"); if (s) s.onchange = () => PA.setStyle(fx.id, +s.value);
   insp.querySelectorAll(".byp button").forEach(b => b.onclick = () => PA.setState(fx.id, b.dataset.s));
+  const f = insp.querySelector("#follow"); if (f) f.onclick = () => PA.setState(fx.id, fx.state === "hit" ? "on" : "hit");
+  paintInspector();
 }
-render();
-document.getElementById("flow").addEventListener("click", e => { const b = e.target.closest("[data-id]"); if (b) { sel = V[b.dataset.id]; render(); } });
-document.getElementById("flow").addEventListener("dblclick", e => { const b = e.target.closest("[data-id]"); if (b) PA.setState(b.dataset.id, PA.nextState(V[b.dataset.id])); });
-document.addEventListener("pa:state", render); document.addEventListener("pa:style", render);
+function paintInspector() {
+  const fx = sel, insp = document.getElementById("insp");
+  insp.querySelector(".wart").innerHTML = PA.artHTML(PA.img(fx));
+  const s = insp.querySelector("#sty"); if (s) s.value = fx.style;
+  insp.querySelectorAll(".byp button").forEach(b => b.classList.toggle("sel", b.dataset.s === fx.state));
+  const f = insp.querySelector("#follow"); if (f) { f.classList.toggle("on", fx.state === "hit"); f.textContent = fx.state === "hit" ? "✓ Follows HIT · tap to stop" : "Follow the HIT switch"; }
+}
+function select(fx) { if (sel === fx) return; sel = fx; buildInspector(); paintBlocks(); }
+buildInspector(); paintBlocks();
+
+// Blocks: tap = inspect, double-tap = on/off, hold = put on HIT, swipe = style
+PA.gestureAll(document.getElementById("flow"), ".blk[data-id]", b => {
+  const fx = V[b.dataset.id]; let base;
+  return { tap: () => select(fx), double: () => { select(fx); PA.setState(fx.id, PA.nextState(fx)); },
+    hold: () => { select(fx); if (PA.hasHit(fx)) { PA.setState(fx.id, fx.state === "hit" ? "on" : "hit"); PA.toast(fx.state === "hit" ? `${fx.name} follows HIT` : `${fx.name} no longer on HIT`); } else PA.toast("Guitar effects can't follow HIT"); },
+    threshold: 12, dragStart: () => { base = fx.style; select(fx); }, drag: dx => { if (fx.styleCell) PA.setStyle(fx.id, base + Math.round(dx / 40)); } };
+});
+PA.gesture(document.getElementById("hit"), { tap: () => PA.setHit(!PA.hitOn()), hold: () => PA.setHit(true), holdEnd: () => PA.setHit(false) });
+const all = () => { paintBlocks(); paintInspector(); };
+["state", "style", "sync", "hit", "preset"].forEach(t => document.addEventListener("pa:" + t, all));
+document.addEventListener("pa:style", e => { if (e.detail.fx === sel) PA.toast(PA.styleName(sel)); });
 </script>
 </body>
 </html>

@@ -50,6 +50,16 @@
   // Register a parameter that isn't on an FX page (mix levels, sends …) so it is read and written like the rest.
   function addParam(id, cell) { const c = { id, param: "0x" + id.toString(16), format: "number", ...cell }; CELL.set(id, c); return c; }
   addParam(HIT, { label: "HIT", min: 0, max: 1, format: "list", values: ["OFF", "ON"] });
+  // Effect sends (per preset, never shown on the pedal) and the MIX page levels: synced like everything else.
+  const SENDS = [["Lead vocal", "uMOD", 171], ["Harmony", "uMOD", 172], ["Lead vocal", "Delay", 173], ["Harmony", "Delay", 174], ["uMOD (vocal)", "Delay", 175],
+    ["Lead vocal", "Reverb", 177], ["Harmony", "Reverb", 178], ["Delay (vocal)", "Reverb", 179], ["uMOD (vocal)", "Reverb", 180],
+    ["Guitar", "uMOD", 181], ["Guitar", "Delay", 176], ["Guitar", "Reverb", 182], ["uMOD (guitar)", "Reverb", 183]]
+    .map(([from, to, id]) => ({ from, to, id, side: /guitar/i.test(from) ? "guitar" : "vocal" }));
+  for (const sd of SENDS) addParam(sd.id, { label: `${sd.from} → ${sd.to}`, min: -36, max: 0, format: "dB", default: -36, demoValue: -12 });
+  // the effects each send feeds or comes from, for "show me this block's sends"
+  const SEND_FX = { "Lead vocal": null, "Harmony": "harmony", "uMOD (vocal)": "umod", "Delay (vocal)": "delay", "Guitar": null, "uMOD (guitar)": "g-umod" };
+  const sendsOf = fx => SENDS.filter(sd => sd.side === fx.side && (SEND_FX[sd.from] === fx.id || (fx.name === sd.to && (sd.side === "vocal") === (fx.side === "vocal"))));
+  const MIX = [...new Map(M.MIX.pages.flatMap(p => p.rows.flat()).filter(Boolean).map(c => [c.param, c])).values()].map(c => addParam(hex(c.param), { ...c, demoValue: -8 }));
 
   // ── value formats (same rules as pa-remote.html, incl. the calibration points in pa-menus.js) ──
   const trim = (n, d) => (+(+n).toFixed(d)).toString();
@@ -446,7 +456,7 @@
   }
   function closeSheet() { if (!sheetEl) return; sheetEl.classList.remove("open"); sheetBg.classList.remove("open"); sheetFx = null; }
 
-  window.PA = { editorHTML, wireEditor, refreshEditor, openSheet, closeSheet, statesOf, FX, byId, cellOf, fmt, seconds, styleName, img, artHTML, color, set, setParam, setStyle, setState, nextState, hasHit, live,
+  window.PA = { SENDS, sendsOf, MIX, editorHTML, wireEditor, refreshEditor, openSheet, closeSheet, statesOf, FX, byId, cellOf, fmt, seconds, styleName, img, artHTML, color, set, setParam, setStyle, setState, nextState, hasHit, live,
     setHit, hitOn, getV, addParam, knob, initKnobs, drawKnob, fader, initFaders, gesture, gestureAll, toast, nav, emit, undo, snapshot, restore,
     stepPreset, gotoPreset, learnNames, keyInfo, link: L,
     vocal: FX.filter(f => f.side === "vocal"), guitar: FX.filter(f => f.side === "guitar"),
