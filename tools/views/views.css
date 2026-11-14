@@ -103,8 +103,8 @@ html.bigbar { --barh: 104px; }
 /* ── fader ── */
 .fader { display: grid; grid-template-columns: 1fr 76px; align-items: center; gap: 10px; min-height: 34px; cursor: ew-resize; }
 .ftrack { position: relative; height: 26px; border-radius: 8px; background: var(--bg); border: 1px solid var(--rule); overflow: hidden; }
-.ffill { position: absolute; top: 0; bottom: 0; background: var(--fc); opacity: .75; }
-.fader.active .ftrack { border-color: var(--fc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fc) 25%, transparent); }
+.ffill { position: absolute; top: 0; bottom: 0; background: var(--fc, var(--accent)); opacity: .75; }
+.fader.active .ftrack { border-color: var(--fc, var(--accent)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fc, var(--accent)) 25%, transparent); }
 .fval, .ftype { font: 600 12px var(--mono); text-align: right; color: var(--ink); }
 .ftype { width: 100%; background: var(--bg); border: 1px solid var(--accent); border-radius: 5px; padding: 3px 6px; }
 

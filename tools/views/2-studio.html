@@ -35,7 +35,7 @@ select { background: var(--bg); color: var(--ink); border: 1px solid var(--rule)
 .seg button { background: none; border: 0; padding: 5px 8px; font: 700 10px var(--mono); color: var(--faint); cursor: pointer; }
 .seg button.sel { background: var(--surface-3); color: var(--ink); } .seg button.sel[data-s=on] { color: var(--on); } .seg button.sel[data-s=hit] { color: var(--hit); }
 .rows { padding: 6px 12px 12px; }
-.pr { display: grid; grid-template-columns: 120px 1fr 74px; align-items: center; gap: 10px; padding: 4px 0; }
+.pr { display: grid; grid-template-columns: 116px 1fr; align-items: center; gap: 10px; padding: 3px 0; }
 .pr.hide { display: none; }
 .pl { font: 600 11px var(--sans); letter-spacing: .04em; color: var(--muted); line-height: 1.2; }
 .pl i { display: none; font: 10px var(--mono); color: var(--faint); font-style: normal; }
@@ -56,11 +56,9 @@ input[type=range] { width: 100%; accent-color: var(--fc); }
 .send input { width: 80px; accent-color: var(--accent); }
 .send span { font: 10px var(--mono); color: var(--muted); }
 .na { color: var(--faint); }
-.mix { display: flex; gap: 6px; padding: 12px; overflow-x: auto; }
-.fader { display: grid; justify-items: center; gap: 6px; width: 64px; flex: none; }
-.fader input { writing-mode: vertical-lr; direction: rtl; height: 150px; width: 28px; accent-color: var(--accent); }
-.fader b { font: 600 9px var(--sans); color: var(--muted); text-align: center; letter-spacing: .05em; height: 22px; }
-.fader span { font: 11px var(--mono); }
+.mix { padding: 6px 12px 12px; }
+.chip:disabled { opacity: .4; cursor: default; }
+.matrix .fader { grid-template-columns: 1fr; gap: 2px; min-width: 90px; } .matrix .fval { text-align: center; font-size: 10px; } .matrix .ftrack { height: 20px; }
 @media (max-width: 820px) { .layout { grid-template-columns: 1fr; } aside { display: none; } .tb { top: var(--barh); } }
 </style>
 </head>
@@ -71,8 +69,8 @@ input[type=range] { width: 100%; accent-color: var(--fc); }
   <button class="chip on" id="tAdv">Advanced</button>
   <button class="chip" id="tChg">Changed only</button>
   <span class="sp"></span>
-  <span class="note">Compare</span><div class="ab"><button class="sel">A</button><button>B</button></div>
-  <button class="chip">↶ Undo</button><button class="chip">Save preset…</button>
+  <span class="note">Compare</span><div class="ab" id="ab"><button data-ab="A" class="sel">A</button><button data-ab="B">B</button></div>
+  <button class="chip" id="undo" disabled>↶ Undo</button><button class="chip" id="store">Store…</button>
 </div>
 <div class="layout">
   <aside id="side"></aside>
@@ -81,8 +79,8 @@ input[type=range] { width: 100%; accent-color: var(--fc); }
     <h2>Guitar</h2><div class="grid" id="gg"></div>
     <h2>Routing &amp; mix</h2>
     <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(420px, 1fr))">
-      <div class="card" style="--fc:var(--accent)"><div class="ch" style="grid-template-columns:1fr"><h3>Effect sends</h3><div class="note">Send levels the firmware keeps per preset (parameters 0x0AB–0x0B7). The pedal never shows these.</div></div><div class="rows"><table class="matrix" id="mx"></table></div></div>
-      <div class="card" style="--fc:var(--accent)"><div class="ch" style="grid-template-columns:1fr"><h3>Mix</h3><div class="note">MIX pages 1 + 2 as one fader bank.</div></div><div class="mix" id="mix"></div></div>
+      <div class="card" style="--fc:var(--accent)"><div class="ch" style="grid-template-columns:1fr"><h3>Effect sends</h3><div class="note">Send levels the firmware keeps per preset (0x0AB–0x0B7). The pedal never shows these. Drag a bar; double-tap = default.</div></div><div class="rows"><table class="matrix" id="mx"></table></div></div>
+      <div class="card" style="--fc:var(--accent)"><div class="ch" style="grid-template-columns:1fr"><h3>Mix</h3><div class="note">MIX pages 1 + 2 in one place. Drag a bar · double-tap = default · tap the value to type.</div></div><div class="mix" id="mix"></div></div>
     </div>
   </main>
 </div>
@@ -93,31 +91,40 @@ input[type=range] { width: 100%; accent-color: var(--fc); }
 <script src="views.js"></script>
 <script>
 PA.nav();
-const hex = p => p ? p.replace("0x", "0x").toUpperCase().replace("0X", "0x") : "";
-const initial = Object.fromEntries(PA.FX.map(f => [f.id, { ...f.vals }]));
+const hex = p => p ? "0x" + p.replace(/^0x/i, "").toUpperCase() : "";
+// Parameters that aren't on an FX page: effect sends and the MIX pages. Registered so they sync with the pedal like the rest.
+const SENDS = { "Lead vocal": { uMOD: 171, Delay: 173, Reverb: 177 }, "Harmony": { uMOD: 172, Delay: 174, Reverb: 178 },
+  "uMOD (vocal)": { Delay: 175, Reverb: 180 }, "Delay (vocal)": { Reverb: 179 }, "Guitar": { uMOD: 181, Delay: 176, Reverb: 182 }, "uMOD (guitar)": { Reverb: 183 } };
+for (const m of Object.values(SENDS)) for (const id of Object.values(m)) PA.addParam(id, { label: "SEND", min: -36, max: 0, format: "dB", default: -36, demoValue: -12 });
+const mixCells = [...new Map([...PA_MENUS.MIX.pages.flatMap(p => p.rows.flat())].filter(Boolean).map(c => [c.param, c])).values()];
+for (const c of mixCells) PA.addParam(parseInt(c.param, 16), { ...c, demoValue: -8 });
 
+let base = PA.snapshot();   // values when the preset loaded: "changed" is measured against this
 function row(fx, c, adv) {
-  const v = fx.vals[c.label];
   const ctl = c.format === "list"
-    ? `<select data-fx="${fx.id}" data-p="${c.label}" style="grid-column:2/4">${c.values.map((x, i) => `<option value="${i}" ${i === v ? "selected" : ""}>${x}</option>`).join("")}</select>`
-    : `<input type="range" min="${c.min}" max="${c.max}" value="${v}" data-fx="${fx.id}" data-p="${c.label}"><input class="val" data-fx="${fx.id}" data-p="${c.label}" data-num value="${PA.fmt(c, v)}">`;
-  return `<div class="pr" data-k="${(fx.name + " " + c.label + " " + c.param).toLowerCase()}" data-adv="${adv ? 1 : ""}" data-row="${fx.id}|${c.label}">
+    ? `<select data-fx="${fx.id}" data-p="${c.label}">${c.values.map((x, i) => `<option value="${i + c.min}">${x}</option>`).join("")}</select>`
+    : PA.fader({ fx: fx.id, label: c.label });
+  return `<div class="pr" data-k="${(fx.name + " " + c.label + " " + c.param).toLowerCase()}" data-adv="${adv ? 1 : ""}" data-id="${parseInt(c.param, 16)}">
     <div class="pl">${c.label}${adv ? `<span class="adv">ADV</span>` : ""}<i>${hex(c.param)} · ${c.min}…${c.max}</i></div>${ctl}</div>`;
 }
 const VIZ = { delay: "delay", "g-delay": "delay", reverb: "reverb", "g-reverb": "reverb", "g-bodyrez": "eq", "g-comp": "comp" };
 function card(fx) {
-  const states = fx.always ? [] : PA.hasHit(fx) ? ["off", "on", "hit"] : ["off", "on"];
+  const states = PA.statesOf(fx);
   return `<div class="card" id="c-${fx.id}" style="--fc:${PA.color(fx)}">
-    <div class="ch">${PA.artHTML(PA.img(fx))}<div><h3>${fx.name}</h3>${fx.styleCell ? `<select data-style="${fx.id}">${fx.styleCell.values.map((s, i) => `<option value="${i}" ${i === fx.style ? "selected" : ""}>${String(i + 1).padStart(2, "0")} ${s}</option>`).join("")}</select>` : `<div class="note">always in the guitar path</div>`}</div>
-      ${states.length ? `<div class="seg">${states.map(s => `<button data-st="${fx.id}" data-s="${s}" class="${fx.state === s ? "sel" : ""}">${s.toUpperCase()}</button>`).join("")}</div>` : "<span></span>"}</div>
+    <div class="ch"><span class="cart">${PA.artHTML(PA.img(fx))}</span><div><h3>${fx.name}</h3>${fx.styleCell ? `<select data-style="${fx.id}">${fx.styleCell.values.map((s, i) => `<option value="${i}">${String(i + 1).padStart(2, "0")} ${s}</option>`).join("")}</select>` : `<div class="note">always in the guitar path</div>`}</div>
+      ${states.length ? `<div class="seg">${states.map(s => `<button data-st="${fx.id}" data-s="${s}">${s.toUpperCase()}</button>`).join("")}</div>` : "<span></span>"}</div>
     ${VIZ[fx.id] ? `<div class="viz" data-viz="${VIZ[fx.id]}" data-fx="${fx.id}"></div>` : ""}
     <div class="rows">${fx.params.map(c => row(fx, c)).join("")}${fx.adv.map(c => row(fx, c, true)).join("")}</div></div>`;
 }
 document.getElementById("gv").innerHTML = PA.vocal.map(card).join("");
 document.getElementById("gg").innerHTML = PA.guitar.map(card).join("");
+const sideRow = fx => `<div class="fxl" data-jump="${fx.id}" style="--fc:${PA.color(fx)}"><span class="dot"></span>${fx.name}<span class="st" data-tog="${fx.id}"></span></div>`;
 document.getElementById("side").innerHTML = `<h5>Vocal</h5>` + PA.vocal.map(sideRow).join("") + `<h5>Guitar</h5>` + PA.guitar.map(sideRow).join("") +
-  `<h5>Jump to</h5><div class="fxl" onclick="document.getElementById('mx').scrollIntoView({behavior:'smooth'})"><span></span>Sends &amp; mix</div>`;
-function sideRow(fx) { return `<div class="fxl ${fx.state === "off" ? "off" : ""}" data-jump="${fx.id}" style="--fc:${PA.color(fx)}"><span class="dot"></span>${fx.name}<span class="st ${fx.state}">${fx.always ? "—" : fx.state.toUpperCase()}</span></div>`; }
+  `<h5>Jump to</h5><div class="fxl" data-jumpto="mx"><span></span>Sends &amp; mix</div><div class="note" style="padding:8px 6px">Tap a name to jump · tap ON/OFF to switch · hold it for HIT</div>`;
+const dests = ["uMOD", "Delay", "Reverb"];
+document.getElementById("mx").innerHTML = `<tr><th>from ↓ / to →</th>${dests.map(d => `<th>${d}</th>`).join("")}</tr>` +
+  Object.entries(SENDS).map(([s, m]) => `<tr><td>${s}</td>${dests.map(d => m[d] ? `<td>${PA.fader(m[d])}</td>` : `<td class="na">—</td>`).join("")}</tr>`).join("");
+document.getElementById("mix").innerHTML = mixCells.map(c => `<div class="pr" data-id="${parseInt(c.param, 16)}" data-k="mix ${c.label.toLowerCase()} ${c.param}"><div class="pl">${c.label}<i>${hex(c.param)} · ${c.min}…${c.max}</i></div>${PA.fader(parseInt(c.param, 16))}</div>`).join("");
 
 // ── visualisations ────────────────────────────────────────────────────────
 const W = 320, H = 110, F = i => 20 * Math.pow(1000, i / 240), X = f => Math.log10(f / 20) / 3 * W;
@@ -134,12 +141,17 @@ function drawEQ(el, fx) {
     <path d="${d} L${W},${H / 2} L0,${H / 2} Z" fill="var(--fc)" fill-opacity=".15"/><path d="${d}" stroke="var(--fc)" stroke-width="2" fill="none"/>
     ${nodes.map(([fk, gk, t]) => `<g data-node="${fk}|${gk}" style="cursor:grab"><circle cx="${X(F(v[fk]))}" cy="${y(v[gk])}" r="9" fill="var(--surface-3)" stroke="var(--fc)" stroke-width="2"/><text x="${X(F(v[fk]))}" y="${y(v[gk]) + 3}" text-anchor="middle" style="fill:var(--ink);font-weight:700">${t}</text></g>`).join("")}
     <text x="4" y="11">+12 dB</text><text x="4" y="${H - 14}">−12</text><text x="${W - 4}" y="11" text-anchor="end">drag the nodes</text></svg>`;
-  el.querySelectorAll("[data-node]").forEach(n => n.addEventListener("pointerdown", e => {
-    const [fk, gk] = n.dataset.node.split("|"), svg = el.querySelector("svg"); n.setPointerCapture(e.pointerId);
-    const mv = ev => { const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) / r.width * W, py = (ev.clientY - r.top) / r.height * H;
+  // Drag a node: left/right = frequency, up/down = gain. Double-tap a node = flat (0 dB). The listener sits on the
+  // container, which survives the redraws a drag causes.
+  if (el.__eq) return; el.__eq = true; el.style.touchAction = "none"; let lastTap = 0;
+  el.addEventListener("pointerdown", e => {
+    const n = e.target.closest("[data-node]"); if (!n) return;
+    const [fk, gk] = n.dataset.node.split("|"); el.setPointerCapture(e.pointerId);
+    if (performance.now() - lastTap < 300) { PA.set(fx.id, gk, 0); lastTap = 0; return; } lastTap = performance.now();
+    const mv = ev => { const r = el.querySelector("svg").getBoundingClientRect(), px = (ev.clientX - r.left) / r.width * W, py = (ev.clientY - r.top) / r.height * H;
       PA.set(fx.id, fk, Math.log10(Math.max(20, 20 * Math.pow(1000, px / W)) / 20) / 3 * 240); PA.set(fx.id, gk, (H / 2 - py) / (H / 2 - 8) * 12); };
-    n.addEventListener("pointermove", mv); n.addEventListener("pointerup", () => n.removeEventListener("pointermove", mv), { once: true });
-  }));
+    el.addEventListener("pointermove", mv); el.addEventListener("pointerup", () => el.removeEventListener("pointermove", mv), { once: true });
+  });
 }
 function drawComp(el, fx) {
   const v = fx.vals, ratio = parseFloat(PA.cellOf(fx, "RATIO").values[v.RATIO]), t = v.THRESHOLD, S = 110;
@@ -161,7 +173,7 @@ function drawDelay(el, fx) {
     <rect x="7" y="12" width="6" height="${H - 30}" rx="2" fill="var(--ink)"/>${bars}<text x="10" y="${H - 5}">one bar at ${tempo} BPM · ${sn}</text></svg>`;
 }
 function drawReverb(el, fx) {
-  const dec = (fx.vals.DECAY ?? fx.vals["REVERB DECAY"]) / 10, pre = (fx.vals["REVERB PRE DLY"] || 0) / 1000, span = 5;
+  const dc = PA.cellOf(fx, "DECAY") || PA.cellOf(fx, "REVERB DECAY"), dec = Math.max(.05, PA.seconds(dc, fx.vals[dc.label])), pre = (fx.vals["REVERB PRE DLY"] || 0) / 1000, span = 5;
   let d = `M10,${H - 16}`; const x0 = 10 + pre / span * (W - 20);
   d += ` L${x0},${H - 16} L${x0 + 4},20`; for (let x = x0 + 4; x <= W - 10; x += 4) { const t = (x - x0) / (W - 20) * span; d += ` L${x},${(H - 16 - (H - 36) * Math.pow(10, -3 * t / dec)).toFixed(1)}`; }
   el.innerHTML = `<svg viewBox="0 0 ${W} ${H}"><path d="${d}" stroke="var(--fc)" stroke-width="2" fill="var(--fc)" fill-opacity=".12"/>
@@ -171,59 +183,68 @@ function drawViz(fx) {
   const el = document.querySelector(`.viz[data-fx="${fx.id}"]`); if (!el) return;
   ({ eq: drawEQ, comp: drawComp, delay: drawDelay, reverb: drawReverb })[el.dataset.viz](el, fx);
 }
-PA.FX.forEach(drawViz);
 
-// ── sends + mix ───────────────────────────────────────────────────────────
-const SENDS = { // [source][destination] = [param id, value]
-  "Lead vocal": { uMOD: [171, -6], Delay: [173, -12], Reverb: [177, -8] }, "Harmony": { uMOD: [172, -36], Delay: [174, -14], Reverb: [178, -6] },
-  "uMOD (vocal)": { Delay: [175, -18], Reverb: [180, -10] }, "Delay (vocal)": { Reverb: [179, -12] },
-  "Guitar": { uMOD: [181, 0], Delay: [176, -10], Reverb: [182, -9] }, "uMOD (guitar)": { Reverb: [183, -12] } };
-const dests = ["uMOD", "Delay", "Reverb"];
-document.getElementById("mx").innerHTML = `<tr><th>from ↓ / to →</th>${dests.map(d => `<th>${d}</th>`).join("")}</tr>` +
-  Object.entries(SENDS).map(([s, m]) => `<tr><td>${s}</td>${dests.map(d => m[d] ? `<td><div class="send"><input type="range" min="-36" max="0" value="${m[d][1]}" oninput="this.nextElementSibling.textContent=this.value+' dB · 0x'+(${m[d][0]}).toString(16).toUpperCase().padStart(3,'0')"><span>${m[d][1]} dB · 0x${m[d][0].toString(16).toUpperCase().padStart(3, "0")}</span></div></td>` : `<td class="na">—</td>`).join("")}</tr>`).join("");
-const mixCells = [...PA_MENUS.MIX.pages[0].rows.flat(), ...PA_MENUS.MIX.pages[1].rows.flat()].filter(Boolean);
-const MIXV = [-6, -10, -12, -20, -3, -12, 0, -8, -2];
-document.getElementById("mix").innerHTML = mixCells.map((c, i) => `<div class="fader"><b>${c.label}</b><input type="range" min="${c.min}" max="${c.max}" value="${MIXV[i] ?? 0}" oninput="this.nextElementSibling.textContent=this.value+' dB'"><span>${MIXV[i] ?? 0} dB</span><span class="note mono">${c.param}</span></div>`).join("");
 
-// ── wiring ────────────────────────────────────────────────────────────────
-document.addEventListener("input", e => {
-  const t = e.target;
-  if (t.dataset.style) { PA.setStyle(t.dataset.style, +t.value); return; }
-  if (t.dataset.fx && !t.dataset.num) PA.set(t.dataset.fx, t.dataset.p, +t.value);
-});
-document.addEventListener("change", e => {
-  const t = e.target; if (!t.dataset.num) return;
-  const n = parseFloat(t.value.replace("−", "-")); if (!isNaN(n)) PA.set(t.dataset.fx, t.dataset.p, n);
-  syncRow(PA.byId[t.dataset.fx], t.dataset.p);
-});
-function syncRow(fx, label) {
-  const c = PA.cellOf(fx, label), v = fx.vals[label];
-  document.querySelectorAll(`[data-fx="${fx.id}"][data-p="${CSS.escape(label)}"]`).forEach(el => { if (el.dataset.num) el.value = PA.fmt(c, v); else el.value = v; });
-  document.querySelector(`[data-row="${fx.id}|${CSS.escape(label)}"]`)?.classList.toggle("changed", initial[fx.id][label] !== v);
+// ── keep everything in step with the model ──────────────────────────────
+function paintFx(fx) {
+  const c = document.getElementById("c-" + fx.id); c.classList.toggle("off", fx.state === "off");
+  c.querySelectorAll("[data-st]").forEach(b => b.classList.toggle("sel", b.dataset.s === fx.state));
+  const sel = c.querySelector("[data-style]"); if (sel) sel.value = fx.style;
+  c.querySelector(".cart").innerHTML = PA.artHTML(PA.img(fx));
+  c.querySelectorAll("select[data-p]").forEach(s => s.value = fx.vals[s.dataset.p]);
+  const st = document.querySelector(`[data-tog="${fx.id}"]`); st.className = "st " + fx.state; st.textContent = fx.always ? "—" : fx.state.toUpperCase();
+  st.closest(".fxl").classList.toggle("off", fx.state === "off");
+  drawViz(fx);
 }
-document.addEventListener("pa:change", e => { syncRow(e.detail.fx, e.detail.label); drawViz(e.detail.fx); });
-document.addEventListener("pa:style", e => { const fx = e.detail.fx; document.querySelector(`#c-${fx.id} .ch .art`).outerHTML = PA.artHTML(PA.img(fx)); drawViz(fx); });
+function markChanged() {
+  document.querySelectorAll(".pr[data-id]").forEach(r => r.classList.toggle("changed", base.has(+r.dataset.id) && base.get(+r.dataset.id) !== PA.getV(+r.dataset.id)));
+  if (document.getElementById("tChg").classList.contains("on")) filter();
+}
+function paintAll() { PA.FX.forEach(paintFx); PA.initFaders(); markChanged(); }
+paintAll();
+document.addEventListener("pa:state", e => paintFx(e.detail.fx));
+document.addEventListener("pa:style", e => paintFx(e.detail.fx));
+document.addEventListener("pa:change", e => { drawViz(e.detail.fx); const s = document.querySelector(`select[data-fx="${e.detail.fx.id}"][data-p="${CSS.escape(e.detail.label)}"]`); if (s) s.value = e.detail.v; markChanged(); });
+document.addEventListener("pa:param", markChanged);
+document.addEventListener("pa:sync", paintAll);
+let needBase = PA.connected;   // take the "as loaded" snapshot once the preset's values have arrived
+document.addEventListener("pa:preset", () => { needBase = true; ab = { A: null, B: null }; abCur = "A"; paintAB(); if (!PA.connected) { base = PA.snapshot(); markChanged(); } });
+document.addEventListener("pa:link", e => { if (e.detail.ready) needBase = true; });
+document.addEventListener("pa:syncing", e => { if (!e.detail.on && needBase) { needBase = false; base = PA.snapshot(); markChanged(); } });
+document.addEventListener("pa:history", e => document.getElementById("undo").disabled = !e.detail.n);
+
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.dataset.style) PA.setStyle(t.dataset.style, +t.value);
+  else if (t.matches("select[data-fx]")) PA.set(t.dataset.fx, t.dataset.p, +t.value);
+});
 document.addEventListener("click", e => {
   const s = e.target.closest("[data-st]"); if (s) { PA.setState(s.dataset.st, s.dataset.s); return; }
+  if (e.target.closest("[data-tog]")) return;
   const j = e.target.closest("[data-jump]"); if (j) document.getElementById("c-" + j.dataset.jump).scrollIntoView({ behavior: "smooth", block: "center" });
+  const k = e.target.closest("[data-jumpto]"); if (k) document.getElementById(k.dataset.jumpto).scrollIntoView({ behavior: "smooth", block: "center" });
 });
-document.addEventListener("pa:state", e => {
-  const fx = e.detail.fx, c = document.getElementById("c-" + fx.id);
-  c.classList.toggle("off", fx.state === "off"); c.querySelectorAll("[data-st]").forEach(b => b.classList.toggle("sel", b.dataset.s === fx.state));
-  document.querySelector(`[data-jump="${fx.id}"]`).outerHTML = sideRow(fx);
-});
-PA.FX.forEach(f => document.getElementById("c-" + f.id).classList.toggle("off", f.state === "off"));
+// side list chips: tap = on/off, hold = HIT
+PA.gestureAll(document.getElementById("side"), "[data-tog]", el => { const fx = PA.byId[el.dataset.tog];
+  return { tap: () => PA.setState(fx.id, PA.nextState(fx)), hold: () => { if (PA.hasHit(fx)) PA.setState(fx.id, "hit"); } }; });
 
 // filters
 const q = document.getElementById("q"), tIds = document.getElementById("tIds"), tAdv = document.getElementById("tAdv"), tChg = document.getElementById("tChg");
 function filter() {
   const s = q.value.trim().toLowerCase();
-  document.querySelectorAll(".pr").forEach(r => r.classList.toggle("hide", (s && !r.dataset.k.includes(s)) || (!tAdv.classList.contains("on") && r.dataset.adv) || (tChg.classList.contains("on") && !r.classList.contains("changed"))));
-  document.querySelectorAll(".card").forEach(c => { if (!c.querySelector(".pr")) return; c.style.display = s && !c.querySelector(".pr:not(.hide)") ? "none" : ""; });
+  document.querySelectorAll(".pr").forEach(r => r.classList.toggle("hide", (s && !(r.dataset.k || "").includes(s)) || (!tAdv.classList.contains("on") && r.dataset.adv) || (tChg.classList.contains("on") && !r.classList.contains("changed"))));
+  document.querySelectorAll(".grid .card[id]").forEach(c => { c.style.display = (s || tChg.classList.contains("on")) && !c.querySelector(".pr:not(.hide)") ? "none" : ""; });
 }
 q.oninput = filter;
 [tIds, tAdv, tChg].forEach(b => b.onclick = () => { b.classList.toggle("on"); document.body.classList.toggle("ids", tIds.classList.contains("on")); filter(); });
-document.querySelectorAll(".ab button").forEach(b => b.onclick = () => document.querySelectorAll(".ab button").forEach(x => x.classList.toggle("sel", x === b)));
+
+// A/B compare: A is the preset as loaded (plus your edits while on A), B starts as a copy; switching sends the other set
+let ab = { A: null, B: null }, abCur = "A";
+function paintAB() { document.querySelectorAll("#ab button").forEach(b => b.classList.toggle("sel", b.dataset.ab === abCur)); }
+document.getElementById("ab").onclick = e => { const b = e.target.closest("[data-ab]"); if (!b || b.dataset.ab === abCur) return;
+  ab[abCur] = PA.snapshot(); const to = b.dataset.ab; if (ab[to]) PA.restore(ab[to]); abCur = to; paintAB(); PA.toast(`Comparing: ${to}`); };
+document.getElementById("undo").onclick = () => { if (PA.undo()) PA.toast("Undone"); };
+document.getElementById("store").onclick = () => { if (!PA.connected) { PA.toast("Connect the pedal to store"); return; } PA.link.press(PA.link.EVT.store); PA.toast("STORE pressed: finish on the pedal", 2500); };
 </script>
 </body>
 </html>

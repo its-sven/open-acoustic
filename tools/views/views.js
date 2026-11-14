@@ -299,7 +299,7 @@
   //    hold the value text to type a number. Works for FX parameters (fx, label) or any registered parameter (id). ──
   function fader(ref, o = {}) {
     const c = typeof ref === "number" ? CELL.get(ref) : cellOf(byId[ref.fx], ref.label);
-    return `<div class="fader" data-id="${c.id}" style="--fc:${o.color || "var(--fc, var(--accent))"}"><div class="ftrack"><div class="ffill"></div></div><span class="fval"></span></div>`;
+    return `<div class="fader" data-id="${c.id}" ${o.color ? `style="--fc:${o.color}"` : ""}><div class="ftrack"><div class="ffill"></div></div><span class="fval"></span></div>`;
   }
   const getV = id => { const c = CELL.get(id); return V.get(id) ?? c.default ?? clampC(c, 0); };
   function drawFader(el) {
