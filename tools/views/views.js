@@ -94,10 +94,11 @@
   const touched = new Map(), pending = new Map(); let flushT = null;
   function send(id, v) {
     touched.set(id, performance.now());
-    if (!L.ready) return;
+    if (!L.ready) { clearTimeout(flushT); flushT = setTimeout(saveCache, 30); return; }
     pending.set(id, v); if (!flushT) flushT = setTimeout(flush, 30);
   }
-  function flush() { flushT = null; for (const [id, v] of pending) L.set(id, v); pending.clear(); saveCache(); }
+  function flush() { clearTimeout(flushT); flushT = null; for (const [id, v] of pending) L.set(id, v); pending.clear(); saveCache(); }
+  addEventListener("pagehide", flush);
   function store(id, v) { V.set(id, v); }
   function setParam(id, v, { quiet } = {}) {
     const c = CELL.get(id); if (!c) return; v = clampC(c, v);
@@ -159,32 +160,42 @@
   const names = Object.assign({}, L.store.get("pa-preset-names") || {});   // number → name, learned while browsing
   const P = { num: 12, name: DEMO_NAMES[2], live: false };
   let demoIdx = 2; try { const s = sessionStorage.getItem("pa-demo-preset"); if (s !== null && DEMO_NAMES[+s]) demoIdx = +s; } catch {}
-  loadDemo(demoIdx); P.num = demoIdx + 10; P.name = DEMO_NAMES[demoIdx];
-  const cacheKey = n => "pa-vals-" + n;
-  function saveCache() { if (!P.live || P.num == null) return; try { sessionStorage.setItem(cacheKey(P.num), JSON.stringify([...V])); } catch {} }
-  function loadCache(n) { try { const a = JSON.parse(sessionStorage.getItem(cacheKey(n))); if (a) { for (const [id, v] of a) V.set(id, v); return true; } } catch {} return false; }
+  // Values are read from the pedal once per preset and kept in sessionStorage, so switching views (each view is
+  // its own page) reuses them instead of reading everything again. Your edits update the saved copy as they're sent.
+  const cacheKey = n => (P.live ? "pa-vals-" : "pa-demo-vals-") + n;
+  // The copy is saved again when you leave a view, so a fresh one (< 30 s) means "just switched views". An older one
+  // (the tab was closed or asleep and the pedal may have been used meanwhile) is read again from the pedal.
+  function saveCache() { if (P.num == null || (P.live && !complete)) return; try { sessionStorage.setItem(cacheKey(P.num), JSON.stringify({ t: Date.now(), v: [...V] })); } catch {} }
+  function loadCache(n, maxAge = Infinity) { try { const a = JSON.parse(sessionStorage.getItem(cacheKey(n)));
+    if (a && a.v && Date.now() - a.t < maxAge) { for (const [id, v] of a.v) V.set(id, v); return true; } } catch {} return false; }
+  const dropCache = n => { try { sessionStorage.removeItem(cacheKey(n)); } catch {} };
+  let complete = false;   // true once every value of the current preset has been read (or came from the saved copy)
+  loadDemo(demoIdx); P.num = demoIdx + 10; P.name = DEMO_NAMES[demoIdx]; loadCache(P.num);
   const recent = id => touched.has(id) && performance.now() - touched.get(id) < 1500;   // don't overwrite what the user is dragging
   // Read order: what makes the views look right first (on/off, styles, HIT), then every value.
   const firstIds = () => [HIT, ...FX.flatMap(f => [f.control && f.control.id, f.styleCell && f.styleCell.id]).filter(x => x != null)];
   const allIds = () => [...new Set([...firstIds(), ...CELL.keys()])];
   let gen = 0, syncing = false;
-  async function sync() {
+  // reuse = take the saved copy if this preset was already read in this session (used when a view opens);
+  // otherwise (preset changed, something was used on the unit) read everything from the pedal.
+  async function sync(reuse = false) {
     if (!L.ready) return; const g = ++gen; syncing = true; emit("syncing", { on: true });
     const alive = () => g === gen && L.ready;
     try {
       const n = await L.get(PRESET); if (!alive()) return;
-      if (n != null && n !== P.num) { P.num = n; P.name = names[n] ?? null; if (loadCache(n)) emit("sync", {}); emit("preset", preset()); }
+      if (n != null && n !== P.num) { P.num = n; P.name = names[n] ?? null; complete = false; emit("preset", preset()); }
+      if (reuse && n != null && loadCache(n, 30000)) { complete = true; emit("sync", {}); return; }
       if (n != null && names[n] == null) { const nm = await L.presetName(); if (!alive()) return; if (nm != null) { names[n] = nm; L.store.set("pa-preset-names", names); } P.name = names[n] ?? null; emit("preset", preset()); }
       const apply = (id, v) => { if (!recent(id)) V.set(id, v); };
       if (!(await L.getMany(firstIds(), alive, apply))) return; emit("sync", {});
       if (!(await L.getMany(allIds().filter(id => !firstIds().includes(id)), alive, apply))) return;
-      saveCache(); emit("sync", {});
+      complete = true; saveCache(); emit("sync", {});
     } finally { if (g === gen) { syncing = false; emit("syncing", { on: false }); } }
   }
   let syncT = null; const syncSoon = (ms = 400) => { clearTimeout(syncT); syncT = setTimeout(sync, ms); };
-  L.on("ready", () => { P.live = true; P.num = null; P.name = "…"; emit("preset", preset()); emit("link", linkState()); sync(); });
+  L.on("ready", () => { P.live = true; P.num = null; P.name = "…"; complete = false; emit("preset", preset()); emit("link", linkState()); sync(true); });
   L.on("status", () => { if (!L.ready && P.live) { P.live = false; } emit("link", linkState()); paintBar(); });
-  L.on("program", () => { gen++; syncSoon(120); });
+  L.on("program", () => { gen++; if (P.num != null) dropCache(P.num); complete = false; syncSoon(120); });
   L.on("panel", e => { if (!e.self) syncSoon(e.e0 === 0xAE ? 500 : 250); });   // something was used on the unit itself
   const preset = () => ({ ...P, names });
   const linkState = () => ({ status: L.status, message: L.message, ready: L.ready });
@@ -192,7 +203,7 @@
   // Preset stepping uses the pedal's own front arrows (they step presets on its preset screen).
   function waitProgram(ms = 900) { return new Promise(res => { const off = L.on("program", p => { off(); clearTimeout(t); res(p); }); const t = setTimeout(() => { off(); res(null); }, ms); }); }
   async function stepPreset(d) {
-    if (!P.live) { demoIdx = (demoIdx + d + DEMO_NAMES.length) % DEMO_NAMES.length; try { sessionStorage.setItem("pa-demo-preset", demoIdx); } catch {}
+    if (!P.live) { dropCache(P.num); demoIdx = (demoIdx + d + DEMO_NAMES.length) % DEMO_NAMES.length; try { sessionStorage.setItem("pa-demo-preset", demoIdx); } catch {}
       loadDemo(demoIdx); P.num = demoIdx + 10; P.name = DEMO_NAMES[demoIdx]; history.length = 0; emit("preset", preset()); emit("sync", {}); return; }
     history.length = 0; await L.press(d > 0 ? L.EVT.next : L.EVT.prev);
   }

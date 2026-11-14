@@ -28,6 +28,7 @@
     if (d[3] !== 0x38) return;
     const cmd = d[6], id = (d[7] << 7) | d[8];
     if (cmd === 0x22) set(id, dec28(d, 9));
+    if (cmd === 0x47) window.simPedal.reads++;
     if (cmd === 0x47) reply([...H, 0x22, d[7], d[8], ...enc28(get(id)), 0xF7]);
     if (cmd === 0x45) { const n = [...NAMES[cur]].map(c => c.charCodeAt(0)); while (n.length < 15) n.push(0); reply([...H, 0x20, 0, 0, 0, 0, ...n, 0, 0, 0, 0, 0, 0xF7]); }
     if (cmd === 0x55 && d[7] === 0x01) tunnel = true;
@@ -39,6 +40,6 @@
     }
   } };
   // "use" the pedal yourself: window.simPedal.turn(0x0B9, -3) changes a value and echoes a knob event, like the unit
-  window.simPedal = { turn(id, d) { set(id, get(id) + d); if (tunnel) reply([...H, 0x55, ...enc28(0xAE0001), 0xF7]); }, next() { cur = (cur + 1) % NAMES.length; reply([0xC0, cur]); }, get, P };
+  window.simPedal = { reads: 0, turn(id, d) { set(id, get(id) + d); if (tunnel) reply([...H, 0x55, ...enc28(0xAE0001), 0xF7]); }, next() { cur = (cur + 1) % NAMES.length; reply([0xC0, cur]); }, get, P };
   navigator.requestMIDIAccess = async () => ({ inputs: new Map([[input.id, input]]), outputs: new Map([[output.id, output]]), onstatechange: null });
 })();
