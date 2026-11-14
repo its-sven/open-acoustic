@@ -11,15 +11,19 @@ Control a **stock** Play Acoustic live from your laptop (or an iPad) over USB‑
 
 Opens the live front panel. Needs **Chrome/Edge** (desktop) or a **Web MIDI browser app** (iPad), with a Play Acoustic connected by USB. No install, nothing to flash.
 
+<p align="center">
+  <img src="docs/img/pa-remote.jpg" alt="Play Acoustic Remote — a virtual front panel in the browser" width="640">
+</p>
+
 ### ▶ [Open the touch views »](https://michaelbeyhs.github.io/open-acoustic/tools/views/) · [try them with a simulated pedal](https://michaelbeyhs.github.io/open-acoustic/tools/views/1-pedalboard.html?sim)
 
 Five touch-screen ways to drive the same pedal, made for an iPad: **Pedalboard** (the effect chain as stomp boxes), **Studio editor** (every parameter, EQ/compressor graphs, effect sends, mix, A/B, undo), **Signal grid** (signal flow + inspector), **Stage** (big tiles, HIT, a delay/reverb pad) and **Voice map** (harmony voices on a pitch ladder, the reverb as a room). They share one connection, one preset bar and the same gestures, stay in sync with the pedal both ways, and can read all presets once so switching presets is instant.
 
-> _**Unofficial** community project. Not affiliated with, endorsed by, or supported by TC‑Helicon / Music Tribe. "Play Acoustic", "Play Electric" and "TC‑Helicon" are trademarks of their respective owner, used here only descriptively. **No proprietary firmware binaries or disassembly are distributed in this repository.** Use at your own risk._
-
 <p align="center">
-  <img src="docs/img/pa-remote.jpg" alt="Play Acoustic Remote — a virtual front panel in the browser" width="720">
+  <a href="https://michaelbeyhs.github.io/open-acoustic/tools/views/"><img src="docs/img/views-collage.jpg" alt="The five touch views: Pedalboard, Stage, Studio editor, Signal grid and Voice map" width="900"></a>
 </p>
+
+> _**Unofficial** community project. Not affiliated with, endorsed by, or supported by TC‑Helicon / Music Tribe. "Play Acoustic", "Play Electric" and "TC‑Helicon" are trademarks of their respective owner, used here only descriptively. **No proprietary firmware binaries or disassembly are distributed in this repository.** Use at your own risk._
 
 ---
 
