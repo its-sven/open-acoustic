@@ -163,7 +163,7 @@
   const cacheKey = n => "pa-vals-" + n;
   function saveCache() { if (!P.live || P.num == null) return; try { sessionStorage.setItem(cacheKey(P.num), JSON.stringify([...V])); } catch {} }
   function loadCache(n) { try { const a = JSON.parse(sessionStorage.getItem(cacheKey(n))); if (a) { for (const [id, v] of a) V.set(id, v); return true; } } catch {} return false; }
-  const recent = id => performance.now() - (touched.get(id) || 0) < 1500;   // don't overwrite what the user is dragging
+  const recent = id => touched.has(id) && performance.now() - touched.get(id) < 1500;   // don't overwrite what the user is dragging
   // Read order: what makes the views look right first (on/off, styles, HIT), then every value.
   const firstIds = () => [HIT, ...FX.flatMap(f => [f.control && f.control.id, f.styleCell && f.styleCell.id]).filter(x => x != null)];
   const allIds = () => [...new Set([...firstIds(), ...CELL.keys()])];

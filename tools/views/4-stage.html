@@ -9,7 +9,7 @@
 /* Stage mode: an iPad on the mic stand. Readable from 1.5 m, every target at least thumb-sized, no small text needed while playing. */
 body { background: #07090b; user-select: none; -webkit-user-select: none; }
 .wrap { display: grid; grid-template-columns: 1fr 300px; gap: 14px; padding: 14px 16px 16px; min-height: calc(100vh - var(--barh)); }
-.tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tools { display: grid; grid-template-columns: 1fr; gap: 8px; }
 .tools button { height: 72px; border-radius: 18px; border: 1px solid var(--rule); background: var(--surface); color: var(--muted); font: 700 12px var(--mono); cursor: pointer; display: grid; place-items: center; gap: 2px; }
 .tools button b { font-size: 22px; color: var(--ink); }
 .tools button.on { border-color: var(--warn); color: var(--warn); }
@@ -20,7 +20,7 @@ body { background: #07090b; user-select: none; -webkit-user-select: none; }
 .tile { position: relative; border-radius: 18px; background: var(--surface); border: 2px solid #ffffff10; overflow: hidden; cursor: pointer; touch-action: none; color: var(--faint);
   display: grid; grid-template-rows: 1fr auto auto; padding: 12px 14px; transition: border-color .15s, background .15s; }
 .tile .fill { position: absolute; inset: auto auto 0 0; height: 6px; width: var(--lv); background: var(--fc); opacity: .5; }
-.tile .art { width: min(70%, 150px); justify-self: center; align-self: center; }
+.tile .tart { display: grid; place-items: center; align-self: center; } .tile .art { width: min(70%, 150px); }
 .tile .nm { font: 800 20px var(--sans); color: var(--muted); }
 .tile .sn { font: 600 12px var(--mono); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile.on { border-color: var(--fc); background: color-mix(in srgb, var(--fc) 14%, var(--surface)); color: var(--fc); }
@@ -32,7 +32,7 @@ body { background: #07090b; user-select: none; -webkit-user-select: none; }
 .tile .readout small { display: block; font: 700 12px var(--mono); color: var(--muted); text-align: center; letter-spacing: .1em; }
 .tile.dragging .readout { display: grid; }
 .g .tile { grid-template-columns: 56px minmax(0,1fr); grid-template-rows: 1fr 1fr; column-gap: 10px; padding: 10px 12px; align-items: center; }
-.g .tile .art { grid-row: 1 / 3; width: 56px; }
+.g .tile .tart { grid-row: 1 / 3; } .g .tile .art { width: 56px; }
 .talk { border-radius: 18px; border: 2px solid #ffffff10; background: var(--surface); color: var(--muted); font: 800 20px var(--sans); cursor: pointer; display: grid; place-items: center; align-content: center; gap: 4px; }
 .talk small { font: 600 11px var(--mono); color: var(--faint); }
 .talk.on { border-color: var(--warn); color: var(--warn); background: #2a1f0b; }
@@ -48,7 +48,7 @@ body { background: #07090b; user-select: none; -webkit-user-select: none; }
 .xy .ax.x { bottom: 10px; right: 12px; } .xy .ax.y { top: 10px; left: 12px; }
 .xy .val { position: absolute; bottom: 10px; left: 12px; font: 600 12px var(--mono); color: var(--ink); }
 .xy .ttl { position: absolute; top: 10px; right: 12px; font: 800 13px var(--sans); color: var(--ink); }
-.locked .tiles, .locked .xy { pointer-events: none; opacity: .55; }
+.locked .tiles, .locked .xy, .locked .talk { pointer-events: none; opacity: .55; }
 @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } .tiles { grid-template-columns: repeat(2, 1fr); } .tiles.g { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
@@ -60,7 +60,7 @@ body { background: #07090b; user-select: none; -webkit-user-select: none; }
     <div class="tiles g" id="tg"></div>
   </div>
   <div class="right">
-    <div class="tools"><button><b>♪</b>TUNER</button><button><b>♩</b>TAP</button><button id="lock"><b>🔒</b>LOCK</button></div>
+    <div class="tools"><button id="lock"><b>🔒</b><span>LOCK</span></button></div>
     <button class="hit" id="hit">HIT<small>TAP TO LATCH · HOLD = MOMENTARY</small></button>
     <div class="xy" id="xy"><span class="ttl">SPACE</span><span class="ax y">↑ REVERB</span><span class="ax x">DELAY →</span><span class="val" id="xyv"></span><span class="dot" id="dot"></span></div>
   </div>
@@ -75,63 +75,64 @@ PA.nav({ big: true });
 // one "swipe" parameter per tile: drag across the tile to change it
 const SWIPE = { hardtune: "SHIFT", transducer: "DRIVE", double: "LEVEL", harmony: "LEVEL", umod: "LEVEL", delay: "LEVEL", reverb: "LEVEL",
   "g-bodyrez": "AMOUNT", "g-comp": "MAKEUP GAIN", "g-umod": "UMOD LEVEL", "g-delay": "DELAY LEVEL", "g-reverb": "REVERB LEVEL" };
-let hitOn = false, talk = false;
+let talk = false;
 const lv = fx => { const c = PA.cellOf(fx, SWIPE[fx.id]); return ((fx.vals[c.label] - c.min) / (c.max - c.min) * 100).toFixed(0) + "%"; };
-function tile(fx) {
-  const live = fx.state === "on" || fx.always || (fx.state === "hit" && hitOn);
-  return `<div class="tile ${live ? "on" : ""} ${fx.state === "hit" ? "hitas" : ""}" data-id="${fx.id}" style="--fc:${PA.color(fx)};--lv:${lv(fx)}">
-    ${PA.artHTML(PA.img(fx))}<div class="nm">${fx.name}</div><div class="sn">${PA.styleName(fx)}</div><span class="fill"></span>
-    <div class="readout"><div><small>${SWIPE[fx.id]}</small>${PA.fmt(PA.cellOf(fx, SWIPE[fx.id]), fx.vals[SWIPE[fx.id]])}</div></div></div>`;
+// Tiles are built once and repainted in place, so a tile being held or swiped is never replaced mid-gesture.
+const tile = fx => `<div class="tile" data-id="${fx.id}" style="--fc:${PA.color(fx)}"><span class="tart"></span><div class="nm">${fx.name}</div><div class="sn"></div><span class="fill"></span><div class="readout"></div></div>`;
+document.getElementById("tv").innerHTML = PA.vocal.map(tile).join("") + `<button class="talk" id="talk">TALK<small></small></button>`;
+document.getElementById("tg").innerHTML = PA.guitar.map(tile).join("");
+function paintTile(fx) {
+  const t = document.querySelector(`.tile[data-id="${fx.id}"]`), c = PA.cellOf(fx, SWIPE[fx.id]);
+  t.classList.toggle("on", PA.live(fx) || fx.always); t.classList.toggle("hitas", fx.state === "hit");
+  t.querySelector(".tart").innerHTML = PA.artHTML(PA.img(fx)); t.querySelector(".sn").textContent = PA.styleName(fx);
+  t.style.setProperty("--lv", lv(fx)); t.querySelector(".readout").innerHTML = `<div><small>${c.label}</small>${PA.fmt(c, fx.vals[c.label])}</div>`;
 }
-function render() {
-  document.getElementById("tv").innerHTML = PA.vocal.map(tile).join("") + `<button class="talk ${talk ? "on" : ""}" id="talk">TALK<small>${talk ? "FX MUTED · TAP TO SING" : "MUTE FX BETWEEN SONGS"}</small></button>`;
-  document.getElementById("talk").onclick = () => { talk = !talk; render(); };
-  document.getElementById("tg").innerHTML = PA.guitar.map(tile).join("");
+function paint() {
+  PA.FX.forEach(paintTile);
+  hit.classList.toggle("on", PA.hitOn());
+  const tk = document.getElementById("talk"); tk.classList.toggle("on", talk); tk.querySelector("small").textContent = talk ? "FX MUTED · TAP TO SING" : "MUTE FX BETWEEN SONGS";
+  placeDot();
 }
-render();
 
-// tile gestures: tap = on/off · hold still = momentary on · drag sideways = swipe parameter
-for (const id of ["tv", "tg"]) document.getElementById(id).addEventListener("pointerdown", e => {
-  const t = e.target.closest(".tile"); if (!t) return;
-  const fx = PA.byId[t.dataset.id], c = PA.cellOf(fx, SWIPE[fx.id]), x0 = e.clientX, v0 = fx.vals[c.label], w = t.offsetWidth;
-  let mode = "tap", prev = fx.state; t.setPointerCapture(e.pointerId);
-  const hold = setTimeout(() => { if (mode !== "tap" || fx.always) return; mode = "mom"; prev = fx.state; fx.state = "on"; t.classList.add("on", "mom"); }, 420);
-  const mv = ev => {
-    if (mode === "tap" && Math.abs(ev.clientX - x0) > 10) { mode = "drag"; clearTimeout(hold); t.classList.add("dragging"); }
-    if (mode !== "drag") return;
-    PA.set(fx.id, c.label, v0 + (ev.clientX - x0) / w * (c.max - c.min));
-    t.style.setProperty("--lv", lv(fx)); t.querySelector(".readout").innerHTML = `<div><small>${c.label}</small>${PA.fmt(c, fx.vals[c.label])}</div>`;
-  };
-  const up = () => {
-    clearTimeout(hold); t.removeEventListener("pointermove", mv);
-    if (mode === "tap") PA.setState(fx.id, PA.nextState(fx));
-    else if (mode === "mom") { fx.state = prev; render(); }
-    else t.classList.remove("dragging");
-  };
-  t.addEventListener("pointermove", mv); t.addEventListener("pointerup", up, { once: true });
+// Tiles: tap = on/off · hold = on while you hold (momentary) · swipe sideways = the tile's main level
+PA.gestureAll(document.getElementById("wrap"), ".tile", t => {
+  const fx = PA.byId[t.dataset.id], c = PA.cellOf(fx, SWIPE[fx.id]); let v0, w, prev;
+  return { threshold: 10,
+    tap: () => { if (!fx.always) PA.setState(fx.id, PA.nextState(fx)); },
+    hold: () => { if (fx.always) return; prev = fx.state; PA.setState(fx.id, "on"); t.classList.add("mom"); },
+    holdEnd: () => { if (prev == null) return; PA.setState(fx.id, prev); prev = null; t.classList.remove("mom"); },
+    dragStart: () => { v0 = fx.vals[c.label]; w = t.offsetWidth; t.classList.add("dragging"); },
+    drag: dx => { PA.set(fx.id, c.label, v0 + dx / w * (c.max - c.min)); paintTile(fx); },
+    dragEnd: () => t.classList.remove("dragging") };
 });
-document.addEventListener("pa:state", render);
+// TALK: the pedal's talk mode is a held HIT switch, so TALK sends a 1.3 s hold of HIT
+PA.gesture(document.getElementById("talk"), { tap: () => {
+  talk = !talk; paint();
+  if (PA.connected) { const release = PA.link.hold(PA.link.EVT.hit); setTimeout(release, 1300); }
+} });
 
 // HIT: tap latches, hold = momentary
 const hit = document.getElementById("hit");
-PA.press(hit, { tap: () => { hitOn = !hitOn; hit.classList.toggle("on", hitOn); render(); },
-  hold: () => { hitOn = true; hit.classList.add("on"); render(); }, holdEnd: () => { hitOn = false; hit.classList.remove("on"); render(); } });
+PA.gesture(hit, { tap: () => PA.setHit(!PA.hitOn()), hold: () => PA.setHit(true), holdEnd: () => PA.setHit(false) });
 
-// SPACE pad: X = vocal delay level, Y = vocal reverb level (one finger mixes the ambience)
+// SPACE pad: X = vocal delay level, Y = vocal reverb level (one finger mixes the ambience); double-tap = both back to −12 dB
 const xy = document.getElementById("xy"), dot = document.getElementById("dot"), D = PA.byId.delay, R = PA.byId.reverb;
 function placeDot() {
   const x = (D.vals.LEVEL + 51) / 51, y = (R.vals.LEVEL + 51) / 51;
   dot.style.left = x * 100 + "%"; dot.style.top = (1 - y) * 100 + "%";
   document.getElementById("xyv").textContent = `DLY ${D.vals.LEVEL} dB · REV ${R.vals.LEVEL} dB`;
 }
-placeDot();
-xy.addEventListener("pointerdown", e => {
-  xy.setPointerCapture(e.pointerId);
-  const mv = ev => { const r = xy.getBoundingClientRect(), x = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)), y = Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height));
-    PA.set("delay", "LEVEL", -51 + x * 51); PA.set("reverb", "LEVEL", -51 + (1 - y) * 51); placeDot(); };
-  mv(e); xy.addEventListener("pointermove", mv); xy.addEventListener("pointerup", () => xy.removeEventListener("pointermove", mv), { once: true });
-});
-document.getElementById("lock").onclick = e => { e.currentTarget.classList.toggle("on"); document.getElementById("wrap").classList.toggle("locked"); };
+const toXY = e => { const r = xy.getBoundingClientRect(), x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), y = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+  PA.set("delay", "LEVEL", -51 + x * 51); PA.set("reverb", "LEVEL", -51 + (1 - y) * 51); placeDot(); };
+PA.gesture(xy, { threshold: 2, double: () => { PA.set("delay", "LEVEL", -12); PA.set("reverb", "LEVEL", -12); placeDot(); }, dragStart: toXY, drag: (dx, dy, e) => toXY(e) });
+
+// LOCK: tap to lock the tiles and the pad, hold to unlock (so a stray touch can't unlock it)
+const lock = document.getElementById("lock"), wrap = document.getElementById("wrap");
+PA.gesture(lock, { tap: () => { if (!wrap.classList.contains("locked")) { wrap.classList.add("locked"); lock.classList.add("on"); lock.querySelector("span").textContent = "HOLD TO UNLOCK"; } else PA.toast("Hold to unlock"); },
+  hold: () => { wrap.classList.remove("locked"); lock.classList.remove("on"); lock.querySelector("span").textContent = "LOCK"; } });
+
+["state", "style", "sync", "hit", "preset", "change"].forEach(t => document.addEventListener("pa:" + t, paint));
+paint();
 </script>
 </body>
 </html>
