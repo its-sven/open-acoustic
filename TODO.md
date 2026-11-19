@@ -4,6 +4,9 @@
 
 Status 2026-11-13. "Confirmed" = seen on the unit; everything else is from the firmware code or a simulated pedal.
 
+## Remote UI
+- [x] **Control knob / value editing (`tools/pa-remote.html`)**: the value bars are now draggable (tap selects, drag left/right scrubs), and the knob drag is horizontal (right = up) instead of vertical.
+
 ## 1. Check against the unit
 - [ ] **Vocal FX pages 2–7** (Double, Delay, Reverb, HardTune, Transducer, uMOD): only Harmony has been compared with a photo. Check the picture, the right-column order and CONTROL.
 - [ ] **Guitar FX pages**, both BodyRez EDITING = BASIC (4 pages) and ADVANCED (7 pages). The BodyRez EQ page has no CONTROL in the firmware: what does the pedal show in its third box?

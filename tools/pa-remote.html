@@ -53,6 +53,17 @@ input[type=range] { width: 100%; margin: 12px 0 8px; accent-color: var(--accent)
 .toggle.on { background: var(--accent); color: var(--bg); }
 .log { font-family: var(--mono); font-size: 12.5px; height: 220px; overflow: auto; background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px; white-space: pre; }
 .log .in { color: var(--ok); } .log .out { color: var(--muted); }
+.callist { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.calrow { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 8px; background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; }
+.calrow .raw { font-family: var(--mono); color: var(--muted); min-width: 52px; }
+.calrow .shown { flex: 1; font-weight: 600; }
+.calrow button { font-size: 12px; padding: 2px 8px; }
+.caltodo { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 8px; border-radius: 6px; cursor: pointer; background: var(--bg); border: 1px solid var(--rule); }
+.caltodo:hover { border-color: var(--muted); }
+.caltodo.done { opacity: .5; }
+.caltodo .loc { color: var(--muted); font-size: 12px; }
+.caltodo .badge { margin-left: auto; font-size: 11px; padding: 1px 7px; border-radius: 10px; background: #1a2a9a; color: #fff; }
+.calout { width: 100%; box-sizing: border-box; height: 120px; margin-top: 10px; font-family: var(--mono); font-size: 12px; background: var(--bg); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px; }
 details summary { cursor: pointer; color: var(--muted); }
 summary.cardsum { display: flex; align-items: center; gap: 8px; color: var(--ink); font-weight: 600; }
 summary.cardsum .muted { color: var(--muted); font-weight: 400; font-size: 13px; }
@@ -79,15 +90,19 @@ select, input { max-width: 100%; }
 .soft:disabled { cursor: default; }
 .lcd2 { background: #1732d6; color: #e9eef2; border: 3px solid #2346ff; border-radius: 3px; font-family: "Silkscreen", "VT323", ui-monospace, monospace; min-height: 220px; display: grid; grid-template-rows: auto 1fr; box-shadow: 0 0 22px rgba(40,90,255,.55), inset 0 0 20px rgba(0,0,30,.35); overflow: hidden; }
 .lcdtitle { background: #dad9cf; color: #1a2a9a; text-align: center; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; padding: 2px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lcdgrid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); }
+.lcdgrid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); touch-action: none; }
+.cell .bar, .fxcell .bar { cursor: ew-resize; }
 .cell { display: grid; align-content: center; gap: 5px; padding: 4px 8px; min-width: 0; cursor: pointer; border-top: 2px solid #e9eef2; }
 .cell:nth-child(odd) { border-right: 2px solid #e9eef2; }
 .cell:nth-child(-n+2) { border-top: 0; }
 .cell .bar, .fxcell .bar { height: 11px; border: 2px solid currentColor; padding: 1px; display: flex; align-items: stretch; gap: 6px; }
 .cell .bar i, .fxcell .bar i { display: block; height: 100%; background: repeating-linear-gradient(90deg, currentColor 0 7px, transparent 7px 10px); }
-.cell .lab { font-size: 15px; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; }
-.cell .val { font-size: 12px; opacity: .85; font-variant-numeric: tabular-nums; min-height: 1em; }
-.cell.sel { background: #dad9cf; color: #1a2a9a; }
+.bar.center { position: relative; }
+.bar.center > i { position: absolute; top: 1px; bottom: 1px; }
+.bar.center::before { content: ""; position: absolute; top: -1px; bottom: -1px; left: var(--z); width: 2px; margin-left: -1px; background: currentColor; opacity: .55; }
+.cell .lab { font-size: 18px; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; }
+.cell .val { font-size: 16px; opacity: .9; font-variant-numeric: tabular-nums; min-height: 1em; }
+.cell.sel { background: #dad9cf; color: #1a2a9a; box-shadow: inset 0 0 0 2px #1a2a9a; }
 .cell.empty { cursor: default; }
 .cell .vtxt { font-size: 14px; line-height: 1.1; padding-left: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cell.right .vtxt { padding-left: 0; }
@@ -98,12 +113,12 @@ select, input { max-width: 100%; }
 .fxcell { cursor: pointer; padding: 2px 4px; min-width: 0; display: grid; align-content: center; justify-items: center; gap: 2px; text-align: center; }
 .fxcell + .fxcell { border-top: 2px solid #e9eef2; }
 .fxcell .bar { width: 100%; box-sizing: border-box; }
-.bval { font-size: 11px; line-height: 1; opacity: .9; }
+.bval { font-size: 14px; line-height: 1; opacity: .95; }
 .fxcell .big { font-size: 20px; line-height: 1; }
-.fxcell .lab { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fxcell .vtxt { font-size: 12px; padding-left: 0; text-transform: uppercase; }
-.fxcell.sel, .fxstyle.sel { background: #dad9cf; color: #1a2a9a; }
-.fxstyle { grid-row: 2; grid-column: 1; font-size: 12px; margin-right: 4px; border-top: 2px solid #e9eef2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; padding: 0 3px; align-self: center; }
+.fxcell .lab { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fxcell .vtxt { font-size: 15px; padding-left: 0; text-transform: uppercase; }
+.fxcell.sel, .fxstyle.sel { background: #dad9cf; color: #1a2a9a; box-shadow: inset 0 0 0 2px #1a2a9a; }
+.fxstyle { grid-row: 2; grid-column: 1; font-size: 17px; margin-right: 4px; color: #e9eef2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; padding: 1px 4px; align-self: center; }
 .lcdgrid.info { grid-template-columns: 1fr; grid-template-rows: none; align-content: center; justify-items: center; gap: 6px; font-size: 13px; padding: 8px; }
 .pnum { font-size: 34px; }
 .lcdgrid.preset { grid-template-columns: 1fr; grid-template-rows: none; align-content: center; justify-items: center; gap: 6px; text-align: center; padding: 8px; }
@@ -137,7 +152,7 @@ select, input { max-width: 100%; }
   .chassis { padding: 10px 8px 14px; }
   .jacks { display: none; }
   .lcd2 { min-height: 170px; }
-  .cell { padding: 3px 4px; } .cell .lab { font-size: 10px; } .lcdtitle { font-size: 12px; }
+  .cell { padding: 3px 4px; } .cell .lab { font-size: 14px; } .cell .val { font-size: 13px; } .fxstyle { font-size: 15px; } .lcdtitle { font-size: 13px; }
   .navrow { gap: 10px; } .knob { width: 76px; height: 76px; } .knob::after { transform-origin: 2px 29px; height: 14px; }
   .hwbtn { padding: 8px 9px; font-size: 11px; } .hwbtn.round { width: 44px; height: 44px; }
 }
@@ -167,27 +182,46 @@ button, .soft, .hwbtn, .fsw, .cell, .fxcell, .fxstyle { touch-action: manipulati
 @media (prefers-color-scheme: dark) { .notice { background: #2e2310; color: #f3cf8f; border-color: #5a4320; } }
 /* Mirror / Independent mode toggle, sitting in the pedal's bottom-left corner */
 .chassis { position: relative; }
-.modeToggle { position: absolute; left: 16px; bottom: 14px; display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; background: #05070a; box-shadow: inset 0 0 0 1px #262d33; z-index: 6; }
+.topright { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.connControls { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.conn.connected .connControls { display: none; }
+.conn.connected.showports .connControls { display: inline-flex; }
+.modeToggle { display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; background: #05070a; box-shadow: inset 0 0 0 1px #262d33; }
 .modeToggle .seg { font: 700 10px/1 system-ui, sans-serif; letter-spacing: .05em; text-transform: uppercase; color: #8c97a0; background: transparent; border: 0; border-radius: 999px; padding: 6px 11px; cursor: pointer; }
 .modeToggle .seg.on { background: var(--accent); color: #fff; }
 .soft { position: relative; }
 .soft.hasadv::after { content: "\2935"; position: absolute; top: 2px; right: 4px; font-size: 10px; line-height: 1; opacity: .8; }
 .modeToggle .seg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-@media (max-width: 560px) { .modeToggle { left: 8px; bottom: 8px; } .modeToggle .seg { padding: 5px 8px; font-size: 9px; } }
+@media (max-width: 560px) { .modeToggle .seg { padding: 5px 8px; font-size: 9px; } }
+.pickerWrap { position: fixed; inset: 0; display: none; z-index: 50; }
+.pickerWrap.open { display: block; }
+/* The value picker is styled as an extension of the pedal's LCD: white-on-blue, Silkscreen, pops out under
+   the current setting. The selected row is inverted (tan / blue) like a highlighted cell. */
+.lcdPicker { position: fixed; background: #1732d6; color: #e9eef2; border: 3px solid #2346ff; border-radius: 4px;
+  font-family: "Silkscreen", "VT323", ui-monospace, monospace; box-shadow: 0 0 22px rgba(40,90,255,.6), 0 12px 34px rgba(0,0,0,.55);
+  max-height: 62vh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 3px; min-width: 150px; max-width: min(92vw, 360px); }
+.lcdPickItem { padding: 9px 12px; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; cursor: pointer; border-radius: 2px; }
+.lcdPickItem:hover { background: rgba(255,255,255,.14); }
+.lcdPickItem.sel { background: #dad9cf; color: #1a2a9a; }
+.lcdPickItem.sel:hover { background: #dad9cf; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="topbar" id="topbar">
     <h1>OpenAcoustic</h1>
-    <div class="conn">
-      <select id="outSel" aria-label="MIDI out (to the pedal)" title="MIDI out (to the pedal)"><option>—</option></select>
-      <select id="inSel" aria-label="MIDI in (from the pedal)" title="MIDI in (from the pedal)"><option>—</option></select>
-      <button id="connectBtn">Connect</button>
-      <button id="disconnectBtn" class="ghost" hidden>Disconnect</button>
-      <label style="display:flex;gap:4px;align-items:center;font-size:12px;color:var(--muted)" title="Tick this when connecting through a Bluetooth MIDI adapter (e.g. WIDI). The adapter answers the identity request itself, so the pedal check is made tolerant and won't block the connection. Auto-ticked if a WIDI/Bluetooth port is detected."><input type="checkbox" id="bleMode"> Using Bluetooth adapter</label>
-      <span id="status" class="status">Not connected</span>
-    </div>
+    <div class="conn" id="conn">
+        <span class="connControls" id="connControls">
+          <select id="outSel" aria-label="MIDI out (to the pedal)" title="MIDI out (to the pedal)"><option>—</option></select>
+          <select id="inSel" aria-label="MIDI in (from the pedal)" title="MIDI in (from the pedal)"><option>—</option></select>
+          <button id="connectBtn">Connect</button>
+          <label style="display:flex;gap:4px;align-items:center;font-size:12px;color:var(--muted)" title="Tick this when connecting through a Bluetooth MIDI adapter (e.g. WIDI). The adapter answers the identity request itself, so the pedal check is made tolerant and won't block the connection. Auto-ticked if a WIDI/Bluetooth port is detected."><input type="checkbox" id="bleMode"> Using Bluetooth adapter</label>
+          <label style="display:flex;gap:4px;align-items:center;font-size:12px;color:var(--muted)" title="After connecting, step the pedal through every preset once to read and cache all their names, so switching presets is always instant. The pedal has no way to read a preset by number, so it must briefly cycle through them (it returns to where it started). Takes a little while and the pedal will change sound as it goes."><input type="checkbox" id="preload"> Preload all names</label>
+        </span>
+        <button id="portsBtn" class="ghost" hidden title="Choose MIDI ports">Ports ▾</button>
+        <span id="status" class="status">Not connected</span>
+        <button id="disconnectBtn" class="ghost" hidden>Disconnect</button>
+      </div>
   </header>
   <div class="notice" id="noMidi" hidden>This browser has no Web MIDI, so it can't talk to the pedal. Safari and the other iPad/iPhone browsers don't support it. On iPad, open this page in a MIDI browser app that adds Web MIDI (with SysEx); on a Mac or PC use Chrome or Edge. The panel still works as a preview.</div>
   <main class="stage" id="panelCard">
@@ -212,16 +246,17 @@ button, .soft, .hwbtn, .fsw, .cell, .fxcell, .fxstyle { touch-action: manipulati
         <button class="fsw" id="fswUp" title="▲ footswitch (sends the pedal's own footswitch event)"><span style="font-size:22px">▲</span><span class="led"></span><span class="cap"></span></button>
         <button class="fsw" id="hwHit" title="HIT: tap to toggle, hold for TALK (presses the real footswitch when mirroring is on)"><span>HIT<br><small>HOLD FOR TALK</small></span><span class="led" id="hitLed"></span><span class="cap"></span></button>
       </div>
-      <div class="modeToggle" id="modeToggle" role="group" aria-label="Sync mode" title="Mirror: the real pedal and this panel follow each other. Independent: the pedal stays on its preset screen and this panel edits values on its own.">
-        <button type="button" class="seg on" data-mode="mirror" aria-pressed="true">Mirror</button>
-        <button type="button" class="seg" data-mode="indep" aria-pressed="false">Independent</button>
-      </div>
     </div>
     <span id="panelStatus" class="status" role="status"></span>
   </main>
   <details class="card" id="optCard">
-    <summary class="cardsum"><strong>Options</strong><span class="muted">how the panel works</span></summary>
-    <p class="panelhint">Use it like the pedal: the soft buttons open menus, ◀ ▶ change pages, BACK returns to the preset screen, and the knob edits values (drag / scroll / arrows, Shift = ×10). Values are read live and set over the firmware's SysEx.</p>
+    <summary class="cardsum"><strong>Options</strong>
+      <div class="modeToggle" id="modeToggle" role="group" aria-label="Sync mode" title="Mirror: the real pedal and this panel follow each other. Independent: the pedal stays on its preset screen and this panel edits values on its own.">
+        <button type="button" class="seg on" data-mode="mirror" aria-pressed="true">Mirror</button>
+        <button type="button" class="seg" data-mode="indep" aria-pressed="false">Independent</button>
+      </div>
+      <span class="muted">sync mode · how the panel works</span></summary>
+    <p class="panelhint">Use it like the pedal: the soft buttons open menus, ◀ ▶ change pages, BACK returns to the preset screen. To edit a value, <b>drag its bar left/right</b>, or turn the knob (drag left/right, scroll, or arrow keys; Shift = ×10). Tapping a <b>list setting</b> steps to the next value (on/off just toggles); <b>hold</b> a multi-option one for a picker to jump straight to any value. Values are read live and set over the firmware's SysEx.</p>
     <details class="panelmore"><summary>How the panel works</summary>
     <p class="panelhint">Pages and cell positions come from the firmware's own menu tables (still being checked against the real unit); labels are the firmware's display names. Values are read live (SysEx 0x47) and set with the knob (0x22). On the preset screen the six soft buttons open the menus (white); inside a menu they turn blue and select the cell beside them, as on the pedal. With "Press the pedal's buttons too" on, the soft buttons, BACK, STORE and ▼ ▲ also press the real buttons (SysEx 55 events), and ◀ ▶ / the knob on the preset screen change presets. ◀ ▶ inside menus press the pedal's arrow buttons too, and HIT works as tap (toggle) or hold (TALK). The bars and labels follow the pedal's layout; the pixels are an approximation.</p></details>
   </details>
@@ -243,12 +278,40 @@ button, .soft, .hwbtn, .fsw, .cell, .fxcell, .fxstyle { touch-action: manipulati
     </div>
   </details>
 
+  <details class="card" id="calCard">
+    <summary class="cardsum"><strong>Calibrate parameter</strong><span class="muted">tell the maintainer what the pedal really shows</span><span id="calStatus" class="status">—</span></summary>
+    <p class="sub" style="margin:6px 0 10px">Some parameters still show the raw number because their real unit or scale isn't known yet. To fix one: <b>select it</b> (touch it on the virtual screen — the pedal lands on it too), step the raw value, read what the <b>pedal's own screen</b> shows, and capture it. For a scale (dB, Hz, %…) capture the <b>min, max and one middle</b> point; for a discrete setting (filter type, ON/OFF…) capture <b>every</b> value. Then <b>Copy for Claude</b> and paste the result into the chat.</p>
+    <div class="lcd" style="margin-bottom:10px"><span id="calInfo">Select a parameter on the panel</span><span><b id="calRaw">—</b></span></div>
+    <div class="btns" id="calSet" style="align-items:center">
+      <span class="muted">Set raw on pedal:</span>
+      <button data-d="-10">−10</button><button data-d="-1">−1</button>
+      <input id="calVal" type="number" style="width:84px;font:inherit;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--surface);color:var(--ink)">
+      <button data-d="1">+1</button><button data-d="10">+10</button>
+      <button id="calMinB">Min</button><button id="calMidB">Mid</button><button id="calMaxB">Max</button>
+    </div>
+    <div class="row" style="align-items:flex-end;margin-top:10px">
+      <label class="f" style="flex:1;min-width:220px">Pedal shows (type it exactly)<input id="calShown" placeholder='e.g. -6 dB   HIGH   120 Hz   OFF' style="font:inherit;padding:6px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--surface);color:var(--ink)"></label>
+      <button id="calAdd">Capture this point</button>
+    </div>
+    <div id="calList" class="callist"></div>
+    <div class="btns" style="margin-top:10px;align-items:center">
+      <button id="calCopy">Copy for Claude</button>
+      <button id="calClearOne">Clear this parameter</button>
+      <button id="calClearAll">Clear all</button>
+      <span id="calCount" class="muted"></span>
+    </div>
+    <details style="margin-top:12px"><summary class="muted">Parameters still needing a unit (<span id="calTodoN">0</span>) — click to jump</summary><div id="calTodo" class="callist" style="margin-top:8px"></div></details>
+    <textarea id="calOut" readonly class="calout" placeholder="Captured data shows here as JSON. Copy for Claude copies it; you can also select it here."></textarea>
+  </details>
+
   <details class="card" id="monCard">
     <summary class="cardsum"><strong>MIDI monitor</strong><span class="muted">raw traffic log</span></summary>
     <div class="btns" style="margin:0 0 10px"><label class="f" style="flex-direction:row;display:flex;gap:6px;align-items:center"><input type="checkbox" id="showOut" checked> show sent</label><label class="f" style="flex-direction:row;display:flex;gap:6px;align-items:center" title="Value replies (22) and preset packets (20/21) from the panel's background reads"><input type="checkbox" id="showPoll"> show polling replies</label><button id="clearLog">Clear</button></div>
     <div class="log" id="log" aria-live="polite"></div>
   </details>
 </div>
+
+<div class="pickerWrap" id="pickerWrap"><div class="lcdPicker" id="lcdPicker" role="listbox"></div></div>
 
 <script src="pa-menus.js"></script>
 <script src="pa-images.js"></script>
@@ -412,12 +475,12 @@ setInterval(() => {
 // cell = [param id, label, min, max, format, default, value names?]
 const MENUS = {};
 try {
-  const cell = c => c ? [parseInt(c.param, 16), c.label, c.min, c.max, c.format || "number", c.default ?? c.min].concat(c.values ? [c.values] : []) : null;
+  const cell = c => c ? [parseInt(c.param, 16), c.label, c.min, c.max, c.format || "number", c.default ?? c.min, c.values || null, c.fmt || null] : null;
   for (const [key, menu] of Object.entries(window.PA_MENUS || {})) MENUS[key] = menu.pages.map(p => {
     let s = (p.rows || [[null, null], [null, null], [null, null]]).flat().map(cell);
     // Picture pages use the pedal's FX layout: STYLE (first cell) on the bottom-left soft button, the other cells
     // on the right buttons top to bottom, the effect's CONTROL (OFF/ON/HIT) on the bottom-right button.
-    if (p.layout === "image") { const rest = s.slice(1).filter(Boolean); s = [null, rest[0] || null, null, rest[1] || null, s[0], cell(p.control)]; }
+    if (p.layout === "image") { const rest = s.slice(1).filter(Boolean); s = [null, rest[0] || null, null, rest[1] || null, s[0], cell(p.control) || rest[2] || null]; }
     return { t: p.title, text: p.text, layout: p.layout, images: p.images, s,
       w: Object.fromEntries(Object.entries(p.showWhen || {}).map(([id, v]) => [String(parseInt(id, 16)), v])) };
   });
@@ -445,9 +508,17 @@ function pages() {   // sub-pages the pedal shows right now, given the selector 
 }
 function curSub() { const p = pages(); return p[Math.min(pnl.sub, p.length - 1)]; }
 function selectors() { return isHome() ? [] : [...new Set((MENUS[pnl.page] || []).flatMap(e => Object.keys(e.w).map(Number)))]; }
+const trimNum = (n, dec) => (+(+n).toFixed(dec)).toString();   // 5.03 -> "5.03", 10.00 -> "10"
+function lerpPts(pts, v) {   // piecewise-linear interpolation through captured (raw -> display) points
+  if (!pts || !pts.length) return v;
+  if (v <= pts[0][0]) return pts[0][1];
+  for (let i = 1; i < pts.length; i++) if (v <= pts[i][0]) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i]; return y0 + (y1 - y0) * (v - x0) / (x1 - x0); }
+  return pts[pts.length - 1][1];
+}
 function fmtV(c, v) {
   if (v == null) return "··";
   if (c[6] && v - c[2] >= 0 && v - c[2] < c[6].length) return c[6][v - c[2]];
+  const o = c[7] || {};
   switch (c[4]) {
     case "dB": return `${v} dB`;
     case "%": return `${v} %`;
@@ -455,10 +526,37 @@ function fmtV(c, v) {
     case "OFF/%": return v ? `${v} %` : "OFF";
     case "BPM": return `${v} BPM`;
     case "ms": return `${v} ms`;
+    // scale: display = raw * mul, to `dec` decimals, with an optional unit (e.g. SPEED: raw/100 Hz)
+    case "scale": return trimNum(v * (o.mul ?? 1), o.dec ?? 2) + (o.unit ? " " + o.unit : "");
+    // time: interpolate seconds from captured points, switching mS / s (e.g. REVERB DECAY, nonlinear)
+    case "time": { const s = lerpPts(o.points, v); return s < 1 ? `${Math.round(s * 1000)} mS` : `${trimNum(s, s < 10 ? 1 : 0)} s`; }
+    // curve: interpolate a value from captured points and append a unit (e.g. a nonlinear Hz filter sweep)
+    case "curve": return trimNum(lerpPts(o.points, v), o.dec ?? 0) + (o.unit ? " " + o.unit : "");
     default: return String(v);
   }
 }
 const isProductInfo = sp => !!sp.text;   // text-only page (Product Info)
+// A level/slider affordance for a numeric cell. Signed ranges (min<0<max) get a bar that grows left or
+// right from a centre-zero tick; everything else gets a plain left-to-right level bar.
+function barHTML(c, v) {
+  const min = c[2], max = c[3], span = Math.max(1, max - min), clamp = x => Math.max(0, Math.min(1, x));
+  if (min < 0 && max > 0) {
+    const z = clamp((0 - min) / span), cur = v == null ? z : clamp((v - min) / span);
+    const L = Math.min(z, cur), W = Math.abs(cur - z);
+    return `<div class="bar center" style="--z:${(z * 100).toFixed(1)}%"><i style="left:${(L * 100).toFixed(1)}%;width:${(W * 100).toFixed(1)}%"></i></div>`;
+  }
+  const f = v == null ? 0 : clamp((v - min) / span);
+  return `<div class="bar"><i style="width:${(f * 100).toFixed(1)}%"></i></div>`;
+}
+const isNumericCell = c => !c[6];   // no enum value-list → a numeric parameter that gets a bar
+// Drop a leading word that the page title already says (REVERB page: "REVERB LEVEL" → "LEVEL"), since the
+// title tells you which effect you're in. Leaves single-word labels (e.g. the effect's own STYLE name) alone.
+function shortLabel(label, title) {
+  if (!label || !title) return label || "";
+  for (const w of title.toUpperCase().split(" "))
+    if (label.toUpperCase().startsWith(w + " ") && label.length > w.length + 1) label = label.slice(w.length + 1);
+  return label;
+}
 function firstSlot(sp) { if (sp.layout === "image" && sp.s[4]) return 4; const i = sp.s.findIndex(x => x); return i < 0 ? 0 : i; }
 function renderPanel() {
   const pg = pages(), sp = curSub(), n = pg.length;
@@ -467,7 +565,7 @@ function renderPanel() {
   $("lcdTitle").style.visibility = isHome() ? "hidden" : "visible";
   const g = $("lcdGrid"); g.innerHTML = ""; g.className = "lcdgrid" + (isHome() ? " preset" : isProductInfo(sp) ? " info" : "");
   if (isHome()) { g.innerHTML = `<div class="pname"></div><div class="pnum"></div>`;
-    g.querySelector(".pname").textContent = pnl.presetName || (pnl.preset == null ? "PRESET" : "");
+    g.querySelector(".pname").textContent = pnl.preset == null ? "PRESET" : (pnl.presetName == null ? "…" : pnl.presetName);
     g.querySelector(".pnum").textContent = pnl.preset == null ? "—" : String(pnl.preset); }
   else if (isProductInfo(sp)) for (const line of sp.text) { const d = document.createElement("div"); d.textContent = line; g.appendChild(d); }
   else if (sp.layout === "image") renderFx(g, sp);
@@ -476,14 +574,16 @@ function renderPanel() {
     d.className = "cell" + (i % 2 ? " right" : "") + (c ? (i === pnl.sel ? " sel" : "") : " empty");
     if (c) {
       const v = val(c[0]);
-      if (pnl.page === "MIX") {   // Mix cells: bar graph over the label
-        const f = v == null ? 0 : (v - c[2]) / Math.max(1, c[3] - c[2]);
-        d.innerHTML = `<div class="bar"><i style="width:${Math.round(Math.max(0, Math.min(1, f)) * 100)}%"></i></div><div class="lab"></div>` + (i === pnl.sel ? `<div class="bval">${fmtV(c, pnl.vals[c[0]])}</div>` : "");
-      } else d.innerHTML = `<div class="lab"></div><div class="vtxt"></div>`;
-      d.querySelector(".lab").textContent = c[1];
-      if (d.querySelector(".vtxt")) d.querySelector(".vtxt").textContent = pnl.vals[c[0]] == null ? "··" : fmtV(c, v);
+      if (isNumericCell(c)) {   // numeric parameter: level / centre bar + its value
+        d.innerHTML = barHTML(c, v) + `<div class="lab"></div><div class="val"></div>`;
+        d.querySelector(".val").textContent = v == null ? "··" : fmtV(c, v);
+      } else {   // discrete selection: show the chosen value as text
+        d.innerHTML = `<div class="lab"></div><div class="vtxt"></div>`;
+        d.querySelector(".vtxt").textContent = pnl.vals[c[0]] == null ? "··" : fmtV(c, v);
+      }
+      d.querySelector(".lab").textContent = shortLabel(c[1], sp.t);
       d.title = `${c[1]} = ${fmtV(c, pnl.vals[c[0]])} (param 0x${c[0].toString(16).toUpperCase()}, ${c[2]}…${c[3]})`;
-      d.onclick = () => selSlot(i);
+      d.dataset.slot = i;   // selection + bar drag handled by the #lcdGrid pointer handler
     }
     g.appendChild(d);
   });
@@ -495,6 +595,7 @@ function renderPanel() {
   const c = isHome() ? null : sp.s[pnl.sel], k = $("knob");
   if (c) { const v = val(c[0]) ?? c[2]; const f = (v - c[2]) / Math.max(1, c[3] - c[2]);
     k.style.setProperty("--ang", `${-135 + 270 * f}deg`); k.setAttribute("aria-valuemin", c[2]); k.setAttribute("aria-valuemax", c[3]); k.setAttribute("aria-valuenow", v); k.setAttribute("aria-valuetext", `${c[1]} ${fmtV(c, v)}`); }
+  try { calRefresh(); } catch (_) {}
 }
 // Vocal FX / Guitar FX pages (firmware func_446ce8): picture 92x48 at (0,7) chosen by the STYLE value (func_446c06),
 // "STYLE: name" line at the bottom left, the page's other cells in a narrow column on the right (x 94-127).
@@ -511,49 +612,56 @@ function renderFx(g, sp) {
   if (show) { pic.style.webkitMaskImage = pic.style.maskImage = show; pnl.lastPic = show; }
   else pic.classList.add("empty");   // nothing shown yet at all: blank (without a mask the box would fill solid)
   pic.title = n != null ? `firmware image ${n}` : "";
+  if (st) pic.dataset.slot = 4;   // tapping the picture opens the STYLE picker
   const right = document.createElement("div"); right.className = "fxright";
   for (const i of [1, 3, 5]) {   // one box per right-hand soft button
     const c = sp.s[i], d = document.createElement("div"); d.className = "fxcell" + (c && i === pnl.sel ? " sel" : "");
     if (c) {
       const has = pnl.vals[c[0]] != null, cv = val(c[0]);
-      if (c[4] === "dB") {   // levels: bar graph over the label
-        const f = has ? (cv - c[2]) / Math.max(1, c[3] - c[2]) : 0;
-        d.innerHTML = `<div class="bar"><i style="width:${Math.round(Math.max(0, Math.min(1, f)) * 100)}%"></i></div><div class="lab"></div>` + (i === pnl.sel ? `<div class="bval">${fmtV(c, pnl.vals[c[0]])}</div>` : "");
+      if (isNumericCell(c)) {   // numeric parameter: level / centre bar + its value
+        d.innerHTML = barHTML(c, has ? cv : null) + `<div class="lab"></div>` + (i === pnl.sel ? `<div class="bval">${fmtV(c, pnl.vals[c[0]])}</div>` : "");
       } else d.innerHTML = `<div class="${i === 5 ? "big" : "vtxt"}"></div><div class="lab"></div>`;
-      d.querySelector(".lab").textContent = c[1];
+      d.querySelector(".lab").textContent = shortLabel(c[1], sp.t);
       const vt = d.querySelector(".vtxt, .big"); if (vt) vt.textContent = has ? fmtV(c, cv) : "··";
       d.title = `${c[1]} = ${fmtV(c, pnl.vals[c[0]])} (param 0x${c[0].toString(16).toUpperCase()})`;
-      d.onclick = () => selSlot(i);
+      d.dataset.slot = i;
     }
     right.appendChild(d);
   }
   const line = document.createElement("div"); line.className = "fxstyle" + (pnl.sel === 4 ? " sel" : "");
-  line.textContent = st ? `${st[1]}: ${pnl.vals[st[0]] == null ? "··" : fmtV(st, v)}` : "";
-  if (st) line.onclick = () => selSlot(4);
+  if (st) { const sval = pnl.vals[st[0]] == null ? "··" : fmtV(st, v); line.textContent = `STYLE: ${sval}`; }
+  else line.textContent = "";
+  if (st) line.dataset.slot = 4;
   g.append(pic, right, line);
 }
 // soft-button menu functions on the preset screen, by slot: left 0/2/4, right 1/3/5
 const MENU = { 0: () => "VOCAL", 2: () => "GUITAR", 4: () => "MIX", 5: () => "SETUP" };
 function selSlot(i) { const sp = curSub(); if (!isHome() && sp.s[i]) { pnl.sel = i; renderPanel(); } }
+// Touching a parameter on the virtual LCD: in Mirror mode also tap that slot's soft button on the
+// pedal so its selection moves with ours (quick press/release, like a real soft-button tap).
+function tapSlot(i) {
+  if (mirror()) { const code = BTN.soft[i]; injectEvent(0xDB, code, 0x00).catch(() => {}); setTimeout(() => injectEvent(0xDB, code, 0x01).catch(() => {}), 40); }
+  selSlot(i);
+}
 function softPress(i) { if (isHome()) { const m = MENU[i]; if (m) gotoPage(m()); } else selSlot(i); }
-// NOTE / open issue: the pedal remembers the last sub-page per menu PER PRESET and reopens the menu there,
-// so assuming pnl.sub = 0 on entry is sometimes wrong — e.g. if you last left Vocal FX on page 2 of preset 2,
-// re-entering that menu on preset 2 lands on page 2, not page 0. We don't yet know how to read the pedal's
-// remembered page, so the on-screen page can disagree with the unit until a ◀ ▶ echo corrects it. Event-driven
-// reads don't make this worse (we still read whatever page we think we're on); a real fix needs the pedal's page.
-function gotoPage(name) { advReturn = null; pnl.page = name; pnl.sub = 0; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true); }
-function gotoSub(d) { if (isHome()) return; const n = pages().length, s = Math.max(0, Math.min(n - 1, pnl.sub + d)); if (s === pnl.sub) return; pnl.sub = s; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true); }
+// Like the pedal, remember the last page visited in each settings menu (Vocal/Guitar FX, Mix, Setup…) — not per
+// preset, per menu — so reopening a menu returns to that page and matches the hardware. Persisted across reloads.
+let lastSub = {};
+try { lastSub = JSON.parse(localStorage.getItem("pa-lastsub") || "{}") || {}; } catch (_) {}
+const saveLastSub = () => { try { localStorage.setItem("pa-lastsub", JSON.stringify(lastSub)); } catch (_) {} };
+function gotoPage(name) { fetchGen++; advReturn = null; pnl.page = name; pnl.sub = Math.min(lastSub[name] ?? 0, Math.max(0, pages().length - 1)); pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true); }
+function gotoSub(d) { if (isHome()) return; const n = pages().length, s = Math.max(0, Math.min(n - 1, pnl.sub + d)); if (s === pnl.sub) return; fetchGen++; pnl.sub = s; lastSub[pnl.page] = s; saveLastSub(); pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true); }
 // Press-and-hold a soft button on an effect that has an advanced page to drill into it; BACK returns here.
 let advReturn = null;
 const curAdvLink = () => isHome() ? null : advLink(pnl.page, curSub().t);
 function drillIntoAdvanced() {
   const link = curAdvLink(); if (!link) return false;
   advReturn = { page: pnl.page, sub: pnl.sub };
-  pnl.page = link.menu; pnl.sub = link.sub; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true);
+  fetchGen++; pnl.page = link.menu; pnl.sub = link.sub; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true);
   return true;
 }
 function doBack() {
-  if (advReturn) { pnl.page = advReturn.page; pnl.sub = advReturn.sub; advReturn = null; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true); }
+  if (advReturn) { fetchGen++; pnl.page = advReturn.page; pnl.sub = advReturn.sub; advReturn = null; pnl.sel = firstSlot(curSub()); renderPanel(); pollPanel(true); }
   else gotoPage("PRESET");
 }
 async function panelRead(id) {
@@ -565,50 +673,102 @@ async function panelRead(id) {
 // Name = 15 bytes in the preset header (cmd 0x20) the unit sends for "request preset 0" (45 00 00 = current preset).
 async function readPreset() {
   const n = await panelRead(0x2A4); if (n == null) return;
-  const changed = n !== pnl.preset; pnl.preset = n;
-  if (changed || pnl.presetName == null) {
+  if (lastPCprog != null) { presetOffset = n - lastPCprog; offsetKnown = true; }   // learn PC-number → shown-number offset
+  pnl.preset = n;
+  if (presetNames[n] != null) pnl.presetName = presetNames[n];   // already cached → no name round-trip needed
+  else {
     const p = collect(1000, 1, m => m[0] === 0xF0 && m[3] === 0x38 && m[6] === 0x20 && m.length >= 31);
     out.send([...hdr(), 0x45, 0x00, 0x00, 0xF7]);
     const r = await p;
     // 15-byte name buffer: the name ends at the first 00; bytes after it are leftovers from the previous (longer) name.
     if (r.length) { const raw = [...r[0].slice(11, 26)], end = raw.indexOf(0);
-      pnl.presetName = String.fromCharCode(...(end < 0 ? raw : raw.slice(0, end)).filter(c => c >= 0x20 && c < 0x7F)).trim(); }
+      pnl.presetName = String.fromCharCode(...(end < 0 ? raw : raw.slice(0, end)).filter(c => c >= 0x20 && c < 0x7F)).trim();
+      presetNames[n] = pnl.presetName; }   // cache for instant display next time
   }
 }
 // Read ahead: every Vocal/Guitar FX page's cells (STYLE picks the picture) plus the page-variant selectors, once after
 // connecting and again after each preset change, so FX pages open with the right picture and values instead of blank.
-async function prefetch() {
+async function prefetch(gen) {
   if (pnl.prefetchFor === pnl.preset) return;
   const ids = new Set([0x295, 0x39F, 0x362]);
   for (const k of ["VOCAL", "GUITAR"]) for (const e of MENUS[k] || []) if (e.layout === "image") for (const c of e.s) if (c) ids.add(c[0]);
-  for (const id of ids) { const v = await panelRead(id); if (v != null) pnl.vals[id] = v; }
-  pnl.prefetchFor = pnl.preset;
+  for (const id of ids) { if (gen !== fetchGen) return; const v = await panelRead(id); if (v != null) pnl.vals[id] = v; }   // abort if the preset/page changed
+  if (gen === fetchGen) pnl.prefetchFor = pnl.preset;
 }
 // Fast path after a preset change: read just number and name, outside the poll lock, then redraw.
-let fastBusy = false;
+let fastBusy = false, lastPCprog = null, presetOffset = 0, presetReadT = null, fetchGen = 0, offsetKnown = false;
+let preloading = false, preloadedSession = false;
+const presetNames = {};   // number → name, cached per session so each preset's name is fetched at most once
+// Program Change carries the preset number, so update it live while the user flips. The NAME needs a SysEx
+// round-trip the first time, but then it's cached — revisiting a preset shows its name instantly with no read.
+function onProgramChange(prog) {
+  if (preloading) { lastPCprog = prog; return; }   // the preload walk drives its own reads; don't interfere
+  fetchGen++;                         // strand any param reads still running for the previous preset
+  lastPCprog = prog;
+  pnl.preset = prog + presetOffset;   // instant number; reconciled from 0x2A4 on the settled read
+  pnl.presetName = presetNames[pnl.preset] ?? null;   // from cache if seen; "…" only for an unseen preset
+  pnl.prefetchFor = null;             // new preset → re-read its FX values (lazily, when a menu is opened)
+  if (isHome()) renderPanel();
+  clearTimeout(presetReadT);
+  // No round-trip at all when we're on the home screen and already know this preset's name (and the number offset)
+  if (pnl.presetName != null && offsetKnown && isHome()) return;
+  presetReadT = setTimeout(fastPreset, 150);
+}
 async function fastPreset() {
-  if (fastBusy || !out || !inp) return; fastBusy = true;
-  try { await ensureId(); pnl.presetName = null; await readPreset(); renderPanel(); setTimeout(() => pollPanel(true), 300); }
+  if (!out || !inp) return;
+  if (fastBusy) { clearTimeout(presetReadT); presetReadT = setTimeout(fastPreset, 120); return; }   // busy → retry soon, don't drop it
+  fastBusy = true;
+  try { await ensureId(); await readPreset(); renderPanel(); if (!isHome()) setTimeout(() => pollPanel(true), 300); }   // on home there's nothing more to refresh
   catch (_) {} finally { fastBusy = false; }
+}
+// Optional: cache EVERY preset's name up front. The pedal can't be asked for a preset by number, so the only way
+// is to step through them all (inject preset-advance events), read each name, and return to where we started.
+const waitNumChange = async prev => { for (let t = 0; t < 8; t++) { await delay(130); const n = await panelRead(0x2A4); if (n != null && n !== prev) return n; } return null; };
+async function preloadNames() {
+  if (preloading || !out || !inp) return;
+  preloadedSession = true; preloading = true;
+  const s = $("status"); const say = (t, cls) => { s.textContent = t; s.className = "status" + (cls ? " " + cls : ""); };
+  try {
+    await ensureId();
+    for (let i = 0; i < 3; i++) { await pressButton(BTN.back); await delay(90); }   // exit any menu → the pedal's preset screen, where ◀▶ step presets
+    pnl.page = "PRESET"; pnl.sub = 0; advReturn = null; fetchGen++; renderPanel();
+    const start = await panelRead(0x2A4); if (start == null) { say("Preload: couldn't read the preset", "bad"); return; }
+    const seen = new Set([start]); pnl.preset = start; await readPreset();   // cache the starting one
+    let cur = start;
+    for (let i = 0; i < 1000 && preloading; i++) {
+      await press(EVT.arrowNext);            // step to the next preset
+      const n = await waitNumChange(cur);
+      if (n == null || seen.has(n)) { cur = n ?? cur; break; }   // stepping stopped or wrapped back → done
+      seen.add(n); cur = n; pnl.preset = n; await readPreset();
+      say(`Preloading preset names… ${seen.size}`);
+    }
+    for (let i = 0; i < 1000 && cur !== start; i++) { await press(EVT.arrowPrev); const n = await waitNumChange(cur); if (n == null) break; cur = n; }   // walk back to the start preset
+    pnl.preset = cur; preloading = false; await fastPreset();
+    say(`Preloaded ${seen.size} preset names — switching is now instant`, "ok");
+  } catch (_) { say("Preload interrupted", "bad"); }
+  finally { preloading = false; renderPanel(); }
 }
 let polling = false;
 async function pollPanel(force) {
   if (polling || !out || !inp || portRejected) return;
   if (!force && performance.now() - pnl.touched < 1200) return;
   polling = true;
+  const gen = fetchGen;   // abort token: flipping presets or navigating bumps fetchGen and strands this read
   try {
-    await ensureId();
-    for (const id of selectors()) { const v = await panelRead(id); if (v != null) pnl.vals[id] = v; }
+    await ensureId(); if (gen !== fetchGen) return;
+    for (const id of selectors()) { if (gen !== fetchGen) return; const v = await panelRead(id); if (v != null) pnl.vals[id] = v; }
     const sp = curSub(); let got = 0, want = 0;
-    if (!isHome() && !isProductInfo(sp)) for (const c of sp.s) { if (!c) continue; want++; const v = await panelRead(c[0]); if (v != null) { pnl.vals[c[0]] = v; got++; } }
+    if (!isHome() && !isProductInfo(sp)) for (const c of sp.s) { if (!c) continue; if (gen !== fetchGen) return; want++; const v = await panelRead(c[0]); if (v != null) { pnl.vals[c[0]] = v; got++; } }
+    if (gen !== fetchGen) return;
     const hit = await panelRead(0x2A8); if (hit != null) pnl.vals[0x2A8] = hit;
     await readPreset();
-    await prefetch();
+    if (!isHome() && gen === fetchGen) await prefetch(gen);   // FX read-ahead only while actually inside a menu
+    if (gen !== fetchGen) return;
     $("panelStatus").textContent = got === want ? "In sync with the pedal" : `Read ${got}/${want} values`; $("panelStatus").className = "status " + (got === want ? "ok" : "bad");
     const n = pages().length; if (pnl.sub >= n) pnl.sub = n - 1;
     renderPanel();
   } catch (e) { $("panelStatus").textContent = "Read failed: " + e.message; $("panelStatus").className = "status bad"; }
-  polling = false;
+  finally { polling = false; }
 }
 // ── Fake front-panel presses (SysEx 55 tunnel) ──
 // 55 01 01 00 00 00 switches the tunnel on (the pedal then echoes its own panel events as "55 …");
@@ -647,7 +807,8 @@ let mirrorMode = true;   // true = Mirror (two-way), false = Independent (parame
 const mirror = () => !!out && mirrorMode;
 (function wireModeToggle() {
   const tg = $("modeToggle"); if (!tg) return;
-  tg.querySelectorAll(".seg").forEach(b => b.onclick = () => {
+  tg.querySelectorAll(".seg").forEach(b => b.onclick = (ev) => {
+    ev.preventDefault(); ev.stopPropagation();   // sits in the Options <summary>; don't open/close the card
     mirrorMode = b.dataset.mode === "mirror";
     tg.querySelectorAll(".seg").forEach(s => { const on = s.dataset.mode === b.dataset.mode; s.classList.toggle("on", on); s.setAttribute("aria-pressed", on); });
     $("panelStatus").textContent = mirrorMode ? "Mirror mode: the pedal follows this panel and vice versa" : "Independent: the pedal stays on its preset screen";
@@ -672,32 +833,50 @@ async function press(seq) {   // send a press (and release) sequence like the re
 }
 // Preset up/down on the preset screen: the pedal's own front arrows (they step presets there, like the footswitches).
 const stepPreset = dir => press(dir > 0 ? EVT.arrowNext : EVT.arrowPrev);
-function turn(delta) {
-  if (isHome()) { for (let i = 0; i < Math.min(Math.abs(delta), 10); i++) press(delta > 0 ? EVT.knobUp : EVT.knobDown); return; }
-  const c = curSub().s[pnl.sel]; if (!c) return;
-  const v = Math.max(c[2], Math.min(c[3], (val(c[0]) ?? c[2]) + delta));
+// Set an absolute value on a parameter: update the model, redraw, and send to the pedal (debounced).
+function setVal(c, v) {
+  v = Math.max(c[2], Math.min(c[3], Math.round(v)));
+  if (v === val(c[0])) { pnl.touched = performance.now(); return; }
   pnl.vals[c[0]] = v; pnl.touched = performance.now(); renderPanel();
   clearTimeout(pnl.sendT);
   pnl.sendT = setTimeout(async () => { if (!out) { $("panelStatus").textContent = "Not connected: change not sent"; $("panelStatus").className = "status bad"; return; } await ensureId(); setParam(c[0], pnl.vals[c[0]]); }, 35);
+}
+function turn(delta) {
+  if (isHome()) { for (let i = 0; i < Math.min(Math.abs(delta), 10); i++) press(delta > 0 ? EVT.knobUp : EVT.knobDown); return; }
+  const c = curSub().s[pnl.sel]; if (!c) return;
+  setVal(c, (val(c[0]) ?? c[2]) + delta);
 }
 // Soft buttons: a tap navigates (as before); a press-and-hold on an effect that has an advanced page drills
 // into it. In Mirror mode we send press (00) on down, held (02) once the hold fires, and release (01) on up,
 // so the pedal makes the same tap/hold distinction.
 document.querySelectorAll(".soft").forEach(b => {
   const slot = () => +b.dataset.slot;
-  let holdT = null, held = false, sentDown = false;
+  let holdT = null, holdRepeat = null, held = false, sentDown = false;
   b.addEventListener("pointerdown", e => {
     if (b.disabled) return;
     try { b.setPointerCapture(e.pointerId); } catch (_) {}
     held = false; sentDown = mirror();
     if (sentDown) injectEvent(0xDB, BTN.soft[slot()], 0x00).catch(() => {});
+    // The pedal detects a hold from a SUSTAINED stream of 0x02 (held) events, not one —
+    // it drills around the 3rd/4th. So repeat 0x02 (~200ms) while held, like the hardware does.
+    if (sentDown) {
+      let n = 0;
+      holdRepeat = setInterval(() => {
+        if (++n > 12) { clearInterval(holdRepeat); holdRepeat = null; return; }
+        injectEvent(0xDB, BTN.soft[slot()], 0x02).catch(() => {});
+      }, 200);
+    }
     holdT = setTimeout(() => {
       held = true;
-      if (mirror()) injectEvent(0xDB, BTN.soft[slot()], 0x02).catch(() => {});
       if (!isHome()) drillIntoAdvanced();   // hold on an effect page → its advanced page (if any)
-    }, 450);
+    }, 600);
   });
-  const release = () => { clearTimeout(holdT); if (sentDown) injectEvent(0xDB, BTN.soft[slot()], 0x01).catch(() => {}); sentDown = false; };
+  const release = () => {
+    clearTimeout(holdT);
+    if (holdRepeat) { clearInterval(holdRepeat); holdRepeat = null; }
+    if (sentDown) injectEvent(0xDB, BTN.soft[slot()], 0x01).catch(() => {});
+    sentDown = false;
+  };
   b.addEventListener("pointerup", () => { release(); if (!held) softPress(slot()); held = false; });
   b.addEventListener("pointercancel", () => { release(); held = false; });
 });
@@ -728,13 +907,174 @@ function onWheel(e) {
 }
 knob.addEventListener("wheel", onWheel, { passive: false });
 $("lcd").addEventListener("wheel", onWheel, { passive: false });
-let dragY = null, acc = 0;
-knob.addEventListener("pointerdown", e => { dragY = e.clientY; acc = 0; knob.setPointerCapture(e.pointerId); });
-knob.addEventListener("pointermove", e => { if (dragY == null) return; acc += dragY - e.clientY; dragY = e.clientY; const step = e.shiftKey ? 10 : 1; while (Math.abs(acc) >= 6) { turn(Math.sign(acc) * step); acc -= Math.sign(acc) * 6; } });
-knob.addEventListener("pointerup", () => { dragY = null; });
+let dragX = null, acc = 0;   // horizontal drag: right = up, left = down (clearer than vertical on a touchscreen)
+knob.addEventListener("pointerdown", e => { dragX = e.clientX; acc = 0; try { knob.setPointerCapture(e.pointerId); } catch (_) {} });
+knob.addEventListener("pointermove", e => { if (dragX == null) return; acc += e.clientX - dragX; dragX = e.clientX; const step = e.shiftKey ? 10 : 1; while (Math.abs(acc) >= 6) { turn(Math.sign(acc) * step); acc -= Math.sign(acc) * 6; } });
+knob.addEventListener("pointerup", () => { dragX = null; });
 knob.addEventListener("keydown", e => { const m = e.shiftKey ? 10 : 1;
   if (e.key === "ArrowUp" || e.key === "ArrowRight") { e.preventDefault(); turn(m); } else if (e.key === "ArrowDown" || e.key === "ArrowLeft") { e.preventDefault(); turn(-m); }
   else if (e.key === "PageUp") { e.preventDefault(); turn(10); } else if (e.key === "PageDown") { e.preventDefault(); turn(-10); } });
+// Draggable value bars: tap a cell to select it (the pedal follows); drag left/right to scrub its value
+// directly — the gesture the bars invite. Pointer capture is on #lcdGrid (which survives cell re-renders),
+// and the bar's geometry is snapshotted on press, so a drag keeps tracking even as the cells redraw.
+const enumCount = c => Math.min(c[6].length, c[3] - c[2] + 1);   // number of discrete options
+function cycleEnum(c) { const cur = val(c[0]) ?? c[2]; setVal(c, cur + 1 > c[3] ? c[2] : cur + 1); }   // next, looping
+(function () {
+  const grid = $("lcdGrid");
+  let drag = null;
+  const anchorRect = i => {   // where the picker should pop out from: the current setting for this slot
+    const onFx = curSub().layout === "image";
+    const el = (i === 4 && onFx) ? grid.querySelector(".fxstyle") : grid.querySelector(`.cell[data-slot="${i}"], .fxcell[data-slot="${i}"]`);
+    return el ? el.getBoundingClientRect() : null;
+  };
+  grid.addEventListener("pointerdown", e => {
+    if (isHome()) return;
+    const cell = e.target.closest(".cell, .fxcell, .fxstyle, .fximg"); if (!cell || cell.dataset.slot == null) return;
+    const i = +cell.dataset.slot, c = curSub().s[i]; if (!c) return;
+    try { grid.setPointerCapture(e.pointerId); } catch (_) {}
+    const bar = cell.querySelector(".bar");
+    drag = { i, c, moved: false, held: false, startX: e.clientX, rect: bar ? bar.getBoundingClientRect() : null, holdT: null };
+    if (!isNumericCell(c) && enumCount(c) > 2) {   // hold a multi-option setting → the full picker
+      drag.holdT = setTimeout(() => { if (!drag || drag.moved) return; drag.held = true; tapSlot(i); openPicker(c, anchorRect(i)); }, 450);
+    }
+  });
+  grid.addEventListener("pointermove", e => {
+    if (!drag) return;
+    if (!drag.moved) { if (Math.abs(e.clientX - drag.startX) < 4) return; drag.moved = true; clearTimeout(drag.holdT); if (pnl.sel !== drag.i) tapSlot(drag.i); }
+    if (!drag.rect || !isNumericCell(drag.c)) return;   // discrete cells only select; they have no bar to scrub
+    const f = Math.max(0, Math.min(1, (e.clientX - drag.rect.left) / drag.rect.width));
+    setVal(drag.c, drag.c[2] + f * (drag.c[3] - drag.c[2]));
+  });
+  const end = e => {
+    if (!drag) return; const d = drag; drag = null;
+    clearTimeout(d.holdT);
+    try { grid.releasePointerCapture(e.pointerId); } catch (_) {}
+    if (d.moved || d.held) return;   // drag already scrubbed; a hold already opened the picker
+    tapSlot(d.i);
+    if (!isNumericCell(d.c)) cycleEnum(d.c);   // tap a discrete setting → next value (on/off just toggles)
+  };
+  grid.addEventListener("pointerup", end);
+  grid.addEventListener("pointercancel", () => { if (drag) clearTimeout(drag.holdT); drag = null; });
+})();
+// Discrete-list settings (reverb/delay types, keys, filters…) open a scrollable picker instead of forcing you
+// to step through dozens of values with the knob.
+function openPicker(c, rect) {
+  if (!c || !c[6]) return;
+  const pop = $("lcdPicker"); pop.innerHTML = "";
+  const cur = val(c[0]), n = Math.min(c[6].length, c[3] - c[2] + 1);
+  let selEl = null;
+  for (let idx = 0; idx < n; idx++) {
+    const v = c[2] + idx, it = document.createElement("div");
+    it.className = "lcdPickItem" + (v === cur ? " sel" : "");
+    it.textContent = c[6][idx];
+    it.onclick = () => { setVal(c, v); closePicker(); };
+    pop.appendChild(it);
+    if (v === cur) selEl = it;
+  }
+  $("pickerWrap").classList.add("open");
+  // position under the tapped setting, flipping above / clamping to the viewport if it won't fit below
+  pop.style.visibility = "hidden"; pop.style.left = "0px"; pop.style.top = "0px";
+  requestAnimationFrame(() => {
+    const r = rect || { left: innerWidth / 2 - 75, top: innerHeight / 2, bottom: innerHeight / 2, width: 150 };
+    const pr = pop.getBoundingClientRect(), vw = innerWidth, vh = innerHeight, m = 8;
+    const left = Math.max(m, Math.min(r.left, vw - pr.width - m));
+    let top = r.bottom + 4;
+    if (top + pr.height > vh - m) { const up = r.top - 4 - pr.height; top = up > m ? up : Math.max(m, vh - pr.height - m); }
+    pop.style.left = left + "px"; pop.style.top = top + "px"; pop.style.visibility = "visible";
+    if (selEl) selEl.scrollIntoView({ block: "nearest" });
+  });
+}
+function closePicker() { $("pickerWrap").classList.remove("open"); }
+$("pickerWrap").addEventListener("pointerdown", e => { if (e.target === $("pickerWrap")) closePicker(); });   // tap outside to dismiss
+addEventListener("keydown", e => { if (e.key === "Escape") closePicker(); });
+// ── Parameter calibration ──────────────────────────────────────────────────────────────────────
+// Unknown scales/units (format "number") show the raw number. We can't derive what the pedal's own
+// screen shows for a raw value — only the pedal knows — so this captures (raw -> shown) pairs you read
+// off the hardware. A few points on a scale (min/mid/max) give a formula; every point gives an enum.
+const PARAM_LOC = {}, UNKNOWNS = [];
+for (const [menu, pgs] of Object.entries(MENUS)) pgs.forEach((p, sub) => (p.s || []).forEach((c, slot) => {
+  if (!c) return;
+  if (PARAM_LOC[c[0]] == null) PARAM_LOC[c[0]] = { menu, sub, slot };
+  if (c[4] === "number" && !c[6] && !UNKNOWNS.some(u => u.id === c[0]))
+    UNKNOWNS.push({ id: c[0], menu, title: p.t, label: c[1], min: c[2], max: c[3] });
+}));
+let calStore = {};
+try { calStore = JSON.parse(localStorage.getItem("pa-cal") || "{}") || {}; } catch (_) {}
+const calSave = () => { try { localStorage.setItem("pa-cal", JSON.stringify(calStore)); } catch (_) {} };
+const calHex = id => "0x" + id.toString(16).toUpperCase();
+const calCur = () => (!isHome() && curSub().s[pnl.sel]) || null;
+function calSetRaw(v) {
+  const c = calCur(); if (!c) return;
+  v = Math.max(c[2], Math.min(c[3], Math.round(v)));
+  pnl.vals[c[0]] = v; pnl.touched = performance.now(); renderPanel();
+  if (out) ensureId().then(() => setParam(c[0], v)).catch(() => {});
+}
+function calAddPoint() {
+  const c = calCur(); if (!c) return;
+  const shown = $("calShown").value.trim(); if (!shown) return;
+  const raw = val(c[0]); if (raw == null) return;
+  const id = calHex(c[0]);
+  const e = calStore[id] || (calStore[id] = { param: id, label: c[1], min: c[2], max: c[3], was: c[4], samples: [] });
+  e.samples = e.samples.filter(s => s[0] !== raw).concat([[raw, shown]]).sort((a, b) => a[0] - b[0]);
+  $("calShown").value = ""; calSave(); calRefresh(); $("calShown").focus();
+}
+function calGoto(id) {
+  const loc = PARAM_LOC[id]; if (!loc) return;
+  pnl.page = loc.menu; advReturn = null;
+  const ps = pages(), sub = ps.findIndex(p => p.s.some(c => c && c[0] === id));
+  pnl.sub = sub < 0 ? Math.min(loc.sub, ps.length - 1) : sub;
+  const sp = curSub(), slot = sp.s.findIndex(c => c && c[0] === id);
+  pnl.sel = slot >= 0 ? slot : firstSlot(sp);
+  renderPanel(); pollPanel(true);
+}
+function calRefresh() {
+  if (!$("calInfo")) return;
+  const c = calCur();
+  if (c) {
+    const raw = val(c[0]);
+    $("calInfo").textContent = `${calHex(c[0])} ${c[1]}   range ${c[2]}…${c[3]}   current format: ${c[4]}`;
+    $("calRaw").textContent = raw == null ? "—" : String(raw);
+    if (document.activeElement !== $("calVal")) $("calVal").value = raw == null ? "" : raw;
+  } else { $("calInfo").textContent = "Select a parameter on the panel"; $("calRaw").textContent = "—"; }
+  const list = $("calList"); list.innerHTML = "";
+  const e = c && calStore[calHex(c[0])];
+  if (e) for (const [raw, shown] of e.samples) {
+    const row = document.createElement("div"); row.className = "calrow";
+    row.innerHTML = `<span class="raw"></span><span class="shown"></span><button>remove</button>`;
+    row.querySelector(".raw").textContent = raw; row.querySelector(".shown").textContent = shown;
+    row.querySelector("button").onclick = () => { e.samples = e.samples.filter(s => s[0] !== raw); if (!e.samples.length) delete calStore[calHex(c[0])]; calSave(); calRefresh(); };
+    list.appendChild(row);
+  }
+  const n = Object.values(calStore).reduce((a, x) => a + x.samples.length, 0);
+  $("calCount").textContent = `${Object.keys(calStore).length} parameter(s), ${n} point(s)`;
+  $("calTodoN").textContent = UNKNOWNS.length;
+  const todo = $("calTodo"); todo.innerHTML = "";
+  for (const u of UNKNOWNS) {
+    const d = document.createElement("div"); d.className = "caltodo";
+    const done = calStore[calHex(u.id)]; if (done) d.classList.add("done");
+    d.innerHTML = `<span><b></b> <span class="loc"></span></span>` + (done ? `<span class="badge">${done.samples.length}</span>` : "");
+    d.querySelector("b").textContent = u.label;
+    d.querySelector(".loc").textContent = `${u.menu} ▸ ${u.title} · ${calHex(u.id)} · ${u.min}…${u.max}`;
+    d.onclick = () => calGoto(u.id);
+    todo.appendChild(d);
+  }
+  $("calOut").value = Object.keys(calStore).length ? JSON.stringify(Object.values(calStore), null, 1) : "";
+}
+$("calSet").querySelectorAll("button[data-d]").forEach(b => b.onclick = () => { const c = calCur(); if (c) calSetRaw((val(c[0]) ?? c[2]) + (+b.dataset.d)); });
+$("calMinB").onclick = () => { const c = calCur(); if (c) calSetRaw(c[2]); };
+$("calMidB").onclick = () => { const c = calCur(); if (c) calSetRaw(Math.round((c[2] + c[3]) / 2)); };
+$("calMaxB").onclick = () => { const c = calCur(); if (c) calSetRaw(c[3]); };
+$("calVal").onchange = () => { const c = calCur(); if (c && $("calVal").value !== "") calSetRaw(+$("calVal").value); };
+$("calAdd").onclick = calAddPoint;
+$("calShown").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); calAddPoint(); } });
+$("calCopy").onclick = async () => {
+  const t = $("calOut").value;
+  if (!t) { $("calStatus").textContent = "Nothing captured yet"; $("calStatus").className = "status bad"; return; }
+  try { await navigator.clipboard.writeText(t); $("calStatus").textContent = "Copied — paste into the chat"; $("calStatus").className = "status ok"; }
+  catch (_) { $("calOut").focus(); $("calOut").select(); $("calStatus").textContent = "Selected — press copy"; $("calStatus").className = "status"; }
+};
+$("calClearOne").onclick = () => { const c = calCur(); if (c) { delete calStore[calHex(c[0])]; calSave(); calRefresh(); } };
+$("calClearAll").onclick = () => { if (confirm("Clear ALL captured calibration points?")) { calStore = {}; calSave(); calRefresh(); } };
 // Event-driven refresh: instead of a tight 800ms timer, read only when something actually changes — on
 // connect, on navigation (gotoPage/gotoSub), on preset change (fastPreset), and whenever the pedal echoes a
 // panel event (see onMsg). A slow heartbeat stays as a light safety net for anything an echo doesn't cover.
@@ -763,7 +1103,7 @@ function onMsg(e) {
     if (mirror() && !self) applyPanelEvent(e0, e1, e2);   // a real press on the pedal → mirror it onto this panel
     schedulePoll(); return; }
   const st = d[0] & 0xF0, ch = (d[0] & 0x0F) + 1;
-  if (st === 0xC0) fastPreset();   // the pedal reports preset changes as Program Change: refresh name/number now
+  if (st === 0xC0) onProgramChange(d[1]);   // Program Change = preset change; number now, name debounced
   if (st === 0xB0 || st === 0xC0) log(`← ch${ch} ${[...d].map(x => x.toString(16).padStart(2, "0")).join(" ")}`, "in");
   else if (d[0] === 0xF0 && d[3] === 0x38 && [0x20, 0x21, 0x22].includes(d[6]) && !$("showPoll").checked) return;   // background-read replies
   else if (d[0] === 0xF0) log(`← SysEx ${d.length} bytes: ${[...d.slice(0, 12)].map(x => x.toString(16).padStart(2, "0")).join(" ")}${d.length > 12 ? " …" : ""}`, "in");
@@ -796,7 +1136,11 @@ function bind() {
   if (inp) inp.onmidimessage = null;
   inp = access.inputs.get($("inSel").value) || null; if (inp) inp.onmidimessage = onMsg;
   const s = $("status");
-  if (out && inp) { s.textContent = `Checking "${out.name}"…`; s.className = "status"; ensureId().then(() => { if (out && inp) pollPanel(true); }).catch(e => { if (e.message === "port changed") return; s.textContent = e.message; s.className = "status bad"; }); }
+  const connected = !!(out && inp);
+  $("conn").classList.toggle("connected", connected);   // collapse the port chooser only once both ports are actually bound
+  if (!connected) $("conn").classList.remove("showports");
+  $("portsBtn").hidden = !connected;
+  if (connected) { s.textContent = `Checking "${out.name}"…`; s.className = "status"; ensureId().then(() => { if (!out || !inp) return; if ($("preload").checked && !preloadedSession) preloadNames(); else pollPanel(true); }).catch(e => { if (e.message === "port changed") return; s.textContent = e.message; s.className = "status bad"; }); }
   else { s.textContent = "No Play Acoustic port found: choose its MIDI in and out above"; s.className = "status bad"; }
 }
 async function initMidi(auto) {
@@ -804,15 +1148,21 @@ async function initMidi(auto) {
   try {
     access = await navigator.requestMIDIAccess({ sysex: true }); access.onstatechange = fill; fill();
     $("connectBtn").hidden = true; $("disconnectBtn").hidden = false;
+    // the port chooser collapses from bind() once both ports are actually bound, not merely on access grant
   } catch (e) { if (!auto) { $("status").textContent = "MIDI access denied: " + e.message; $("status").className = "status bad"; } }
 }
 $("connectBtn").onclick = () => initMidi(false);
+$("portsBtn").onclick = () => $("conn").classList.toggle("showports");
 $("bleMode").onchange = () => { bleTouched = true; if (access) fill(); };
+try { $("preload").checked = localStorage.getItem("pa-preload") === "1"; } catch (_) {}
+$("preload").onchange = () => { try { localStorage.setItem("pa-preload", $("preload").checked ? "1" : "0"); } catch (_) {} };
 $("disconnectBtn").onclick = () => {
+  preloading = false; preloadedSession = false;   // stop/allow a fresh preload on reconnect
   if (inp) inp.onmidimessage = null;
   if (access) access.onstatechange = null;
   out = null; inp = null;
   $("disconnectBtn").hidden = true; $("connectBtn").hidden = false;
+  $("conn").classList.remove("connected", "showports"); $("portsBtn").hidden = true;   // show the port chooser again
   $("status").textContent = "Not connected"; $("status").className = "status";
   $("panelStatus").textContent = "Connect MIDI to sync with the pedal"; $("panelStatus").className = "status";
   $("liveStatus").textContent = "Connect MIDI first"; $("liveStatus").className = "status";

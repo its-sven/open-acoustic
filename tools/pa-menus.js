@@ -32,7 +32,7 @@ window.PA_MENUS = {
       [ {"param": "0x19A", "label": "REVERB STYLE", "min": 0, "max": 27, "format": "list", "values": ["SMOOTH PLATE", "REFLECTION PLATE", "THIN PLATE", "BRIGHT PLATE", "REAL PLATE", "REAL PLATE LONG", "JAZZ PLATE", "QUICK PLATE", "SOFT HALL", "AMSTERDAM HALL", "BROADWAY HALL", "SNAPPY ROOM", "LIBRARY", "DARK ROOM", "MUSIC CLUB", "STUDIO ROOM", "BOUNCY ROOM", "COZY CORNER", "BRIGHT CHAMBER", "WOODEN CHAMBER", "ST. JOSEPH CHURCH", "DOME CHAPEL", "HOCKEY ARENA", "MUSEUM", "INDOOR ARENA", "WAREHOUSE", "THIN SPRING", "FULL SPRING"], "default": 0},
         null ],
       [ {"param": "0x0D5", "label": "LEVEL", "min": -51, "max": 0, "format": "dB", "default": 0},
-        {"param": "0x19F", "label": "DECAY", "min": 1, "max": 290, "format": "number", "default": 100} ],
+        {"param": "0x19F", "label": "DECAY", "min": 1, "max": 290, "format": "time", "fmt": {"points": [[1, 0.01], [84, 0.84], [146, 5.2], [290, 20]]}, "default": 100} ],
       [ null,
         null ]
     ] },
@@ -56,7 +56,7 @@ window.PA_MENUS = {
       [ {"param": "0x124", "label": "uMOD STYLE", "min": 0, "max": 23, "format": "list", "values": ["MICROMOD CLONE", "MICROMOD WIDER", "THICKEN", "LIGHT CHORUS", "MEDIUM CHORUS", "WIDE CHORUS", "MONO CHORUS", "FAST ROTOR", "PANNER", "FLANGER ", "FLANGE FEEDBACK", "FLANGE NEGATIVE", "MONO FLANGE", "SOFT FLANGE", "TUBE", "UP TUBE", "DOWN TUBE", "DOWN & UP TUBE", "RISE AND FALL", "AUTO WAH", "UNDERWATER", "CYLON MONO", "CYLON STEREO", "ALIEN VOICEOVER"], "default": 0},
         null ],
       [ {"param": "0x0D3", "label": "LEVEL", "min": -51, "max": 0, "format": "dB", "default": 0},
-        {"param": "0x130", "label": "SPEED", "min": 5, "max": 1000, "format": "number", "default": 150} ],
+        {"param": "0x130", "label": "SPEED", "min": 5, "max": 1000, "format": "scale", "fmt": {"mul": 0.01, "unit": "Hz", "dec": 2}, "default": 150} ],
       [ null,
         null ]
     ] }
@@ -88,15 +88,15 @@ window.PA_MENUS = {
     ] }
   ] },
   "GUITAR": { "button": "GUITAR FX", "pages": [
-    { "title": "GUITAR REVERB", "layout": "image", "control": {"param": "0x353", "label": "CONTROL", "min": 0, "max": 1, "format": "list", "values": ["OFF", "ON"], "default": 1}, "images": [77, 77, 77, 77, 77, 77, 77, 77, 118, 118, 118, 118, 118, 118, 118, 118, 117, 117, 117, 119, 119, 119, 119, 119, 119, 119, 116, 116, 116, 116, 115, 115, 115, 115, 120, 120], "showWhen": {"0x362": 0}, "rows": [
+    { "title": "GUITAR REVERB", "layout": "image", "control": {"param": "0x355", "label": "CONTROL", "min": 0, "max": 1, "format": "list", "values": ["OFF", "ON"], "default": 1}, "images": [77, 77, 77, 77, 77, 77, 77, 77, 118, 118, 118, 118, 118, 118, 118, 118, 117, 117, 117, 119, 119, 119, 119, 119, 119, 119, 116, 116, 116, 116, 115, 115, 115, 115, 120, 120], "showWhen": {"0x362": 0}, "rows": [
       [ {"param": "0x19B", "label": "REVERB", "min": 0, "max": 35, "format": "list", "values": ["HALL", "PLATE", "ROOM", "CHURCH", "SPRING", "AMBIENCE", "LOFI", "TILE", "SMOOTH PLATE", "REFLECTION PLATE", "THIN PLATE", "BRIGHT PLATE", "REAL PLATE", "REAL PLATE LONG", "JAZZ PLATE", "QUICK PLATE", "SOFT HALL", "AMSTERDAM HALL", "BROADWAY HALL", "SNAPPY ROOM", "LIBRARY", "DARK ROOM", "MUSIC CLUB", "STUDIO ROOM", "BOUNCY ROOM", "COZY CORNER", "BRIGHT CHAMBER", "WOODEN CHAMBER", "ST. JOSEPH CHURCH", "DOME CHAPEL", "HOCKEY ARENA", "MUSEUM", "INDOOR ARENA", "WAREHOUSE", "THIN SPRING", "FULL SPRING"], "default": 1},
         null ],
       [ {"param": "0x0D8", "label": "REVERB LEVEL", "min": -51, "max": 0, "format": "dB", "default": 0},
-        {"param": "0x1A0", "label": "REVERB DECAY", "min": 1, "max": 290, "format": "number", "default": 100} ],
+        {"param": "0x1A0", "label": "REVERB DECAY", "min": 1, "max": 290, "format": "time", "fmt": {"points": [[1, 0.01], [84, 0.84], [146, 5.2], [290, 20]]}, "default": 100} ],
       [ null,
         null ]
     ] },
-    { "title": "GUITAR DELAY", "layout": "image", "control": {"param": "0x355", "label": "CONTROL", "min": 0, "max": 1, "format": "list", "values": ["OFF", "ON"], "default": 1}, "images": [123, 123, 123, 123, 123, 123, 123, 16, 24, 13, 23, 23, 18, 26, 133, 120], "showWhen": {"0x362": 0}, "rows": [
+    { "title": "GUITAR DELAY", "layout": "image", "control": {"param": "0x353", "label": "CONTROL", "min": 0, "max": 1, "format": "list", "values": ["OFF", "ON"], "default": 1}, "images": [123, 123, 123, 123, 123, 123, 123, 16, 24, 13, 23, 23, 18, 26, 133, 120], "showWhen": {"0x362": 0}, "rows": [
       [ {"param": "0x151", "label": "DELAY", "min": 0, "max": 15, "format": "list", "values": ["FLASHBACK 2290", "FLASHBACK ANALOG", "FLASHBACK TAPE", "FLASHBACK LOFI", "FLASHBACK SLAP", "EDGE-Y MOD", "ANALOG MODUL8R", "HALF", "QUARTER", "DOTTED 1/8", "PING PONG", "PING PONG FX", "MULTITAP", "300 MS", "LONG & THIN", "REVERB TANK"], "default": 0},
         null ],
       [ {"param": "0x0D7", "label": "DELAY LEVEL", "min": -51, "max": 0, "format": "dB", "default": 0},
@@ -108,7 +108,7 @@ window.PA_MENUS = {
       [ {"param": "0x125", "label": "uMOD", "min": 0, "max": 5, "format": "list", "values": ["CHORUS 12:00", "CHORUS FAST", "CHORUS SLOW", "SILKY DETUNE", "MEDIUM DETUNE", "MONO CHORUS"], "default": 0},
         null ],
       [ {"param": "0x0D6", "label": "UMOD LEVEL", "min": -51, "max": 0, "format": "dB", "default": 0},
-        {"param": "0x131", "label": "SPEED", "min": 5, "max": 1000, "format": "number", "default": 150} ],
+        {"param": "0x131", "label": "SPEED", "min": 5, "max": 1000, "format": "scale", "fmt": {"mul": 0.01, "unit": "Hz", "dec": 2}, "default": 150} ],
       [ null,
         null ]
     ] },
@@ -117,18 +117,18 @@ window.PA_MENUS = {
         null ],
       [ {"param": "0x2AF", "label": "AMOUNT", "min": 0, "max": 10, "format": "number", "default": 10},
         {"param": "0x2B3", "label": "LOW GAIN", "min": -12, "max": 12, "format": "dB", "default": 0} ],
-      [ null,
+      [ {"param": "0x2B7", "label": "HI GAIN", "min": -12, "max": 12, "format": "dB", "default": 0},
         null ]
     ] },
-    { "title": "GUITAR REVERB", "layout": "image", "control": {"param": "0x353", "label": "CONTROL", "min": 0, "max": 1, "format": "list", "values": ["OFF", "ON"], "default": 1}, "images": [77, 77, 77, 77, 77, 77, 77, 77, 118, 118, 118, 118, 118, 118, 118, 118, 117, 117, 117, 119, 119, 119, 119, 119, 119, 119, 116, 116, 116, 116, 115, 115, 115, 115, 120, 120], "showWhen": {"0x362": 1}, "rows": [
+    { "title": "GUITAR REVERB", "layout": "image", "control": {"param": "0x355", "label": "CONTROL", "min": 0, "max": 1, "format": "list", "values": ["OFF", "ON"], "default": 1}, "images": [77, 77, 77, 77, 77, 77, 77, 77, 118, 118, 118, 118, 118, 118, 118, 118, 117, 117, 117, 119, 119, 119, 119, 119, 119, 119, 116, 116, 116, 116, 115, 115, 115, 115, 120, 120], "showWhen": {"0x362": 1}, "rows": [
       [ {"param": "0x19B", "label": "REVERB", "min": 0, "max": 35, "format": "list", "values": ["HALL", "PLATE", "ROOM", "CHURCH", "SPRING", "AMBIENCE", "LOFI", "TILE", "SMOOTH PLATE", "REFLECTION PLATE", "THIN PLATE", "BRIGHT PLATE", "REAL PLATE", "REAL PLATE LONG", "JAZZ PLATE", "QUICK PLATE", "SOFT HALL", "AMSTERDAM HALL", "BROADWAY HALL", "SNAPPY ROOM", "LIBRARY", "DARK ROOM", "MUSIC CLUB", "STUDIO ROOM", "BOUNCY ROOM", "COZY CORNER", "BRIGHT CHAMBER", "WOODEN CHAMBER", "ST. JOSEPH CHURCH", "DOME CHAPEL", "HOCKEY ARENA", "MUSEUM", "INDOOR ARENA", "WAREHOUSE", "THIN SPRING", "FULL SPRING"], "default": 1},
         null ],
       [ {"param": "0x0D8", "label": "REVERB LEVEL", "min": -51, "max": 0, "format": "dB", "default": 0},
-        {"param": "0x1A0", "label": "REVERB DECAY", "min": 1, "max": 290, "format": "number", "default": 100} ],
+        {"param": "0x1A0", "label": "REVERB DECAY", "min": 1, "max": 290, "format": "time", "fmt": {"points": [[1, 0.01], [84, 0.84], [146, 5.2], [290, 20]]}, "default": 100} ],
       [ null,
         null ]
     ] },
-    { "title": "GUITAR DELAY", "layout": "image", "control": {"param": "0x355", "label": "CONTROL", "min": 0, "max": 1, "format": "list", "values": ["OFF", "ON"], "default": 1}, "images": [123, 123, 123, 123, 123, 123, 123, 16, 24, 13, 23, 23, 18, 26, 133, 120], "showWhen": {"0x362": 1}, "rows": [
+    { "title": "GUITAR DELAY", "layout": "image", "control": {"param": "0x353", "label": "CONTROL", "min": 0, "max": 1, "format": "list", "values": ["OFF", "ON"], "default": 1}, "images": [123, 123, 123, 123, 123, 123, 123, 16, 24, 13, 23, 23, 18, 26, 133, 120], "showWhen": {"0x362": 1}, "rows": [
       [ {"param": "0x151", "label": "DELAY", "min": 0, "max": 15, "format": "list", "values": ["FLASHBACK 2290", "FLASHBACK ANALOG", "FLASHBACK TAPE", "FLASHBACK LOFI", "FLASHBACK SLAP", "EDGE-Y MOD", "ANALOG MODUL8R", "HALF", "QUARTER", "DOTTED 1/8", "PING PONG", "PING PONG FX", "MULTITAP", "300 MS", "LONG & THIN", "REVERB TANK"], "default": 0},
         null ],
       [ {"param": "0x0D7", "label": "DELAY LEVEL", "min": -51, "max": 0, "format": "dB", "default": 0},
@@ -140,7 +140,7 @@ window.PA_MENUS = {
       [ {"param": "0x125", "label": "uMOD", "min": 0, "max": 5, "format": "list", "values": ["CHORUS 12:00", "CHORUS FAST", "CHORUS SLOW", "SILKY DETUNE", "MEDIUM DETUNE", "MONO CHORUS"], "default": 0},
         null ],
       [ {"param": "0x0D6", "label": "UMOD LEVEL", "min": -51, "max": 0, "format": "dB", "default": 0},
-        {"param": "0x131", "label": "SPEED", "min": 5, "max": 1000, "format": "number", "default": 150} ],
+        {"param": "0x131", "label": "SPEED", "min": 5, "max": 1000, "format": "scale", "fmt": {"mul": 0.01, "unit": "Hz", "dec": 2}, "default": 150} ],
       [ null,
         null ]
     ] },
@@ -149,7 +149,7 @@ window.PA_MENUS = {
         null ],
       [ {"param": "0x2AF", "label": "AMOUNT", "min": 0, "max": 10, "format": "number", "default": 10},
         {"param": "0x2B3", "label": "LOW GAIN", "min": -12, "max": 12, "format": "dB", "default": 0} ],
-      [ null,
+      [ {"param": "0x2B7", "label": "HI GAIN", "min": -12, "max": 12, "format": "dB", "default": 0},
         null ]
     ] },
     { "title": "BODYREZ SHELF EQ", "showWhen": {"0x362": 1}, "rows": [
@@ -267,13 +267,13 @@ window.PA_MENUS = {
         {"param": "0x329", "label": "GUITAR GATE", "min": -81, "max": 0, "format": "dB", "default": -81} ],
       [ {"param": "0x28B", "label": "GLOBAL TEMPO", "min": 0, "max": 1, "format": "list", "values": ["OFF", "ON"], "default": 0},
         {"param": "0x352", "label": "MIC BOOST", "min": 0, "max": 2, "format": "list", "values": ["OFF", "LOW", "HIGH"], "default": 1} ],
-      [ {"param": "0x35A", "label": "ROOMSENSE LOCUT", "min": 0, "max": 112, "format": "number", "default": 32},
+      [ {"param": "0x35A", "label": "ROOMSENSE LOCUT", "min": 0, "max": 112, "format": "curve", "fmt": {"points": [[0, 20], [56, 101], [80, 202], [112, 508]], "unit": "Hz"}, "default": 32},
         {"param": "0x362", "label": "BODYREZ EDITING", "min": 0, "max": 1, "format": "list", "values": ["BASIC", "ADVANCED"], "default": 0} ]
     ] },
     { "title": "GUITAR ANTI-FEEDBACK", "rows": [
       [ {"param": "0x347", "label": "PHASE INVERT", "min": 0, "max": 1, "format": "list", "values": ["OFF", "ON"], "default": 0},
         {"param": "0x03F", "label": "NOTCH GAIN", "min": -12, "max": 12, "format": "dB", "default": 0} ],
-      [ {"param": "0x348", "label": "LOW CUT", "min": 0, "max": 86, "format": "number", "default": 38},
+      [ {"param": "0x348", "label": "LOW CUT", "min": 0, "max": 86, "format": "curve", "fmt": {"points": [[0, 20], [81, 207], [86, 240]], "unit": "Hz"}, "default": 38},
         {"param": "0x05A", "label": "NOTCH FREQ", "min": 45, "max": 97, "format": "number", "default": 69} ],
       [ null,
         null ]
