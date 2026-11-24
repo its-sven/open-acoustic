@@ -54,7 +54,21 @@ The web files are not modified. `Resources/AppPageShim.js` only adds app-level t
 5. **Run** (⌘R). The first launch is blocked until you trust the certificate: Settings ▸ General ▸ VPN & Device Management ▸ your Apple ID ▸ **Trust**.
 
 ### The 7-day limit
-Apps signed with a free account expire after **7 days**; the app then won't start until you run it from Xcode again (your saved settings stay). A free account can have at most 3 such apps per device. To renew automatically without a Mac at hand, sideload the app with [SideStore](https://sidestore.io) or [AltStore](https://altstore.io) and let them refresh it in the background.
+Apps signed with a free account expire after **7 days**; the app then won't start until you run it from Xcode again (your saved settings stay). A free account can have at most 3 such apps per device.
+
+### Without a Mac at hand: SideStore
+[SideStore](https://sidestore.io) signs apps on the device with your Apple ID and refreshes them before the 7 days run out, so the app keeps working without Xcode. Follow the [official installation guide](https://docs.sidestore.io/docs/installation/prerequisites); in short:
+
+1. On the device, install **LocalDevVPN** from the App Store (SideStore talks to the device's own services through it).
+2. On a computer, use **iloader** (linked from the SideStore docs) to install SideStore and place its pairing file. You sign in with your Apple ID there and in SideStore.
+3. Build the IPA and copy it to the device (AirDrop, iCloud Drive or Files):
+   ```bash
+   ios/scripts/build-ipa.sh      # → ios/build/OpenAcoustic.ipa (unsigned; SideStore signs it)
+   ```
+4. In SideStore: **My Apps ▸ +** ▸ pick `OpenAcoustic.ipa`.
+5. Keep LocalDevVPN on while SideStore refreshes, and open SideStore now and then (or allow Background App Refresh) so it renews apps within 7 days. If a refresh fails with a pairing error, place a new pairing file with iloader.
+
+Once SideStore manages the app, install updates through SideStore too (new IPA ▸ +), not from Xcode: both use your Apple ID's certificate, and a new certificate from one can stop apps installed by the other from launching.
 
 ### With a paid Apple Developer account
 - **TestFlight:** archive (Product ▸ Archive), upload to App Store Connect and invite testers. Builds run 90 days and need no cable.
@@ -79,7 +93,7 @@ iOS only lets apps with the *audio* background mode create virtual MIDI ports, s
 ios/
 ├── OpenAcoustic.xcodeproj      project (folder-synchronized: new files in the folders below are picked up)
 ├── Config/                      Base.xcconfig (shared), App.xcconfig, Tests.xcconfig, Local.xcconfig (yours, ignored)
-├── scripts/bundle-web.sh        copies ../tools into the app at build time
+├── scripts/                     bundle-web.sh (copies ../tools into the app at build time), build-ipa.sh
 ├── OpenAcoustic/
 │   ├── App/                     SwiftUI: start screen, web screen, Bluetooth pairing
 │   ├── Web/                     WKWebView setup, app:// scheme handler, Web MIDI bridge
