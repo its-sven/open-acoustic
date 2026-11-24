@@ -53,6 +53,8 @@ Below the panel there's a **live parameter control** (any parameter by name or I
 ### On iPad / iPhone
 iOS/iPadOS browsers (all WebKit) have **no Web MIDI**. Use a **Web MIDI browser app** that adds Web MIDI with SysEx, connect the pedal through a USB adapter, and open the page from a URL. The panel is touch‑friendly and sized for a tablet.
 
+Or build the **iOS app** in [`ios/`](ios/README.md): it bundles the Remote, the touch views and the checklist for **offline** use and bridges Web MIDI (incl. SysEx) to CoreMIDI, over USB or Bluetooth MIDI. Runs on your own iPhone/iPad with a free Apple ID.
+
 > ### ⚠️ Safety
 > - The Remote **refuses** to change **MIDI CTRL (`0x278`)** and **FILTER (`0x27B`)**. Either can make the pedal ignore USB SysEx after the next power‑up, and there is no MIDI socket to undo it.
 > - **Factory reset** (if ever needed): hold **STORE + BACK** while powering on. It erases settings **and your presets/favorites** — back those up first.
@@ -78,6 +80,7 @@ Full write‑ups: **`docs/index.html`** (rendered overview), **`docs/ANALYSIS.md
 |------|----------|
 | `tools/` | The Remote (`pa-remote.html`), the verification checklist (`verify.html`), and extraction/analysis scripts |
 | `tools/views/` | The touch views (`index.html`), their shared model/gestures (`views.js`) and a simulated pedal (`sim-pedal.js`); `tools/pa-link.js` is the MIDI/SysEx link they use |
+| `ios/` | A native iPhone/iPad app that bundles the web tools for offline use and bridges Web MIDI to CoreMIDI (see `ios/README.md`) |
 | `docs/` | Analysis write‑ups, SysEx/menu references, rendered overview, images |
 | `data/` | Parameter and menu tables, string lists, UI map (factual data) |
 | `graphics/` | Display assets extracted from the firmware (fonts, bitmaps, icons) |
