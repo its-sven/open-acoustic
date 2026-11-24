@@ -1,7 +1,8 @@
 #!/bin/sh
 # Copies the web tools from the repository's tools/ folder into the app bundle (web/), at every build.
 # The files are not duplicated in the repository, so upstream changes to tools/ ship with the next build.
-# Only what the pages load is copied: HTML, JS, CSS and images; no Python, notes or emulator sources.
+# Everything is copied except what is clearly not part of the web pages (scripts, notes, emulator and
+# exploration sources), so new assets upstream (images, fonts, modules, data) come along without changes here.
 set -eu
 
 SRC="${SRCROOT}/../tools"
@@ -15,8 +16,9 @@ fi
 rm -rf "$DST"
 mkdir -p "$DST"
 cd "$SRC"
-find . \( -name emulator -o -name exploration -o -name '.?*' \) -prune -o -type f \
-  \( -name '*.html' -o -name '*.js' -o -name '*.css' -o -name '*.png' -o -name '*.svg' -o -name '*.json' \) -print |
+find . \( -name emulator -o -name exploration -o -name __pycache__ -o -name '.?*' \) -prune -o -type f \
+  ! -name '*.py' ! -name '*.pyc' ! -name '*.md' ! -name '*.cpp' ! -name '*.c' ! -name '*.h' ! -name '*.sh' \
+  ! -name '*.syx' ! -name '*.bin' -print |
 while IFS= read -r f; do
   mkdir -p "$DST/$(dirname "$f")"
   cp "$f" "$DST/$f"

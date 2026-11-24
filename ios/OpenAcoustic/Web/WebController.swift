@@ -9,6 +9,14 @@ final class WebController: NSObject, ObservableObject {
     private var pendingURL: URL?
     private var rulesReady = false
     fileprivate var downloads: [ObjectIdentifier: URL] = [:]   // download → file it's written to
+    /// The page's own background colour, so the safe-area margins around the web view blend in.
+    @Published private(set) var pageBackground = UIColor.black
+
+    /// Page zoom like a browser's (the layout reflows; not a pinch). 1 = 100 %.
+    var zoom: CGFloat {
+        get { webView.pageZoom }
+        set { webView.pageZoom = newValue }
+    }
 
     init(url: URL) {
         let config = WKWebViewConfiguration()
@@ -46,6 +54,31 @@ final class WebController: NSObject, ObservableObject {
     }
 
     func reload() { webView.reload() }
+
+    /// Reads the page's background colour (body, else html) once it has loaded.
+    fileprivate func updatePageBackground() {
+        let js = """
+            (() => { const bg = e => e ? getComputedStyle(e).backgroundColor : "";
+              const ok = c => c && c !== "transparent" && !/^rgba\\(.*,\\s*0\\)$/.test(c);
+              const b = bg(document.body), h = bg(document.documentElement); return ok(b) ? b : ok(h) ? h : ""; })()
+            """
+        webView.evaluateJavaScript(js) { [weak self] result, _ in
+            guard let self, let css = result as? String, let color = Self.color(fromCSS: css) else { return }
+            self.pageBackground = color
+            self.webView.backgroundColor = color
+            self.webView.scrollView.backgroundColor = color
+        }
+    }
+
+    /// Parses `rgb(r, g, b)` / `rgba(r, g, b, a)` as returned by getComputedStyle.
+    static func color(fromCSS css: String) -> UIColor? {
+        let parts = css.drop(while: { $0 != "(" }).dropFirst().prefix(while: { $0 != ")" })
+            .split(separator: ",").map { Double($0.trimmingCharacters(in: .whitespaces)) }
+        guard parts.count >= 3, let r = parts[0], let g = parts[1], let b = parts[2] else { return nil }
+        let a = parts.count > 3 ? (parts[3] ?? 1) : 1
+        guard a > 0 else { return nil }
+        return UIColor(red: r / 255, green: g / 255, blue: b / 255, alpha: 1)
+    }
 
     /// Blocks every http(s) subresource. The pages are bundled; the one remote reference (a web font on
     /// pa-remote.html) is replaced by a bundled copy, and a render-blocking stylesheet request must not
@@ -98,6 +131,10 @@ extension WebController: WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         bridge.reset()
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        updatePageBackground()
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {

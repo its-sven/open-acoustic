@@ -21,12 +21,12 @@
 		0A0000000000000000000005 /* OpenAcousticTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OpenAcousticTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A0000000000000000000008 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		0A0000000000000000000009 /* Info-Debug.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-Debug.plist"; sourceTree = "<group>"; };
-		0A000000000000000000000F /* App.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = App.xcconfig; sourceTree = "<group>"; };
-		0A0000000000000000000015 /* Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tests.xcconfig; sourceTree = "<group>"; };
 		0A000000000000000000000A /* Local.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text; path = Local.xcconfig.example; sourceTree = "<group>"; };
 		0A000000000000000000000B /* bundle-web.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "bundle-web.sh"; sourceTree = "<group>"; };
-		0A0000000000000000000016 /* build-ipa.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "build-ipa.sh"; sourceTree = "<group>"; };
 		0A000000000000000000000C /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		0A000000000000000000000F /* App.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = App.xcconfig; sourceTree = "<group>"; };
+		0A0000000000000000000015 /* Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tests.xcconfig; sourceTree = "<group>"; };
+		0A0000000000000000000016 /* build-ipa.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "build-ipa.sh"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */

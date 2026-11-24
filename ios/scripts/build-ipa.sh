@@ -7,8 +7,11 @@ cd "$(dirname "$0")/.."
 OUT="$PWD/build"
 DD="$OUT/DerivedData"
 
+# Build number = number of commits, so every IPA from a newer checkout counts as an update.
+BUILD=$(git rev-list --count HEAD 2>/dev/null || echo 1)
+
 xcodebuild -project OpenAcoustic.xcodeproj -scheme OpenAcoustic -configuration Release \
-  -destination 'generic/platform=iOS' -derivedDataPath "$DD" \
+  -destination 'generic/platform=iOS' -derivedDataPath "$DD" CURRENT_PROJECT_VERSION="$BUILD" \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
   build -quiet
 
@@ -21,4 +24,4 @@ cp -R "$APP" "$STAGE/Payload/"
 rm -rf "$STAGE"
 
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")
-echo "Built $OUT/OpenAcoustic.ipa (version $VERSION, $(du -h "$OUT/OpenAcoustic.ipa" | cut -f1))"
+echo "Built $OUT/OpenAcoustic.ipa (version $VERSION build $BUILD, $(du -h "$OUT/OpenAcoustic.ipa" | cut -f1))"

@@ -75,6 +75,25 @@ Once SideStore manages the app, install updates through SideStore too (new IPA �
 - **AltStore PAL** (EU): distribute as a notarized alternative-marketplace app.
 - Either way the app is signed for one year instead of seven days. Note the license of the web tools (below) before distributing builds to others.
 
+## Using it
+
+- **Corner menu** (the dot and ••• at the bottom right of every page): Home, Reload page, **Size** and Bluetooth MIDI…. The dot is green when CoreMIDI sees the pedal on USB, blue for a Bluetooth adapter, grey for none.
+- **Size** scales the pages like a browser's zoom (the layout reflows; it is not a pinch). It is remembered per device; phones start at 80 %, tablets at 100 %.
+- The margins left free for the notch and the home indicator take the page's background colour.
+
+## Updating
+
+The app has no copy of the web tools: `scripts/bundle-web.sh` copies `tools/` at every build (everything except scripts, notes and emulator/exploration sources). New features in the web tools therefore need no change in the app; pull them and build again:
+
+```bash
+git pull upstream main        # or merge upstream/main into your branch
+ios/scripts/build-ipa.sh      # build number = commit count, so SideStore sees an update
+```
+
+Then install the new IPA in SideStore (**My Apps ▸ +**). Your settings (saved ports, checklist, page size) stay.
+
+The app only needs changing if the web tools start to rely on something it doesn't provide, for example a resource from the internet (blocked; the app is offline) or a browser API beyond Web MIDI that WKWebView lacks.
+
 ## Tests
 
 ```bash
