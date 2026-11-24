@@ -4,7 +4,7 @@ import WebKit
 /// Owns one WKWebView set up for the bundled pages: the `app://` scheme, Web MIDI, no network,
 /// JS dialogs, downloads (shared via the share sheet) and external links (opened in Safari).
 final class WebController: NSObject, ObservableObject {
-    let webView: WKWebView
+    let webView: SizedWebView
     private let bridge = WebMIDIBridge()
     private var pendingURL: URL?
     private var rulesReady = false
@@ -12,25 +12,29 @@ final class WebController: NSObject, ObservableObject {
     /// The page's own background colour, so the safe-area margins around the web view blend in.
     @Published private(set) var pageBackground = UIColor.black
 
-    /// Page zoom like a browser's (the layout reflows; not a pinch). 1 = 100 %.
-    var zoom: CGFloat {
-        get { webView.pageZoom }
-        set { webView.pageZoom = newValue }
+    /// Page size like a browser's zoom: the page is laid out for a viewport of (view width ÷ zoom) CSS pixels
+    /// and scaled to fit, so it reflows and always fills the screen. 1 = 100 %.
+    var zoom: Double = 1 {
+        didSet {
+            guard zoom != oldValue else { return }
+            installUserScripts()      // later page loads start at the new size
+            applyZoom()               // and the current page changes now
+        }
     }
 
-    init(url: URL) {
+    init(url: URL, zoom: Double = 1) {
+        self.zoom = zoom
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(AppSchemeHandler(), forURLScheme: AppSchemeHandler.scheme)
         config.websiteDataStore = .default()                      // keep localStorage (saved ports, checklists)
         config.preferences.javaScriptCanOpenWindowsAutomatically = false
         config.defaultWebpagePreferences.preferredContentMode = .mobile
         bridge.install(into: config)
-        if let url = Bundle.main.url(forResource: "AppPageShim", withExtension: "js"), let src = try? String(contentsOf: url, encoding: .utf8) {
-            config.userContentController.addUserScript(WKUserScript(source: src, injectionTime: .atDocumentEnd, forMainFrameOnly: false, in: .page))
-        }
 
-        webView = WKWebView(frame: .zero, configuration: config)
+        webView = SizedWebView(frame: .zero, configuration: config)
         super.init()
+        installUserScripts()
+        webView.onWidthChange = { [weak self] _ in self?.applyZoom() }   // rotation, split view
         bridge.webView = webView
         webView.navigationDelegate = self
         webView.uiDelegate = self
@@ -54,6 +58,26 @@ final class WebController: NSObject, ObservableObject {
     }
 
     func reload() { webView.reload() }
+
+    private static let pageShim: String? = Bundle.main.url(forResource: "AppPageShim", withExtension: "js")
+        .flatMap { try? String(contentsOf: $0, encoding: .utf8) }
+
+    /// The Web MIDI shim (document start), the current zoom (document start) and the page tweaks (document end).
+    private func installUserScripts() {
+        let ucc = webView.configuration.userContentController
+        ucc.removeAllUserScripts()
+        if let midi = WebMIDIBridge.userScript { ucc.addUserScript(midi) }
+        ucc.addUserScript(WKUserScript(source: "window.__oaZoom = \(zoom);", injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .page))
+        if let src = Self.pageShim {
+            ucc.addUserScript(WKUserScript(source: src, injectionTime: .atDocumentEnd, forMainFrameOnly: false, in: .page))
+        }
+    }
+
+    /// Re-applies the zoom to the current page with the exact width of the web view.
+    fileprivate func applyZoom() {
+        let width = webView.bounds.width
+        webView.evaluateJavaScript("window.__oaZoom = \(zoom); window.__oaApplyZoom && window.__oaApplyZoom(\(zoom), \(width)); 0")
+    }
 
     /// Reads the page's background colour (body, else html) once it has loaded.
     fileprivate func updatePageBackground() {
@@ -134,6 +158,7 @@ extension WebController: WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        applyZoom()
         updatePageBackground()
     }
 
@@ -205,6 +230,20 @@ extension WebController: WKUIDelegate {
 }
 
 // MARK: - SwiftUI
+
+/// A WKWebView that reports when its width changes, so the page size can follow rotation.
+final class SizedWebView: WKWebView {
+    var onWidthChange: ((CGFloat) -> Void)?
+    private var lastWidth: CGFloat = 0
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if bounds.width > 0, bounds.width != lastWidth {
+            lastWidth = bounds.width
+            onWidthChange?(bounds.width)
+        }
+    }
+}
 
 struct WebContainer: UIViewRepresentable {
     let controller: WebController

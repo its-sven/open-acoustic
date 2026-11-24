@@ -78,7 +78,8 @@ Once SideStore manages the app, install updates through SideStore too (new IPA �
 ## Using it
 
 - **Corner menu** (the dot and ••• at the bottom right of every page): Home, Reload page, **Size** and Bluetooth MIDI…. The dot is green when CoreMIDI sees the pedal on USB, blue for a Bluetooth adapter, grey for none.
-- **Size** scales the pages like a browser's zoom (the layout reflows; it is not a pinch). It is remembered per device; phones start at 80 %, tablets at 100 %.
+- **Size** works like zooming in a browser: the page is laid out for a wider (or narrower) screen and scaled to fit, so it reflows and always fills the display, also after rotating. At 80 % on a phone in landscape, for example, the touch views switch to their two-column tablet layout. It is remembered per device; phones start at 80 %, tablets at 100 %.
+- On phones the menu button sits in the free margin beside the notch or above the home indicator, so it never covers the page.
 - The margins left free for the notch and the home indicator take the page's background colour.
 
 ## Updating

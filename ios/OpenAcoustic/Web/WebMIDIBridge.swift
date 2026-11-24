@@ -24,16 +24,20 @@ final class WebMIDIBridge: NSObject, WKScriptMessageHandler, WKScriptMessageHand
         DispatchQueue.main.async { tokens.forEach(midi.removeListener) }
     }
 
-    /// Adds the message handlers and the shim (at document start, all frames, page world).
+    /// The Web MIDI implementation, for every frame at document start, in the page's world.
+    static let userScript: WKUserScript? = {
+        guard let url = Bundle.main.url(forResource: "WebMIDIShim", withExtension: "js"),
+              let src = try? String(contentsOf: url, encoding: .utf8) else {
+            assertionFailure("WebMIDIShim.js missing from the bundle"); return nil
+        }
+        return WKUserScript(source: src, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .page)
+    }()
+
+    /// Adds the message handlers. The shim itself (`userScript`) is added by the owner of the web view.
     func install(into config: WKWebViewConfiguration) {
         let ucc = config.userContentController
         ucc.addScriptMessageHandler(self, contentWorld: .page, name: "oaMIDIAccess")
         ucc.add(self, contentWorld: .page, name: "oaMIDI")
-        if let url = Bundle.main.url(forResource: "WebMIDIShim", withExtension: "js"), let src = try? String(contentsOf: url, encoding: .utf8) {
-            ucc.addUserScript(WKUserScript(source: src, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .page))
-        } else {
-            assertionFailure("WebMIDIShim.js missing from the bundle")
-        }
     }
 
     /// The main frame navigated: every frame's MIDIAccess is gone.
