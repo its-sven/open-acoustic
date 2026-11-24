@@ -1,0 +1,8 @@
+# Personal signing settings (team ID, bundle ID override)
+Config/Local.xcconfig
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/

@@ -1,0 +1,10 @@
+// Shared build settings for Open Acoustic. Committed; holds no personal data.
+// Signing: copy Local.xcconfig.example to Local.xcconfig (git-ignored) and put your team ID there.
+
+// Bundle identifier. A free Apple ID needs one that's unique to you: override it in Local.xcconfig.
+OA_BUNDLE_ID = io.github.its-sven.openacoustic
+
+DEVELOPMENT_TEAM =
+CODE_SIGN_STYLE = Automatic
+
+#include? "Local.xcconfig"
